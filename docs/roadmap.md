@@ -1,11 +1,19 @@
 # Roadmap
 
+## Foundation: Desktop QR Signer Simulation
+
+- Python package and CLI.
+- QR envelope encode/decode.
+- NIP-01 event id computation.
+- BIP-340 signing against shared fixtures.
+- Explicit approval gate.
+
+Status: implemented as the first executable vault foundation.
+
 ## M5: Architecture
 
-- QR parser.
 - Review model.
 - Signing service.
-- Desktop simulation path.
 - Pi Zero build plan.
 
 ## M6: Prototype
@@ -20,4 +28,3 @@
 - Minimal OS image path.
 - Reproducible build docs.
 - Hardware acceptance matrix.
-

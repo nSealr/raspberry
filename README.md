@@ -6,12 +6,22 @@ This repository will adapt the SeedSigner-style air-gapped workflow to Nostr:
 scan an unsigned event request, review on a trusted display, approve with
 physical controls, sign BIP-340, and return a signed-event QR.
 
+## Current Capabilities
+
+- Python package and CLI foundation for one-request signing flows.
+- v0 `nseal1:` QR envelope encode/decode.
+- NIP-01 event id computation and BIP-340 signing against shared
+  `NostrSeal/specs` fixtures.
+- Explicit approval gate: `sign_event` requests return `user_rejected` unless
+  approval is provided to the CLI or signer API.
+- JSON and QR file input/output for desktop simulation before camera/display
+  integration.
+
 ## Planned Capabilities
 
 - QR-only signing flow.
 - Stateless key/session mode.
 - NIP-06 mnemonic support.
-- NIP-01 event id computation and BIP-340 signing.
 - Display review for event kind, content, tags, and risk warnings.
 - Verifiable minimal OS image path.
 
@@ -27,6 +37,12 @@ Run the repository verification loop with:
 
 ```sh
 make ci
+```
+
+Run the desktop CLI simulation with:
+
+```sh
+python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
 ```
 
 ## License
