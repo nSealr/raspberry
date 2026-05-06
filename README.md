@@ -21,8 +21,16 @@ physical controls, sign BIP-340, and return a signed-event QR.
 - `os/`: image/buildroot or OS integration notes.
 - `docs/`: build, hardware, QR, and security documentation.
 
-## License Plan
+## Quality Baseline
 
-Vault software should use GPL-3.0 or another strong copyleft license compatible
-with reused SeedSigner concepts and dependencies.
+Run the repository verification loop with:
 
+```sh
+make ci
+```
+
+## License
+
+Vault software and tooling are released under the MIT License unless a file says
+otherwise. SeedSigner is a design reference, not a license source for copied
+code.
