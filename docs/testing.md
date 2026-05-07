@@ -47,3 +47,11 @@ compilation, and `pip check`.
 
 Hardware tests must record board, camera, display, OS image, commit, and exact
 procedure.
+
+## Single-Repository CI
+
+Unit tests prefer the sibling `NostrSeal/specs` repository when the full local
+workspace is present. GitHub Actions checks out `NostrSeal/raspberry` by itself,
+so tests fall back to fixture snapshots under `tests/fixtures/specs` in
+single-repository CI. Cross-repository drift remains guarded by
+`NostrSeal/lab` integration, which runs against the live sibling repositories.

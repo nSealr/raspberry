@@ -1,0 +1,29 @@
+{
+  "name": "kind-30078-empty",
+  "request": {
+    "version": 1,
+    "request_id": "req-kind-30078-empty",
+    "method": "sign_event",
+    "params": {
+      "event_template": {
+        "created_at": 1710000180,
+        "kind": 30078,
+        "tags": [],
+        "content": ""
+      }
+    }
+  },
+  "review": {
+    "kind": 30078,
+    "kind_name": "Unknown",
+    "created_at": 1710000180,
+    "content_preview": "",
+    "content_length": 0,
+    "tag_count": 0,
+    "tag_summary": [],
+    "warnings": [
+      "Unknown event kind.",
+      "Empty content."
+    ]
+  }
+}

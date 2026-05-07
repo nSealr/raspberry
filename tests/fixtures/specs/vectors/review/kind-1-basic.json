@@ -1,0 +1,26 @@
+{
+  "name": "kind-1-basic",
+  "request": {
+    "version": 1,
+    "request_id": "req-kind-1-basic",
+    "method": "sign_event",
+    "params": {
+      "event_template": {
+        "created_at": 1710000000,
+        "kind": 1,
+        "tags": [],
+        "content": "NostrSeal fixture: basic kind 1 event."
+      }
+    }
+  },
+  "review": {
+    "kind": 1,
+    "kind_name": "Short Text Note",
+    "created_at": 1710000000,
+    "content_preview": "NostrSeal fixture: basic kind 1 event.",
+    "content_length": 38,
+    "tag_count": 0,
+    "tag_summary": [],
+    "warnings": []
+  }
+}
