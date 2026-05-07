@@ -7,6 +7,48 @@ from typing import Any, Literal
 ButtonAction = Literal["next", "approve", "reject"]
 
 
+def review_frame_for_page(screen_review: dict[str, Any], page_index: int, page: dict[str, Any]) -> dict[str, Any]:
+    pages = screen_review.get("pages")
+    if not isinstance(pages, list) or page_index < 0 or page_index >= len(pages):
+        raise ValueError("screen review page index out of range")
+    action = page.get("action")
+    if action == "next":
+        action_hint = "Next"
+    elif action == "approve_or_reject":
+        action_hint = "Approve / Reject"
+    else:
+        raise ValueError("unsupported review page action")
+    lines = page.get("lines")
+    if not isinstance(lines, list):
+        raise ValueError("screen review page lines must be a list")
+    return {
+        "title": page["title"],
+        "page_indicator": f"Page {page_index + 1}/{len(pages)}",
+        "body_lines": list(lines),
+        "action_hint": action_hint,
+    }
+
+
+def review_transcript_for_screen_review(
+    screen_review: dict[str, Any],
+    buttons: list[ButtonAction],
+) -> list[dict[str, Any]]:
+    session = ReviewControlSession(screen_review)
+    transcript: list[dict[str, Any]] = []
+    for button in buttons:
+        frame = review_frame_for_page(screen_review, session.page_index, session.current_page)
+        decision = session.handle_button(button)
+        transcript.append(
+            {
+                "frame": frame,
+                "button": button,
+                "decision": decision,
+                "approved_for_signing": session.approved,
+            }
+        )
+    return transcript
+
+
 @dataclass
 class ReviewControlSession:
     screen_review: dict[str, Any]

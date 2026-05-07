@@ -10,6 +10,7 @@
 - Deterministic review model.
 - Deterministic trusted-display page model.
 - Request-bound approval digest.
+- Shared review-transcript vector consumption for display/GPIO adapter tests.
 
 Status: implemented as the first executable Raspberry QR vault foundation.
 
@@ -34,7 +35,9 @@ boundary from the CLI.
 Status: the physical-button approval state machine is implemented in
 `nostrseal_vault.controls`. It is still hardware-neutral, but it pins the rule
 that approval can only happen after every trusted-review page has been reached,
-while rejection can happen at any point.
+while rejection can happen at any point. The same package now generates
+renderer-neutral review transcripts checked against shared
+`NostrSeal/specs` vectors.
 
 Status: `nostrseal_vault.hardware_flow.run_button_qr_vault_flow` now connects
 that state machine to the QR flow boundary. It displays one trusted page at a
@@ -52,4 +55,4 @@ after a complete page traversal and approval, and emits a QR response.
 Shared QR vault contracts stay in `NostrSeal/specs`. ESP32-S3 QR vault firmware
 is a separate target in `NostrSeal/esp32`; it should reuse the same vectors and
 approval-digest semantics rather than depending on Raspberry implementation
-code.
+code. Review-transcript vectors are part of that shared contract.

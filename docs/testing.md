@@ -23,6 +23,8 @@ compilation, and `pip check`.
   `NostrSeal/specs` review-screen vector.
 - Physical-button approval session tests that require all trusted-review pages
   to be traversed before approval while allowing early rejection.
+- Review transcript tests against shared `NostrSeal/specs` vectors, covering
+  displayed frame, button sequence, terminal decision, and approval state.
 - Approval-digest tests proving an approved signing request is rejected when
   the digest no longer matches the rendered review pages.
 - Desktop CLI smoke test for QR request review output as `screen-json`.
@@ -45,7 +47,7 @@ compilation, and `pip check`.
 - Camera frame input, real display rendering, and GPIO approval tests before
   Raspberry Pi hardware acceptance testing.
 - Cross-check the Raspberry QR vault flow against the shared `NostrSeal/specs`
-  review-screen and `approval_digest` vectors.
+  review-screen, review-transcript, and `approval_digest` vectors.
 
 Hardware tests must record board, camera, display, OS image, commit, and exact
 procedure.

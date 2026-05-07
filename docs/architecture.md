@@ -84,6 +84,12 @@ The screen page model and digest calculation are checked against shared
 can implement the same review-to-approval contract without copying platform
 code.
 
+`review_transcript_for_screen_review` records the renderer-neutral frame shown
+before each physical-style button input, the terminal decision, and the
+approval state. It is checked against shared `NostrSeal/specs`
+review-transcript vectors so Raspberry display/GPIO adapters and ESP32 firmware
+adapter tests can use the same frame/button/decision oracle.
+
 ## Hardware Flow Boundary
 
 `nostrseal_vault.hardware_flow` defines the first Raspberry QR vault flow

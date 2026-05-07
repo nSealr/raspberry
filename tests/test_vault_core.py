@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
-from nostrseal_vault.controls import ReviewControlSession
+from nostrseal_vault.controls import ReviewControlSession, review_transcript_for_screen_review
 from nostrseal_vault.display import approval_digest_for_request, render_review_pages, screen_review_for_request
 from nostrseal_vault.hardware_flow import run_button_qr_vault_flow, run_qr_vault_flow
 from nostrseal_vault.nip06 import derive_nip06_secret
@@ -38,6 +38,10 @@ REVIEW_VECTORS = [
 SCREEN_REVIEW_VECTORS = [
     json.loads(path.read_text(encoding="utf-8"))
     for path in sorted((SPECS / "vectors/review-screens").glob("*.json"))
+]
+REVIEW_TRANSCRIPT_VECTORS = [
+    json.loads(path.read_text(encoding="utf-8"))
+    for path in sorted((SPECS / "vectors/review-transcripts").glob("*.json"))
 ]
 TAGGED_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-tags.json").read_text(encoding="utf-8"))
 
@@ -190,6 +194,21 @@ class VaultCoreTests(unittest.TestCase):
     def test_screen_review_matches_shared_review_screen_vectors(self) -> None:
         for vector in SCREEN_REVIEW_VECTORS:
             self.assertEqual(screen_review_for_request(vector["request"]), vector["screen_review"])
+
+    def test_review_transcripts_match_shared_vectors(self) -> None:
+        self.assertEqual(
+            [vector["name"] for vector in REVIEW_TRANSCRIPT_VECTORS],
+            ["kind-1-basic-approve", "kind-1-basic-reject"],
+        )
+        for vector in REVIEW_TRANSCRIPT_VECTORS:
+            request = decode_qr_envelope(vector["qr_envelope"])
+            screen_review = screen_review_for_request(request)
+
+            self.assertEqual(screen_review["approval_digest"], vector["approval_digest"])
+            self.assertEqual(
+                review_transcript_for_screen_review(screen_review, vector["buttons"]),
+                vector["transcript"],
+            )
 
     def test_physical_approval_requires_viewing_all_review_pages(self) -> None:
         session = ReviewControlSession(screen_review_for_request(TAGGED_REQUEST))
