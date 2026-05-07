@@ -17,7 +17,10 @@ KEY = json.loads((SPECS / "vectors/keys/test-key-1.json").read_text(encoding="ut
 BASIC_VECTOR = json.loads((SPECS / "vectors/events/kind-1-basic.json").read_text(encoding="utf-8"))
 BASIC_REQUEST = json.loads((SPECS / "examples/request-kind-1-basic.json").read_text(encoding="utf-8"))
 TAGGED_REQUEST = json.loads((SPECS / "examples/request-kind-1-tags.json").read_text(encoding="utf-8"))
-BASIC_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-basic.json").read_text(encoding="utf-8"))
+REVIEW_VECTORS = [
+    json.loads(path.read_text(encoding="utf-8"))
+    for path in sorted((SPECS / "vectors/review").glob("*.json"))
+]
 TAGGED_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-tags.json").read_text(encoding="utf-8"))
 
 
@@ -55,7 +58,7 @@ class VaultCoreTests(unittest.TestCase):
         self.assertIn("Event includes pubkey mentions.", review["warnings"])
 
     def test_review_model_matches_shared_review_vectors(self) -> None:
-        for vector in (BASIC_REVIEW_VECTOR, TAGGED_REVIEW_VECTOR):
+        for vector in REVIEW_VECTORS:
             self.assertEqual(
                 review_event_template(vector["request"]["params"]["event_template"]),
                 vector["review"],

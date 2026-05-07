@@ -13,7 +13,8 @@ compilation, and `pip check`.
 
 - QR envelope round-trip tests.
 - Signing tests against `NostrSeal/specs` fixtures.
-- Review model tests for event kind, content preview, tag summary, and warnings.
+- Review model tests against every shared review vector for event kind,
+  content preview, tag summary, and warnings.
 - Desktop CLI smoke test for QR request review output without a secret key.
 - Approval rejection tests.
 - Approved signing response tests.
