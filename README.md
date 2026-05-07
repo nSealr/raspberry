@@ -17,6 +17,8 @@ physical controls, sign BIP-340, and return a signed-event QR.
 - Deterministic event review model for kind, content preview, tag summary, and
   warnings before approval, checked against shared `NostrSeal/specs` review
   vectors.
+- `nseal-vault review` renders deterministic review JSON from a request without
+  requiring a secret key or producing a signature.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 
@@ -45,6 +47,7 @@ make ci
 Run the desktop CLI simulation with:
 
 ```sh
+python3 -m nostrseal_vault review --request request.qr --review review.json --input-format qr
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
 ```
 

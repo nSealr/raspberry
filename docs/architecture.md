@@ -33,6 +33,10 @@ The current CLI is a development harness. It intentionally requires an explicit
 desktop experiments preserve the same approval boundary expected on real
 hardware.
 
+The `review` command is intentionally separate from `sign`: it takes a request,
+produces deterministic review JSON, and never needs key material. This mirrors
+the future display flow where review must happen before approval and signing.
+
 The review model is not a UI. It is the deterministic data contract that a Pi
 Zero display flow must render before approval: event kind, content preview, tag
 summary, and warnings. The shared vectors prevent the Pi display flow,

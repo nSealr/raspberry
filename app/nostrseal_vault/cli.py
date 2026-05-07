@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .qr import decode_qr_envelope, encode_qr_envelope
+from .review import review_event_template
 from .signer import sign_request
 
 
@@ -34,6 +35,11 @@ def build_parser() -> argparse.ArgumentParser:
     sign.add_argument("--output-format", choices=["json", "qr"], default="json")
     sign.add_argument("--approve", action="store_true", help="Explicitly approve signing for this CLI invocation")
 
+    review = subparsers.add_parser("review", help="Render deterministic review data for one signing request")
+    review.add_argument("--request", required=True, type=Path, help="Input request path")
+    review.add_argument("--review", required=True, type=Path, help="Output review JSON path")
+    review.add_argument("--input-format", choices=["json", "qr"], default="json")
+
     return parser
 
 
@@ -45,6 +51,16 @@ def main(argv: list[str] | None = None) -> int:
         request = _read_value(args.request, args.input_format)
         response = sign_request(request, args.secret_key, approved=args.approve)
         _write_value(args.response, args.output_format, response)
+        return 0
+
+    if args.command == "review":
+        request = _read_value(args.request, args.input_format)
+        if not isinstance(request, dict) or request.get("method") != "sign_event":
+            parser.error("review requires a sign_event request")
+        params = request.get("params")
+        if not isinstance(params, dict) or not isinstance(params.get("event_template"), dict):
+            parser.error("review requires params.event_template")
+        _write_value(args.review, "json", review_event_template(params["event_template"]))
         return 0
 
     parser.error(f"unsupported command: {args.command}")

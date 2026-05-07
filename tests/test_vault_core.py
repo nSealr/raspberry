@@ -120,6 +120,31 @@ class VaultCoreTests(unittest.TestCase):
             response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
             self.assert_valid_signed_event(response["result"]["event"])
 
+    def test_cli_reviews_qr_request_without_secret_key(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review.json"
+            request_path.write_text(encode_qr_envelope(TAGGED_REVIEW_VECTOR["request"]), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "review",
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--input-format",
+                    "qr",
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            self.assertEqual(json.loads(review_path.read_text(encoding="utf-8")), TAGGED_REVIEW_VECTOR["review"])
+
 
 if __name__ == "__main__":
     unittest.main()
