@@ -144,6 +144,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Comma-separated physical button actions, e.g. next,next,next,approve",
     )
     flow.add_argument("--display-frame-log", type=Path, help="Output bounded display frames shown by --button-sequence")
+    flow.add_argument(
+        "--review-transcript-log",
+        type=Path,
+        help="Output displayed frame/button/decision transcript shown by --button-sequence",
+    )
     flow.add_argument("--max-title-chars", type=int, default=24, help="Maximum trusted-display title characters")
     flow.add_argument("--max-body-lines", type=int, default=6, help="Maximum trusted-display body lines")
     flow.add_argument("--max-line-chars", type=int, default=32, help="Maximum trusted-display body line characters")
@@ -197,8 +202,10 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("flow accepts either --approve or --button-sequence, not both")
         if args.display_frame_log and not args.button_sequence:
             parser.error("flow --display-frame-log requires --button-sequence")
+        if args.review_transcript_log and not args.button_sequence:
+            parser.error("flow --review-transcript-log requires --button-sequence")
         if args.button_sequence:
-            run_button_qr_vault_flow(
+            result = run_button_qr_vault_flow(
                 _FileButtonQrVaultIO(
                     args.request,
                     args.review,
@@ -213,6 +220,11 @@ def main(argv: list[str] | None = None) -> int:
                     max_line_chars=args.max_line_chars,
                 ),
             )
+            if args.review_transcript_log is not None:
+                args.review_transcript_log.write_text(
+                    json.dumps(result.review_transcript, indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
             return 0
         run_qr_vault_flow(
             _FileQrVaultIO(args.request, args.review, args.response, args.approve),

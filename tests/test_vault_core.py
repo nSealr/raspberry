@@ -681,6 +681,42 @@ class VaultCoreTests(unittest.TestCase):
             self.assertTrue(all(len(line) <= 20 for line in frames[1]["body_lines"]))
             self.assertTrue(frames[1]["body_lines"][-1].endswith("..."))
 
+    def test_cli_flow_can_write_review_transcript_log_for_button_sequence(self) -> None:
+        vector = next(item for item in REVIEW_TRANSCRIPT_VECTORS if item["name"] == "kind-1-basic-approve")
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-screen.json"
+            response_path = Path(temp_root) / "response.qr"
+            transcript_log_path = Path(temp_root) / "review-transcript.json"
+            request_path.write_text(vector["qr_envelope"], encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "flow",
+                    "--secret-key",
+                    KEY["secret_key"],
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--response",
+                    str(response_path),
+                    "--button-sequence",
+                    ",".join(vector["buttons"]),
+                    "--review-transcript-log",
+                    str(transcript_log_path),
+                    "--max-line-chars",
+                    "64",
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            self.assertEqual(json.loads(transcript_log_path.read_text(encoding="utf-8")), vector["transcript"])
+
     def test_cli_review_rejects_host_supplied_event_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             request_path = Path(temp_root) / "request.json"

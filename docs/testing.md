@@ -48,6 +48,8 @@ compilation, and `pip check`.
 - Button-driven flow transcript tests proving the displayed frame/button/
   decision trace can match shared `NostrSeal/specs` review-transcript vectors
   under transcript-compatible display limits.
+- CLI transcript-log tests proving the file-backed button harness can export
+  that trace for cross-repo integration and future adapter acceptance tests.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
   screen-review JSON and a signed response QR.
 - Desktop CLI smoke test for QR request input and QR response output.

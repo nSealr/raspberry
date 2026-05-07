@@ -54,6 +54,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - The button-driven flow result carries the displayed frame/button/decision
   transcript, so adapter harnesses can compare a whole review loop with shared
   `NostrSeal/specs` review-transcript vectors before real GPIO/display drivers.
+- `nseal-vault flow --review-transcript-log ...` writes that same transcript
+  from the file-backed button harness for cross-repo and adapter acceptance
+  tests.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 
@@ -87,6 +90,7 @@ python3 -m nostrseal_vault review --request request.qr --review display-frame.js
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --approve
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --display-frame-log display-frames.json
+python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --review-transcript-log review-transcript.json
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve --approval-digest <hex>
 python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve

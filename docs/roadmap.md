@@ -60,6 +60,11 @@ frame/button/decision transcript. Tests cross-check that trace against shared
 `NostrSeal/specs` review-transcript vectors under transcript-compatible display
 limits, while real camera, display, and GPIO drivers remain pending.
 
+Status: `nseal-vault flow --review-transcript-log` now exports the same
+frame/button/decision transcript from the file-backed button harness. This lets
+`NostrSeal/lab` and future adapter tests verify full review-loop traces without
+importing Raspberry implementation code.
+
 ## Later
 
 - Minimal OS image path.

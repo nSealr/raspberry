@@ -85,6 +85,8 @@ a deterministic acceptance trace before real Pi display drivers are wired in.
 The in-process flow result also carries the exact frame/button/decision
 transcript produced during the review loop, which lets tests compare future
 adapter harnesses with shared `NostrSeal/specs` review-transcript vectors.
+The file-backed CLI can write this trace with `--review-transcript-log`, giving
+cross-repo smoke tests the same oracle without importing Raspberry internals.
 
 The `screen-json` output also includes an `approval_digest`. The digest is a
 SHA-256 hash of canonical request metadata, the exact event template, the
