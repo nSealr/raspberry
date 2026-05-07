@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .crypto import sign_event, xonly_pubkey_from_secret
+from .review import review_event_template
 
 
 def _error_response(request_id: str, code: str, message: str, retryable: bool) -> dict[str, Any]:
@@ -38,6 +39,10 @@ def _validate_sign_event_request(request: dict[str, Any]) -> dict[str, Any] | No
         for forbidden in ("id", "pubkey", "sig"):
             if forbidden in params["event_template"]:
                 return _error_response(_request_id(request), "invalid_request", f"event_template must not contain {forbidden}.", False)
+        try:
+            review_event_template(params["event_template"])
+        except ValueError as exc:
+            return _error_response(_request_id(request), "invalid_request", str(exc), False)
     return None
 
 

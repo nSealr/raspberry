@@ -7,12 +7,12 @@
 - NIP-01 event id computation.
 - BIP-340 signing against shared fixtures.
 - Explicit approval gate.
+- Deterministic review model.
 
 Status: implemented as the first executable vault foundation.
 
 ## M5: Architecture
 
-- Review model.
 - Signing service.
 - Pi Zero build plan.
 

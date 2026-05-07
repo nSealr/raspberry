@@ -13,13 +13,13 @@ compilation, and `pip check`.
 
 - QR envelope round-trip tests.
 - Signing tests against `NostrSeal/specs` fixtures.
+- Review model tests for event kind, content preview, tag summary, and warnings.
 - Approval rejection tests.
 - Approved signing response tests.
 - Desktop CLI smoke test for QR request input and QR response output.
 
 ## Next Tests
 
-- Review model tests for event kind, content, tags, and warning policy.
 - Companion verification of signed output through the file transport.
 - Camera/display simulation tests before Raspberry Pi hardware testing.
 

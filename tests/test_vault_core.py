@@ -7,6 +7,7 @@ from pathlib import Path
 
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
 from nostrseal_vault.qr import decode_qr_envelope, encode_qr_envelope
+from nostrseal_vault.review import review_event_template
 from nostrseal_vault.signer import sign_request
 
 
@@ -15,6 +16,7 @@ SPECS = ROOT.parent / "specs"
 KEY = json.loads((SPECS / "vectors/keys/test-key-1.json").read_text(encoding="utf-8"))
 BASIC_VECTOR = json.loads((SPECS / "vectors/events/kind-1-basic.json").read_text(encoding="utf-8"))
 BASIC_REQUEST = json.loads((SPECS / "examples/request-kind-1-basic.json").read_text(encoding="utf-8"))
+TAGGED_REQUEST = json.loads((SPECS / "examples/request-kind-1-tags.json").read_text(encoding="utf-8"))
 
 
 class VaultCoreTests(unittest.TestCase):
@@ -38,6 +40,32 @@ class VaultCoreTests(unittest.TestCase):
         signed = sign_event(BASIC_REQUEST["params"]["event_template"], KEY["secret_key"])
 
         self.assert_valid_signed_event(signed)
+
+    def test_review_model_summarizes_kind_content_and_tags(self) -> None:
+        review = review_event_template(TAGGED_REQUEST["params"]["event_template"])
+
+        self.assertEqual(review["kind"], 1)
+        self.assertEqual(review["kind_name"], "Short Text Note")
+        self.assertEqual(review["content_preview"], "NostrSeal fixture: tagged kind 1 event.")
+        self.assertEqual(review["tag_count"], 2)
+        self.assertIn("p: 4f355bdc...", review["tag_summary"])
+        self.assertIn("t: nostrseal", review["tag_summary"])
+        self.assertIn("Event includes pubkey mentions.", review["warnings"])
+
+    def test_review_model_warns_for_unknown_kind_and_long_content(self) -> None:
+        review = review_event_template(
+            {
+                "created_at": 1710000000,
+                "kind": 30078,
+                "tags": [],
+                "content": "x" * 420,
+            }
+        )
+
+        self.assertEqual(review["kind_name"], "Unknown")
+        self.assertEqual(len(review["content_preview"]), 123)
+        self.assertIn("Unknown event kind.", review["warnings"])
+        self.assertIn("Long content.", review["warnings"])
 
     def test_sign_request_requires_explicit_approval(self) -> None:
         response = sign_request(BASIC_REQUEST, KEY["secret_key"], approved=False)
