@@ -22,6 +22,8 @@ physical controls, sign BIP-340, and return a signed-event QR.
 - `nseal-vault review` renders deterministic review JSON from a request without
   requiring a secret key or producing a signature. It uses the same request
   validation as the signing path for host-supplied event fields.
+- `nseal-vault review --output-format screen-json` renders deterministic
+  trusted-display page data for desktop and future Pi display simulations.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 
@@ -29,7 +31,6 @@ physical controls, sign BIP-340, and return a signed-event QR.
 
 - QR-only signing flow.
 - Stateless key/session mode.
-- NIP-06 mnemonic support.
 - Display review for event kind, content, tags, and risk warnings.
 - Verifiable minimal OS image path.
 
@@ -51,6 +52,7 @@ Run the desktop CLI simulation with:
 
 ```sh
 python3 -m nostrseal_vault review --request request.qr --review review.json --input-format qr
+python3 -m nostrseal_vault review --request request.qr --review review-screen.json --input-format qr --output-format screen-json
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
 python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
 ```

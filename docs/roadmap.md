@@ -8,6 +8,7 @@
 - BIP-340 signing against shared fixtures.
 - Explicit approval gate.
 - Deterministic review model.
+- Deterministic trusted-display page model.
 
 Status: implemented as the first executable vault foundation.
 
@@ -19,7 +20,7 @@ Status: implemented as the first executable vault foundation.
 ## M6: Prototype
 
 - Camera/display abstraction.
-- Approval flow.
+- Physical-button approval flow.
 - Signed QR output.
 - Companion verification loop.
 

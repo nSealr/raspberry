@@ -26,6 +26,8 @@ Nostr event signing.
   `m/44'/1237'/<account>'/0/0` NIP-06 keys.
 - `nostrseal_vault.review`: deterministic event review model checked against
   shared `NostrSeal/specs` review vectors.
+- `nostrseal_vault.display`: deterministic trusted-display page model for
+  event, content, tags, warnings, and final approval decisions.
 - `nostrseal_vault.signer`: request handling and explicit approval gate.
 - `nostrseal_vault.cli`: desktop simulation CLI for JSON and QR file input and
   output.
@@ -49,3 +51,9 @@ Zero display flow must render before approval: event kind, content preview, tag
 summary, and warnings. The shared vectors prevent the Pi display flow,
 companion harness, and future ESP32 display work from drifting on review
 semantics.
+
+The display page model is the next contract above the raw review data. It
+orders the pages that a small trusted screen must show and marks the final page
+as `approve_or_reject`. It is still renderer-neutral: real Pi code can map the
+same page objects onto GPIO buttons, a camera loop, and the selected display
+library without changing the signing contract.

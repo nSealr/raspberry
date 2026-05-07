@@ -17,6 +17,9 @@ compilation, and `pip check`.
 - Review model tests against every shared review vector for event kind,
   content preview, tag summary, and warnings.
 - Desktop CLI smoke test for QR request review output without a secret key.
+- Trusted-display page tests for event, content, tag, warning, and final
+  approval-decision pages.
+- Desktop CLI smoke test for QR request review output as `screen-json`.
 - Negative CLI review test proving host-supplied `id` fields are rejected
   before review output is written.
 - Approval rejection tests.
@@ -27,7 +30,8 @@ compilation, and `pip check`.
 ## Next Tests
 
 - Companion verification of signed output through the file transport.
-- Camera/display simulation tests before Raspberry Pi hardware testing.
+- Camera frame input and real display rendering tests before Raspberry Pi
+  hardware testing.
 
 Hardware tests must record board, camera, display, OS image, commit, and exact
 procedure.

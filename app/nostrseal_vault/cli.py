@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .display import render_review_pages
 from .nip06 import derive_nip06_secret
 from .qr import decode_qr_envelope, encode_qr_envelope
 from .review import review_event_template
@@ -51,6 +52,7 @@ def build_parser() -> argparse.ArgumentParser:
     review.add_argument("--request", required=True, type=Path, help="Input request path")
     review.add_argument("--review", required=True, type=Path, help="Output review JSON path")
     review.add_argument("--input-format", choices=["json", "qr"], default="json")
+    review.add_argument("--output-format", choices=["json", "screen-json"], default="json")
 
     return parser
 
@@ -75,7 +77,13 @@ def main(argv: list[str] | None = None) -> int:
         params = request.get("params")
         if not isinstance(params, dict) or not isinstance(params.get("event_template"), dict):
             parser.error("review requires params.event_template")
-        _write_value(args.review, "json", review_event_template(params["event_template"]))
+        review_output = review_event_template(params["event_template"])
+        if args.output_format == "screen-json":
+            review_output = {
+                "format": "screen-pages",
+                "pages": render_review_pages(review_output),
+            }
+        _write_value(args.review, "json", review_output)
         return 0
 
     parser.error(f"unsupported command: {args.command}")

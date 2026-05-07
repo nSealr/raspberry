@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
+from nostrseal_vault.display import render_review_pages
 from nostrseal_vault.nip06 import derive_nip06_secret
 from nostrseal_vault.qr import decode_qr_envelope, encode_qr_envelope
 from nostrseal_vault.review import review_event_template
@@ -78,6 +79,46 @@ class VaultCoreTests(unittest.TestCase):
                 review_event_template(vector["request"]["params"]["event_template"]),
                 vector["review"],
             )
+
+    def test_review_pages_prioritize_kind_content_tags_and_warnings(self) -> None:
+        review = review_event_template(TAGGED_REQUEST["params"]["event_template"])
+
+        pages = render_review_pages(review)
+
+        self.assertEqual(
+            pages,
+            [
+                {
+                    "title": "Event",
+                    "lines": ["Kind 1", "Short Text Note", "Created 1710000060"],
+                    "action": "next",
+                },
+                {
+                    "title": "Content",
+                    "lines": ["NostrSeal fixture: tagged kind 1 event."],
+                    "action": "next",
+                },
+                {
+                    "title": "Tags",
+                    "lines": ["2 tags", "p: 4f355bdc...", "t: nostrseal"],
+                    "action": "next",
+                },
+                {
+                    "title": "Warnings",
+                    "lines": ["Event includes pubkey mentions."],
+                    "action": "approve_or_reject",
+                },
+            ],
+        )
+
+    def test_review_pages_always_end_with_approval_decision(self) -> None:
+        review = review_event_template(BASIC_REQUEST["params"]["event_template"])
+
+        pages = render_review_pages(review)
+
+        self.assertEqual(pages[-1]["title"], "Decision")
+        self.assertEqual(pages[-1]["lines"], ["Approve signing only if all pages match."])
+        self.assertEqual(pages[-1]["action"], "approve_or_reject")
 
     def test_review_model_warns_for_unknown_kind_and_long_content(self) -> None:
         review = review_event_template(
@@ -197,6 +238,35 @@ class VaultCoreTests(unittest.TestCase):
             )
 
             self.assertEqual(json.loads(review_path.read_text(encoding="utf-8")), TAGGED_REVIEW_VECTOR["review"])
+
+    def test_cli_review_can_write_screen_json(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-screen.json"
+            request_path.write_text(encode_qr_envelope(TAGGED_REVIEW_VECTOR["request"]), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "review",
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "screen-json",
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            review_output = json.loads(review_path.read_text(encoding="utf-8"))
+            self.assertEqual(review_output["format"], "screen-pages")
+            self.assertEqual(review_output["pages"][-1]["action"], "approve_or_reject")
 
     def test_cli_review_rejects_host_supplied_event_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
