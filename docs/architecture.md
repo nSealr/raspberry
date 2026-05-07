@@ -103,3 +103,11 @@ boundary. It reads a QR request from a file, writes the exact screen-review JSON
 that a trusted display must render, requires explicit `--approve`, and writes a
 QR response. It is for desktop integration and hardware-adapter development,
 not for production key custody.
+
+`run_button_qr_vault_flow` is the stricter hardware-facing boundary. Instead of
+accepting one boolean from `show_review`, it renders one page at a time through
+`display_review_page`, reads `next`, `approve`, or `reject` through
+`read_review_button`, and delegates the state machine to
+`ReviewControlSession`. This keeps physical approval impossible until every
+trusted page has been displayed and the final approve/reject page has been
+reached. Real GPIO/display adapters should attach to this boundary first.

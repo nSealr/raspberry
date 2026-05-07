@@ -8,7 +8,7 @@ from pathlib import Path
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
 from nostrseal_vault.controls import ReviewControlSession
 from nostrseal_vault.display import approval_digest_for_request, render_review_pages, screen_review_for_request
-from nostrseal_vault.hardware_flow import run_qr_vault_flow
+from nostrseal_vault.hardware_flow import run_button_qr_vault_flow, run_qr_vault_flow
 from nostrseal_vault.nip06 import derive_nip06_secret
 from nostrseal_vault.qr import decode_qr_envelope, encode_qr_envelope
 from nostrseal_vault.review import review_event_template
@@ -55,6 +55,28 @@ class MemoryQrVaultIO:
     def show_review(self, screen_review: dict) -> bool:
         self.screen_review = screen_review
         return self.approved
+
+    def emit_response_qr(self, response_qr: str) -> None:
+        self.response_qr = response_qr
+
+
+class MemoryButtonQrVaultIO:
+    def __init__(self, request_qr: str, buttons: list[str]) -> None:
+        self.request_qr = request_qr
+        self.buttons = list(buttons)
+        self.displayed_pages: list[tuple[int, str]] = []
+        self.response_qr: str | None = None
+
+    def scan_request_qr(self) -> str:
+        return self.request_qr
+
+    def display_review_page(self, screen_review: dict, page_index: int, page: dict) -> None:
+        self.displayed_pages.append((page_index, page["title"]))
+
+    def read_review_button(self) -> str:
+        if not self.buttons:
+            raise RuntimeError("no more buttons")
+        return self.buttons.pop(0)
 
     def emit_response_qr(self, response_qr: str) -> None:
         self.response_qr = response_qr
@@ -253,6 +275,29 @@ class VaultCoreTests(unittest.TestCase):
         self.assertIsNotNone(hardware.response_qr)
         response = decode_qr_envelope(hardware.response_qr)
         self.assert_valid_signed_event(response["result"]["event"])
+
+    def test_button_qr_vault_flow_requires_page_traversal_before_approval(self) -> None:
+        hardware = MemoryButtonQrVaultIO(encode_qr_envelope(TAGGED_REQUEST), ["next", "next", "next", "approve"])
+
+        result = run_button_qr_vault_flow(hardware, KEY["secret_key"])
+
+        self.assertEqual(hardware.displayed_pages, [(0, "Event"), (1, "Content"), (2, "Tags"), (3, "Warnings")])
+        self.assertEqual(result.approval_digest, screen_review_for_request(TAGGED_REQUEST)["approval_digest"])
+        self.assertTrue(result.approved)
+        self.assertIsNotNone(hardware.response_qr)
+        response = decode_qr_envelope(hardware.response_qr)
+        self.assert_valid_signed_event_for_pubkey(response["result"]["event"], KEY["public_key"])
+
+    def test_button_qr_vault_flow_allows_early_rejection(self) -> None:
+        hardware = MemoryButtonQrVaultIO(encode_qr_envelope(BASIC_REQUEST), ["reject"])
+
+        result = run_button_qr_vault_flow(hardware, KEY["secret_key"])
+
+        self.assertEqual(hardware.displayed_pages, [(0, "Event")])
+        self.assertFalse(result.approved)
+        response = decode_qr_envelope(hardware.response_qr)
+        self.assertEqual(response["ok"], False)
+        self.assertEqual(response["error"]["code"], "user_rejected")
 
     def test_cli_signs_qr_request_and_outputs_qr_response(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:

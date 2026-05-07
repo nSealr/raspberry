@@ -36,6 +36,11 @@ Status: the physical-button approval state machine is implemented in
 that approval can only happen after every trusted-review page has been reached,
 while rejection can happen at any point.
 
+Status: `nostrseal_vault.hardware_flow.run_button_qr_vault_flow` now connects
+that state machine to the QR flow boundary. It displays one trusted page at a
+time, reads physical-style `next`, `approve`, and `reject` actions, signs only
+after a complete page traversal and approval, and emits a QR response.
+
 ## Later
 
 - Minimal OS image path.

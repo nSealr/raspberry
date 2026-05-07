@@ -38,6 +38,8 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - Pure-Python physical approval controller for future GPIO adapters. Approval
   is only accepted after the trusted review pages have been traversed to the
   final approve/reject page; rejection remains available before the final page.
+- Hardware-neutral button-driven QR flow boundary for future camera, display,
+  and GPIO adapters.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 
