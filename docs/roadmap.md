@@ -50,6 +50,11 @@ body lines, page indicator, and action hint. `nseal-vault review
 --output-format display-frame-json` exposes the same frame contract for future
 Raspberry display adapter tests. Real display drivers are still pending.
 
+Status: the button-driven QR flow now renders bounded display frames before
+each physical-style input and can write those frames through `nseal-vault flow
+--display-frame-log`. This turns the hardware-neutral flow into an acceptance
+trace for future Pi display adapters while keeping real drivers pending.
+
 ## Later
 
 - Minimal OS image path.

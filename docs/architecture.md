@@ -78,6 +78,11 @@ the final `approve_or_reject` page has been reached after all pages were seen.
 This gives the future GPIO implementation a tested approval state machine
 before any Raspberry-specific display or button driver is selected.
 
+The button-driven hardware flow now renders those page states through
+`render_display_frame` before each physical-style input. The file-backed CLI can
+record the displayed frames with `--display-frame-log`, giving display adapters
+a deterministic acceptance trace before real Pi display drivers are wired in.
+
 The `screen-json` output also includes an `approval_digest`. The digest is a
 SHA-256 hash of canonical request metadata, the exact event template, the
 review model, and the rendered page model. It is not a secret and is not shown
@@ -118,7 +123,7 @@ not for production key custody.
 
 `run_button_qr_vault_flow` is the stricter hardware-facing boundary. Instead of
 accepting one boolean from `show_review`, it renders one page at a time through
-`display_review_page`, reads `next`, `approve`, or `reject` through
+`display_review_frame`, reads `next`, `approve`, or `reject` through
 `read_review_button`, and delegates the state machine to
 `ReviewControlSession`. This keeps physical approval impossible until every
 trusted page has been displayed and the final approve/reject page has been

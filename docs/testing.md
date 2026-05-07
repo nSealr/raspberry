@@ -41,6 +41,8 @@ compilation, and `pip check`.
   and response-QR I/O.
 - Button-driven QR vault flow tests proving page-by-page traversal before
   approval and early rejection without signing.
+- Button-driven display-frame log tests proving future display adapters receive
+  bounded frames before physical-style input is consumed.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
   screen-review JSON and a signed response QR.
 - Desktop CLI smoke test for QR request input and QR response output.

@@ -52,20 +52,35 @@ class _FileQrVaultIO:
 
 
 class _FileButtonQrVaultIO:
-    def __init__(self, request: Path, review: Path, response: Path, buttons: list[str]) -> None:
+    def __init__(
+        self,
+        request: Path,
+        review: Path,
+        response: Path,
+        buttons: list[str],
+        display_frame_log: Path | None = None,
+    ) -> None:
         self.request = request
         self.review = review
         self.response = response
         self.buttons = list(buttons)
+        self.display_frame_log = display_frame_log
+        self.display_frames: list[dict] = []
         self._wrote_review = False
 
     def scan_request_qr(self) -> str:
         return self.request.read_text(encoding="utf-8").strip()
 
-    def display_review_page(self, screen_review: dict, page_index: int, page: dict) -> None:
+    def display_review_frame(self, screen_review: dict, page_index: int, frame: dict) -> None:
         if not self._wrote_review:
             self.review.write_text(json.dumps(screen_review, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             self._wrote_review = True
+        if self.display_frame_log is not None:
+            self.display_frames.append(frame)
+            self.display_frame_log.write_text(
+                json.dumps(self.display_frames, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
 
     def read_review_button(self) -> str:
         if not self.buttons:
@@ -128,6 +143,10 @@ def build_parser() -> argparse.ArgumentParser:
         type=_button_sequence,
         help="Comma-separated physical button actions, e.g. next,next,next,approve",
     )
+    flow.add_argument("--display-frame-log", type=Path, help="Output bounded display frames shown by --button-sequence")
+    flow.add_argument("--max-title-chars", type=int, default=24, help="Maximum trusted-display title characters")
+    flow.add_argument("--max-body-lines", type=int, default=6, help="Maximum trusted-display body lines")
+    flow.add_argument("--max-line-chars", type=int, default=32, help="Maximum trusted-display body line characters")
 
     return parser
 
@@ -176,10 +195,23 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "flow":
         if args.approve and args.button_sequence:
             parser.error("flow accepts either --approve or --button-sequence, not both")
+        if args.display_frame_log and not args.button_sequence:
+            parser.error("flow --display-frame-log requires --button-sequence")
         if args.button_sequence:
             run_button_qr_vault_flow(
-                _FileButtonQrVaultIO(args.request, args.review, args.response, args.button_sequence),
+                _FileButtonQrVaultIO(
+                    args.request,
+                    args.review,
+                    args.response,
+                    args.button_sequence,
+                    display_frame_log=args.display_frame_log,
+                ),
                 _secret_key_from_args(args),
+                display_limits=DisplayFrameLimits(
+                    max_title_chars=args.max_title_chars,
+                    max_body_lines=args.max_body_lines,
+                    max_line_chars=args.max_line_chars,
+                ),
             )
             return 0
         run_qr_vault_flow(

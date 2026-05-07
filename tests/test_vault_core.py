@@ -80,8 +80,8 @@ class MemoryButtonQrVaultIO:
     def scan_request_qr(self) -> str:
         return self.request_qr
 
-    def display_review_page(self, screen_review: dict, page_index: int, page: dict) -> None:
-        self.displayed_pages.append((page_index, page["title"]))
+    def display_review_frame(self, screen_review: dict, page_index: int, frame: dict) -> None:
+        self.displayed_pages.append((page_index, frame["title"]))
 
     def read_review_button(self) -> str:
         if not self.buttons:
@@ -602,6 +602,48 @@ class VaultCoreTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("approval requires viewing every review page", result.stderr)
             self.assertFalse(response_path.exists())
+
+    def test_cli_flow_can_write_display_frame_log_for_button_sequence(self) -> None:
+        vector = next(item for item in REVIEW_VECTORS if item["name"] == "kind-1-long-events-many-tags")
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-screen.json"
+            response_path = Path(temp_root) / "response.qr"
+            frame_log_path = Path(temp_root) / "display-frames.json"
+            request_path.write_text(encode_qr_envelope(vector["request"]), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "flow",
+                    "--secret-key",
+                    KEY["secret_key"],
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--response",
+                    str(response_path),
+                    "--button-sequence",
+                    "next,reject",
+                    "--display-frame-log",
+                    str(frame_log_path),
+                    "--max-line-chars",
+                    "20",
+                    "--max-body-lines",
+                    "3",
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            frames = json.loads(frame_log_path.read_text(encoding="utf-8"))
+            self.assertEqual([frame["title"] for frame in frames], ["Event", "Content"])
+            self.assertLessEqual(len(frames[1]["body_lines"]), 3)
+            self.assertTrue(all(len(line) <= 20 for line in frames[1]["body_lines"]))
+            self.assertTrue(frames[1]["body_lines"][-1].endswith("..."))
 
     def test_cli_review_rejects_host_supplied_event_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
