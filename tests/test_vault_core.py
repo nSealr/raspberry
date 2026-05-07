@@ -17,6 +17,8 @@ KEY = json.loads((SPECS / "vectors/keys/test-key-1.json").read_text(encoding="ut
 BASIC_VECTOR = json.loads((SPECS / "vectors/events/kind-1-basic.json").read_text(encoding="utf-8"))
 BASIC_REQUEST = json.loads((SPECS / "examples/request-kind-1-basic.json").read_text(encoding="utf-8"))
 TAGGED_REQUEST = json.loads((SPECS / "examples/request-kind-1-tags.json").read_text(encoding="utf-8"))
+BASIC_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-basic.json").read_text(encoding="utf-8"))
+TAGGED_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-tags.json").read_text(encoding="utf-8"))
 
 
 class VaultCoreTests(unittest.TestCase):
@@ -51,6 +53,13 @@ class VaultCoreTests(unittest.TestCase):
         self.assertIn("p: 4f355bdc...", review["tag_summary"])
         self.assertIn("t: nostrseal", review["tag_summary"])
         self.assertIn("Event includes pubkey mentions.", review["warnings"])
+
+    def test_review_model_matches_shared_review_vectors(self) -> None:
+        for vector in (BASIC_REVIEW_VECTOR, TAGGED_REVIEW_VECTOR):
+            self.assertEqual(
+                review_event_template(vector["request"]["params"]["event_template"]),
+                vector["review"],
+            )
 
     def test_review_model_warns_for_unknown_kind_and_long_content(self) -> None:
         review = review_event_template(
