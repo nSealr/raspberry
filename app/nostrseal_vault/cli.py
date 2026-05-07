@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .qr import decode_qr_envelope, encode_qr_envelope
 from .review import review_event_template
-from .signer import sign_request
+from .signer import sign_request, validate_signing_request
 
 
 def _read_value(path: Path, fmt: str) -> object:
@@ -57,6 +57,9 @@ def main(argv: list[str] | None = None) -> int:
         request = _read_value(args.request, args.input_format)
         if not isinstance(request, dict) or request.get("method") != "sign_event":
             parser.error("review requires a sign_event request")
+        validation_error = validate_signing_request(request)
+        if validation_error is not None:
+            parser.error(validation_error["error"]["message"])
         params = request.get("params")
         if not isinstance(params, dict) or not isinstance(params.get("event_template"), dict):
             parser.error("review requires params.event_template")

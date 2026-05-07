@@ -16,6 +16,8 @@ compilation, and `pip check`.
 - Review model tests against every shared review vector for event kind,
   content preview, tag summary, and warnings.
 - Desktop CLI smoke test for QR request review output without a secret key.
+- Negative CLI review test proving host-supplied `id` fields are rejected
+  before review output is written.
 - Approval rejection tests.
 - Approved signing response tests.
 - Desktop CLI smoke test for QR request input and QR response output.

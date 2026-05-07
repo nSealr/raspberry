@@ -148,6 +148,34 @@ class VaultCoreTests(unittest.TestCase):
 
             self.assertEqual(json.loads(review_path.read_text(encoding="utf-8")), TAGGED_REVIEW_VECTOR["review"])
 
+    def test_cli_review_rejects_host_supplied_event_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.json"
+            review_path = Path(temp_root) / "review.json"
+            request = json.loads(json.dumps(TAGGED_REVIEW_VECTOR["request"]))
+            request["params"]["event_template"]["id"] = "00" * 32
+            request_path.write_text(json.dumps(request), encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "review",
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("event_template must not contain id", result.stderr)
+            self.assertFalse(review_path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -18,7 +18,8 @@ physical controls, sign BIP-340, and return a signed-event QR.
   warnings before approval, checked against every shared `NostrSeal/specs`
   review vector.
 - `nseal-vault review` renders deterministic review JSON from a request without
-  requiring a secret key or producing a signature.
+  requiring a secret key or producing a signature. It uses the same request
+  validation as the signing path for host-supplied event fields.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 

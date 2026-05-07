@@ -25,7 +25,7 @@ def _request_id(request: object) -> str:
     return "unknown"
 
 
-def _validate_sign_event_request(request: dict[str, Any]) -> dict[str, Any] | None:
+def validate_signing_request(request: dict[str, Any]) -> dict[str, Any] | None:
     if request.get("version") != 1:
         return _error_response(_request_id(request), "invalid_request", "Unsupported request version.", False)
     if not isinstance(request.get("request_id"), str):
@@ -50,7 +50,7 @@ def sign_request(request: object, secret_key_hex: str, *, approved: bool) -> dic
     if not isinstance(request, dict):
         return _error_response("unknown", "invalid_request", "Request must be a JSON object.", False)
 
-    validation_error = _validate_sign_event_request(request)
+    validation_error = validate_signing_request(request)
     if validation_error is not None:
         return validation_error
 
