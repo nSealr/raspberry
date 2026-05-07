@@ -1,6 +1,6 @@
 # Audit Checklist
 
-Before vault work is complete:
+Before Raspberry QR vault work is complete:
 
 - [ ] QR payloads match `NostrSeal/specs`.
 - [ ] Review UI cannot be bypassed in normal flow.
@@ -8,4 +8,3 @@ Before vault work is complete:
 - [ ] Signed output verifies in companion.
 - [ ] Air-gap assumptions are documented.
 - [ ] Hardware-specific limitations are explicit.
-

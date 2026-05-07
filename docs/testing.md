@@ -34,8 +34,10 @@ compilation, and `pip check`.
 ## Next Tests
 
 - Companion verification of signed output through the file transport.
-- Camera frame input and real display rendering tests before Raspberry Pi
-  hardware testing.
+- Camera frame input, real display rendering, and GPIO approval tests before
+  Raspberry Pi hardware acceptance testing.
+- Cross-check the Raspberry QR vault flow against the shared `NostrSeal/specs`
+  review-screen and `approval_digest` vectors.
 
 Hardware tests must record board, camera, display, OS image, commit, and exact
 procedure.

@@ -1,10 +1,17 @@
-# NostrSeal Vault
+# NostrSeal Raspberry
 
-Pi Zero / SeedSigner-style QR vault for Nostr signing.
+Raspberry/Pi software for NostrSeal signing devices.
 
-This repository will adapt the SeedSigner-style air-gapped workflow to Nostr:
-scan an unsigned event request, review on a trusted display, approve with
-physical controls, sign BIP-340, and return a signed-event QR.
+This repository owns the Raspberry/Pi implementation family. The first line is
+the SeedSigner-style QR vault flow for Nostr: scan an unsigned event request,
+review on a trusted display, approve with physical controls, sign BIP-340, and
+return a signed-event QR.
+
+The QR vault pattern is shared across signer families. Its common contracts live
+in `NostrSeal/specs`: QR envelope, review model, review-screen vectors,
+`approval_digest`, and signing vectors. This repository implements the
+Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
+`NostrSeal/esp32`.
 
 ## Current Capabilities
 
@@ -33,7 +40,7 @@ physical controls, sign BIP-340, and return a signed-event QR.
 
 ## Planned Capabilities
 
-- QR-only signing flow.
+- Raspberry/Pi QR-only signing flow.
 - Stateless key/session mode.
 - Display review for event kind, content, tags, and risk warnings.
 - Verifiable minimal OS image path.
@@ -64,6 +71,6 @@ python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --reque
 
 ## License
 
-Vault software and tooling are released under the MIT License unless a file says
-otherwise. SeedSigner is a design reference, not a license source for copied
-code.
+Raspberry software and tooling are released under the MIT License unless a file
+says otherwise. SeedSigner is a design reference, not a license source for
+copied code.

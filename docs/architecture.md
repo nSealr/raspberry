@@ -1,15 +1,18 @@
 # Architecture
 
-`NostrSeal/vault` is the Pi Zero / SeedSigner-style QR vault line.
+`NostrSeal/raspberry` is the Raspberry/Pi signer implementation family. Its
+first line is the Pi Zero / SeedSigner-style QR vault flow.
 
 ## Responsibilities
 
-- Receive signing requests through QR.
-- Render trusted event review.
+- Implement Raspberry/Pi signer software and OS integration.
+- Receive signing requests through QR for the QR vault flow.
+- Render trusted event review on a Raspberry-connected display.
 - Require physical approval or rejection.
-- Sign NIP-01 event ids with BIP-340.
+- Sign NIP-01 event ids with BIP-340 after approval.
 - Return signed events through QR.
-- Preserve an air-gapped, minimal-runtime security model.
+- Preserve an air-gapped, minimal-runtime security model where the hardware
+  profile supports it.
 
 ## Reference Strategy
 
@@ -66,5 +69,6 @@ machine a deterministic way to reject an approved signing step if it is no
 longer bound to the request that was reviewed.
 
 The screen page model and digest calculation are checked against shared
-`NostrSeal/specs` review-screen vectors so other signer lines can implement the
-same review-to-approval contract without copying vault code.
+`NostrSeal/specs` review-screen vectors so Raspberry and ESP32 QR vault targets
+can implement the same review-to-approval contract without copying platform
+code.

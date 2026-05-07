@@ -1,4 +1,4 @@
-"""NostrSeal Pi Zero QR vault foundation."""
+"""NostrSeal Raspberry QR vault foundation."""
 
 __all__ = ["__version__"]
 

@@ -11,14 +11,15 @@
 - Deterministic trusted-display page model.
 - Request-bound approval digest.
 
-Status: implemented as the first executable vault foundation.
+Status: implemented as the first executable Raspberry QR vault foundation.
 
-## M5: Architecture
+## M5: Raspberry Architecture
 
 - Signing service.
-- Pi Zero build plan.
+- Raspberry Pi Zero build plan.
+- Camera, display, and GPIO approval interface selection.
 
-## M6: Prototype
+## M6: Raspberry Prototype
 
 - Camera/display abstraction.
 - Physical-button approval flow.
@@ -30,3 +31,10 @@ Status: implemented as the first executable vault foundation.
 - Minimal OS image path.
 - Reproducible build docs.
 - Hardware acceptance matrix.
+
+## Boundary
+
+Shared QR vault contracts stay in `NostrSeal/specs`. ESP32-S3 QR vault firmware
+is a separate target in `NostrSeal/esp32`; it should reuse the same vectors and
+approval-digest semantics rather than depending on Raspberry implementation
+code.
