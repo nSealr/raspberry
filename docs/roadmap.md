@@ -26,6 +26,10 @@ Status: implemented as the first executable Raspberry QR vault foundation.
 - Signed QR output.
 - Companion verification loop.
 
+Status: the first hardware-agnostic QR vault flow orchestrator is implemented
+in `nostrseal_vault.hardware_flow`. Real camera, display, and GPIO adapters are
+still pending.
+
 ## Later
 
 - Minimal OS image path.

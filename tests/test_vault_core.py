@@ -7,6 +7,7 @@ from pathlib import Path
 
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
 from nostrseal_vault.display import approval_digest_for_request, render_review_pages, screen_review_for_request
+from nostrseal_vault.hardware_flow import run_qr_vault_flow
 from nostrseal_vault.nip06 import derive_nip06_secret
 from nostrseal_vault.qr import decode_qr_envelope, encode_qr_envelope
 from nostrseal_vault.review import review_event_template
@@ -29,6 +30,24 @@ SCREEN_REVIEW_VECTORS = [
     for path in sorted((SPECS / "vectors/review-screens").glob("*.json"))
 ]
 TAGGED_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-tags.json").read_text(encoding="utf-8"))
+
+
+class MemoryQrVaultIO:
+    def __init__(self, request_qr: str, approved: bool) -> None:
+        self.request_qr = request_qr
+        self.approved = approved
+        self.screen_review: dict | None = None
+        self.response_qr: str | None = None
+
+    def scan_request_qr(self) -> str:
+        return self.request_qr
+
+    def show_review(self, screen_review: dict) -> bool:
+        self.screen_review = screen_review
+        return self.approved
+
+    def emit_response_qr(self, response_qr: str) -> None:
+        self.response_qr = response_qr
 
 
 class VaultCoreTests(unittest.TestCase):
@@ -183,6 +202,18 @@ class VaultCoreTests(unittest.TestCase):
         )
         self.assertEqual(signed["ok"], True)
         self.assert_valid_signed_event(signed["result"]["event"])
+
+    def test_qr_vault_flow_binds_display_digest_before_signing(self) -> None:
+        hardware = MemoryQrVaultIO(encode_qr_envelope(BASIC_REQUEST), approved=True)
+
+        result = run_qr_vault_flow(hardware, KEY["secret_key"])
+
+        self.assertEqual(hardware.screen_review, screen_review_for_request(BASIC_REQUEST))
+        self.assertEqual(result.approval_digest, hardware.screen_review["approval_digest"])
+        self.assertTrue(result.approved)
+        self.assertIsNotNone(hardware.response_qr)
+        response = decode_qr_envelope(hardware.response_qr)
+        self.assert_valid_signed_event(response["result"]["event"])
 
     def test_cli_signs_qr_request_and_outputs_qr_response(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:

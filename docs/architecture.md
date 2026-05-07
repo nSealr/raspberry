@@ -72,3 +72,17 @@ The screen page model and digest calculation are checked against shared
 `NostrSeal/specs` review-screen vectors so Raspberry and ESP32 QR vault targets
 can implement the same review-to-approval contract without copying platform
 code.
+
+## Hardware Flow Boundary
+
+`nostrseal_vault.hardware_flow` defines the first Raspberry QR vault flow
+orchestrator. It is intentionally pure Python and hardware-agnostic:
+
+- camera drivers provide `scan_request_qr`;
+- display/button drivers provide `show_review`;
+- QR output drivers provide `emit_response_qr`.
+
+The flow decodes one request QR, renders trusted screen pages, obtains physical
+approval through the injected I/O boundary, signs with the displayed
+`approval_digest`, and emits one response QR. Real camera, display, and GPIO
+drivers must attach to this boundary rather than bypassing the review model.

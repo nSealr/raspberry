@@ -28,6 +28,8 @@ compilation, and `pip check`.
   before review output is written.
 - Approval rejection tests.
 - Approved signing response tests.
+- Hardware-agnostic QR vault flow test with in-memory camera, display/button,
+  and response-QR I/O.
 - Desktop CLI smoke test for QR request input and QR response output.
 - Desktop CLI smoke test for QR request signing from a NIP-06 mnemonic file.
 
