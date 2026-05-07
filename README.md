@@ -15,7 +15,8 @@ physical controls, sign BIP-340, and return a signed-event QR.
 - Explicit approval gate: `sign_event` requests return `user_rejected` unless
   approval is provided to the CLI or signer API.
 - Deterministic event review model for kind, content preview, tag summary, and
-  warnings before approval.
+  warnings before approval, checked against shared `NostrSeal/specs` review
+  vectors.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 

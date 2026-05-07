@@ -22,7 +22,8 @@ Nostr event signing.
 - `nostrseal_vault.qr`: v0 `nseal1:` QR envelope helpers.
 - `nostrseal_vault.crypto`: NIP-01 canonical event serialization, event id
   computation, x-only public key derivation, and BIP-340 signing.
-- `nostrseal_vault.review`: deterministic event review model.
+- `nostrseal_vault.review`: deterministic event review model checked against
+  shared `NostrSeal/specs` review vectors.
 - `nostrseal_vault.signer`: request handling and explicit approval gate.
 - `nostrseal_vault.cli`: desktop simulation CLI for JSON and QR file input and
   output.
@@ -34,4 +35,6 @@ hardware.
 
 The review model is not a UI. It is the deterministic data contract that a Pi
 Zero display flow must render before approval: event kind, content preview, tag
-summary, and warnings.
+summary, and warnings. The shared vectors prevent the Pi display flow,
+companion harness, and future ESP32 display work from drifting on review
+semantics.
