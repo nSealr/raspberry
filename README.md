@@ -42,6 +42,8 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   tests, checked against shared `NostrSeal/specs` review-transcript vectors.
 - Hardware-neutral button-driven QR flow boundary for future camera, display,
   and GPIO adapters.
+- `nseal-vault flow --button-sequence ...` file-backed physical-button harness
+  that refuses approval until every trusted review page has been traversed.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 
@@ -72,6 +74,7 @@ Run the desktop CLI simulation with:
 python3 -m nostrseal_vault review --request request.qr --review review.json --input-format qr
 python3 -m nostrseal_vault review --request request.qr --review review-screen.json --input-format qr --output-format screen-json
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --approve
+python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve --approval-digest <hex>
 python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve

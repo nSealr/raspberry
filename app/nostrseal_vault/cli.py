@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from .display import screen_review_for_request
-from .hardware_flow import run_qr_vault_flow
+from .hardware_flow import run_button_qr_vault_flow, run_qr_vault_flow
 from .nip06 import derive_nip06_secret
 from .qr import decode_qr_envelope, encode_qr_envelope
 from .review import review_event_template
@@ -51,6 +51,41 @@ class _FileQrVaultIO:
         self.response.write_text(f"{response_qr}\n", encoding="utf-8")
 
 
+class _FileButtonQrVaultIO:
+    def __init__(self, request: Path, review: Path, response: Path, buttons: list[str]) -> None:
+        self.request = request
+        self.review = review
+        self.response = response
+        self.buttons = list(buttons)
+        self._wrote_review = False
+
+    def scan_request_qr(self) -> str:
+        return self.request.read_text(encoding="utf-8").strip()
+
+    def display_review_page(self, screen_review: dict, page_index: int, page: dict) -> None:
+        if not self._wrote_review:
+            self.review.write_text(json.dumps(screen_review, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            self._wrote_review = True
+
+    def read_review_button(self) -> str:
+        if not self.buttons:
+            raise RuntimeError("button sequence ended before approval or rejection")
+        return self.buttons.pop(0)
+
+    def emit_response_qr(self, response_qr: str) -> None:
+        self.response.write_text(f"{response_qr}\n", encoding="utf-8")
+
+
+def _button_sequence(value: str) -> list[str]:
+    buttons = [item.strip() for item in value.split(",") if item.strip()]
+    if not buttons:
+        raise argparse.ArgumentTypeError("button sequence must not be empty")
+    invalid = [button for button in buttons if button not in {"next", "approve", "reject"}]
+    if invalid:
+        raise argparse.ArgumentTypeError(f"unsupported button action: {invalid[0]}")
+    return buttons
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="nseal-vault")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -84,6 +119,11 @@ def build_parser() -> argparse.ArgumentParser:
     flow.add_argument("--review", required=True, type=Path, help="Output trusted screen review JSON path")
     flow.add_argument("--response", required=True, type=Path, help="Output QR response path")
     flow.add_argument("--approve", action="store_true", help="Explicitly approve signing for this CLI invocation")
+    flow.add_argument(
+        "--button-sequence",
+        type=_button_sequence,
+        help="Comma-separated physical button actions, e.g. next,next,next,approve",
+    )
 
     return parser
 
@@ -120,6 +160,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "flow":
+        if args.approve and args.button_sequence:
+            parser.error("flow accepts either --approve or --button-sequence, not both")
+        if args.button_sequence:
+            run_button_qr_vault_flow(
+                _FileButtonQrVaultIO(args.request, args.review, args.response, args.button_sequence),
+                _secret_key_from_args(args),
+            )
+            return 0
         run_qr_vault_flow(
             _FileQrVaultIO(args.request, args.review, args.response, args.approve),
             _secret_key_from_args(args),
