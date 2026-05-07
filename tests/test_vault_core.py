@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
-from nostrseal_vault.display import render_review_pages
+from nostrseal_vault.display import approval_digest_for_request, render_review_pages, screen_review_for_request
 from nostrseal_vault.nip06 import derive_nip06_secret
 from nostrseal_vault.qr import decode_qr_envelope, encode_qr_envelope
 from nostrseal_vault.review import review_event_template
@@ -120,6 +120,18 @@ class VaultCoreTests(unittest.TestCase):
         self.assertEqual(pages[-1]["lines"], ["Approve signing only if all pages match."])
         self.assertEqual(pages[-1]["action"], "approve_or_reject")
 
+    def test_screen_review_binds_digest_to_request_and_pages(self) -> None:
+        screen_review = screen_review_for_request(TAGGED_REVIEW_VECTOR["request"])
+
+        self.assertEqual(screen_review["format"], "screen-pages")
+        self.assertEqual(screen_review["request_id"], TAGGED_REVIEW_VECTOR["request"]["request_id"])
+        self.assertRegex(screen_review["approval_digest"], r"^[0-9a-f]{64}$")
+        self.assertEqual(
+            screen_review["approval_digest"],
+            approval_digest_for_request(TAGGED_REVIEW_VECTOR["request"]),
+        )
+        self.assertEqual(screen_review["pages"], render_review_pages(TAGGED_REVIEW_VECTOR["review"]))
+
     def test_review_model_warns_for_unknown_kind_and_long_content(self) -> None:
         review = review_event_template(
             {
@@ -147,6 +159,22 @@ class VaultCoreTests(unittest.TestCase):
 
         self.assertEqual(response["ok"], True)
         self.assert_valid_signed_event(response["result"]["event"])
+
+    def test_sign_request_rejects_mismatched_approval_digest(self) -> None:
+        response = sign_request(BASIC_REQUEST, KEY["secret_key"], approved=True, approval_digest="00" * 32)
+
+        self.assertEqual(response["ok"], False)
+        self.assertEqual(response["request_id"], BASIC_REQUEST["request_id"])
+        self.assertEqual(response["error"]["code"], "approval_digest_mismatch")
+
+        signed = sign_request(
+            BASIC_REQUEST,
+            KEY["secret_key"],
+            approved=True,
+            approval_digest=approval_digest_for_request(BASIC_REQUEST),
+        )
+        self.assertEqual(signed["ok"], True)
+        self.assert_valid_signed_event(signed["result"]["event"])
 
     def test_cli_signs_qr_request_and_outputs_qr_response(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
@@ -266,6 +294,8 @@ class VaultCoreTests(unittest.TestCase):
 
             review_output = json.loads(review_path.read_text(encoding="utf-8"))
             self.assertEqual(review_output["format"], "screen-pages")
+            self.assertEqual(review_output["request_id"], TAGGED_REVIEW_VECTOR["request"]["request_id"])
+            self.assertRegex(review_output["approval_digest"], r"^[0-9a-f]{64}$")
             self.assertEqual(review_output["pages"][-1]["action"], "approve_or_reject")
 
     def test_cli_review_rejects_host_supplied_event_id(self) -> None:

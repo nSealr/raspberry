@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from .display import render_review_pages
+from .display import screen_review_for_request
 from .nip06 import derive_nip06_secret
 from .qr import decode_qr_envelope, encode_qr_envelope
 from .review import review_event_template
@@ -46,6 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
     sign.add_argument("--response", required=True, type=Path, help="Output response path")
     sign.add_argument("--input-format", choices=["json", "qr"], default="json")
     sign.add_argument("--output-format", choices=["json", "qr"], default="json")
+    sign.add_argument("--approval-digest", help="Optional digest binding approval to reviewed request pages")
     sign.add_argument("--approve", action="store_true", help="Explicitly approve signing for this CLI invocation")
 
     review = subparsers.add_parser("review", help="Render deterministic review data for one signing request")
@@ -63,7 +64,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "sign":
         request = _read_value(args.request, args.input_format)
-        response = sign_request(request, _secret_key_from_args(args), approved=args.approve)
+        response = sign_request(
+            request,
+            _secret_key_from_args(args),
+            approved=args.approve,
+            approval_digest=args.approval_digest,
+        )
         _write_value(args.response, args.output_format, response)
         return 0
 
@@ -79,10 +85,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("review requires params.event_template")
         review_output = review_event_template(params["event_template"])
         if args.output_format == "screen-json":
-            review_output = {
-                "format": "screen-pages",
-                "pages": render_review_pages(review_output),
-            }
+            review_output = screen_review_for_request(request)
         _write_value(args.review, "json", review_output)
         return 0
 

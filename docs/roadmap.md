@@ -9,6 +9,7 @@
 - Explicit approval gate.
 - Deterministic review model.
 - Deterministic trusted-display page model.
+- Request-bound approval digest.
 
 Status: implemented as the first executable vault foundation.
 

@@ -57,3 +57,10 @@ orders the pages that a small trusted screen must show and marks the final page
 as `approve_or_reject`. It is still renderer-neutral: real Pi code can map the
 same page objects onto GPIO buttons, a camera loop, and the selected display
 library without changing the signing contract.
+
+The `screen-json` output also includes an `approval_digest`. The digest is a
+SHA-256 hash of canonical request metadata, the exact event template, the
+review model, and the rendered page model. It is not a secret and is not shown
+as a user-authentication primitive. It gives the CLI and future device state
+machine a deterministic way to reject an approved signing step if it is no
+longer bound to the request that was reviewed.

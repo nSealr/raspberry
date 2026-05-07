@@ -19,6 +19,8 @@ compilation, and `pip check`.
 - Desktop CLI smoke test for QR request review output without a secret key.
 - Trusted-display page tests for event, content, tag, warning, and final
   approval-decision pages.
+- Approval-digest tests proving an approved signing request is rejected when
+  the digest no longer matches the rendered review pages.
 - Desktop CLI smoke test for QR request review output as `screen-json`.
 - Negative CLI review test proving host-supplied `id` fields are rejected
   before review output is written.
