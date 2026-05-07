@@ -34,7 +34,8 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   Pi display simulations.
 - `nseal-vault review --output-format display-frame-json` renders one bounded
   display frame with deterministic line wrapping/truncation for future LCD
-  adapter tests.
+  adapter tests, checked against shared `NostrSeal/specs`
+  review-display-frame vectors.
 - `nseal-vault sign --approval-digest <hex>` can require the signing request to
   match the previously rendered review-page digest before an approved signature
   is produced.

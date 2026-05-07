@@ -24,6 +24,8 @@ compilation, and `pip check`.
 - Bounded trusted-display frame tests for deterministic title truncation,
   body-line wrapping, page indicators, and action hints before real display
   drivers exist.
+- Trusted-display frame conformance tests against shared `NostrSeal/specs`
+  review-display-frame vectors.
 - Physical-button approval session tests that require all trusted-review pages
   to be traversed before approval while allowing early rejection.
 - Review transcript tests against shared `NostrSeal/specs` vectors, covering

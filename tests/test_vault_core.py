@@ -49,6 +49,10 @@ REVIEW_TRANSCRIPT_VECTORS = [
     json.loads(path.read_text(encoding="utf-8"))
     for path in sorted((SPECS / "vectors/review-transcripts").glob("*.json"))
 ]
+DISPLAY_FRAME_VECTORS = [
+    json.loads(path.read_text(encoding="utf-8"))
+    for path in sorted((SPECS / "vectors/review-display-frames").glob("*.json"))
+]
 TAGGED_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-tags.json").read_text(encoding="utf-8"))
 
 
@@ -238,6 +242,24 @@ class VaultCoreTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "display limits must be positive"):
             render_display_frame(screen_review, page_index=0, limits=DisplayFrameLimits(max_line_chars=0))
+
+    def test_display_frames_match_shared_vectors(self) -> None:
+        self.assertEqual(
+            [vector["name"] for vector in DISPLAY_FRAME_VECTORS],
+            ["kind-1-long-content-page-1-20x3"],
+        )
+        for vector in DISPLAY_FRAME_VECTORS:
+            source = json.loads(
+                (SPECS / f"vectors/review/{vector['source_review_vector']}.json").read_text(encoding="utf-8")
+            )
+
+            frame = render_display_frame(
+                screen_review_for_request(source["request"]),
+                page_index=vector["page_index"],
+                limits=DisplayFrameLimits(**vector["limits"]),
+            )
+
+            self.assertEqual(frame, vector["frame"])
 
     def test_physical_approval_requires_viewing_all_review_pages(self) -> None:
         session = ReviewControlSession(screen_review_for_request(TAGGED_REQUEST))
