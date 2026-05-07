@@ -64,3 +64,7 @@ review model, and the rendered page model. It is not a secret and is not shown
 as a user-authentication primitive. It gives the CLI and future device state
 machine a deterministic way to reject an approved signing step if it is no
 longer bound to the request that was reviewed.
+
+The screen page model and digest calculation are checked against shared
+`NostrSeal/specs` review-screen vectors so other signer lines can implement the
+same review-to-approval contract without copying vault code.

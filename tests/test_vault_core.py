@@ -24,6 +24,10 @@ REVIEW_VECTORS = [
     json.loads(path.read_text(encoding="utf-8"))
     for path in sorted((SPECS / "vectors/review").glob("*.json"))
 ]
+SCREEN_REVIEW_VECTORS = [
+    json.loads(path.read_text(encoding="utf-8"))
+    for path in sorted((SPECS / "vectors/review-screens").glob("*.json"))
+]
 TAGGED_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-tags.json").read_text(encoding="utf-8"))
 
 
@@ -131,6 +135,10 @@ class VaultCoreTests(unittest.TestCase):
             approval_digest_for_request(TAGGED_REVIEW_VECTOR["request"]),
         )
         self.assertEqual(screen_review["pages"], render_review_pages(TAGGED_REVIEW_VECTOR["review"]))
+
+    def test_screen_review_matches_shared_review_screen_vectors(self) -> None:
+        for vector in SCREEN_REVIEW_VECTORS:
+            self.assertEqual(screen_review_for_request(vector["request"]), vector["screen_review"])
 
     def test_review_model_warns_for_unknown_kind_and_long_content(self) -> None:
         review = review_event_template(
