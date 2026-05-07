@@ -64,6 +64,7 @@ Run the desktop CLI simulation with:
 ```sh
 python3 -m nostrseal_vault review --request request.qr --review review.json --input-format qr
 python3 -m nostrseal_vault review --request request.qr --review review-screen.json --input-format qr --output-format screen-json
+python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve --approval-digest <hex>
 python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve

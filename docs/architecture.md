@@ -86,3 +86,9 @@ The flow decodes one request QR, renders trusted screen pages, obtains physical
 approval through the injected I/O boundary, signs with the displayed
 `approval_digest`, and emits one response QR. Real camera, display, and GPIO
 drivers must attach to this boundary rather than bypassing the review model.
+
+The `nseal-vault flow` command is the current file-backed harness for this
+boundary. It reads a QR request from a file, writes the exact screen-review JSON
+that a trusted display must render, requires explicit `--approve`, and writes a
+QR response. It is for desktop integration and hardware-adapter development,
+not for production key custody.

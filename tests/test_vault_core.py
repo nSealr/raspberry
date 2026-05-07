@@ -337,6 +337,37 @@ class VaultCoreTests(unittest.TestCase):
             self.assertRegex(review_output["approval_digest"], r"^[0-9a-f]{64}$")
             self.assertEqual(review_output["pages"][-1]["action"], "approve_or_reject")
 
+    def test_cli_flow_writes_review_screen_and_signed_response_qr(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-screen.json"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "flow",
+                    "--secret-key",
+                    KEY["secret_key"],
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--response",
+                    str(response_path),
+                    "--approve",
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            self.assertEqual(json.loads(review_path.read_text(encoding="utf-8")), screen_review_for_request(BASIC_REQUEST))
+            response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event(response["result"]["event"])
+
     def test_cli_review_rejects_host_supplied_event_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             request_path = Path(temp_root) / "request.json"

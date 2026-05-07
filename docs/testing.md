@@ -30,6 +30,8 @@ compilation, and `pip check`.
 - Approved signing response tests.
 - Hardware-agnostic QR vault flow test with in-memory camera, display/button,
   and response-QR I/O.
+- File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
+  screen-review JSON and a signed response QR.
 - Desktop CLI smoke test for QR request input and QR response output.
 - Desktop CLI smoke test for QR request signing from a NIP-06 mnemonic file.
 

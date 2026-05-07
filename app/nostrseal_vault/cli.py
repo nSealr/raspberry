@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .display import screen_review_for_request
+from .hardware_flow import run_qr_vault_flow
 from .nip06 import derive_nip06_secret
 from .qr import decode_qr_envelope, encode_qr_envelope
 from .review import review_event_template
@@ -32,6 +33,24 @@ def _secret_key_from_args(args: argparse.Namespace) -> str:
     return derive_nip06_secret(mnemonic, passphrase=args.passphrase, account=args.account)
 
 
+class _FileQrVaultIO:
+    def __init__(self, request: Path, review: Path, response: Path, approved: bool) -> None:
+        self.request = request
+        self.review = review
+        self.response = response
+        self.approved = approved
+
+    def scan_request_qr(self) -> str:
+        return self.request.read_text(encoding="utf-8").strip()
+
+    def show_review(self, screen_review: dict) -> bool:
+        self.review.write_text(json.dumps(screen_review, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        return self.approved
+
+    def emit_response_qr(self, response_qr: str) -> None:
+        self.response.write_text(f"{response_qr}\n", encoding="utf-8")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="nseal-vault")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -54,6 +73,17 @@ def build_parser() -> argparse.ArgumentParser:
     review.add_argument("--review", required=True, type=Path, help="Output review JSON path")
     review.add_argument("--input-format", choices=["json", "qr"], default="json")
     review.add_argument("--output-format", choices=["json", "screen-json"], default="json")
+
+    flow = subparsers.add_parser("flow", help="Run one hardware-style QR review/sign flow")
+    flow_key_source = flow.add_mutually_exclusive_group(required=True)
+    flow_key_source.add_argument("--secret-key", help="Test/development secret key as lowercase hex")
+    flow_key_source.add_argument("--mnemonic-file", type=Path, help="NIP-06 mnemonic seed phrase file")
+    flow.add_argument("--account", type=int, default=0, help="NIP-06 account index for mnemonic derivation")
+    flow.add_argument("--passphrase", default="", help="Optional BIP-39 passphrase for mnemonic derivation")
+    flow.add_argument("--request", required=True, type=Path, help="Input QR request path")
+    flow.add_argument("--review", required=True, type=Path, help="Output trusted screen review JSON path")
+    flow.add_argument("--response", required=True, type=Path, help="Output QR response path")
+    flow.add_argument("--approve", action="store_true", help="Explicitly approve signing for this CLI invocation")
 
     return parser
 
@@ -87,6 +117,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.output_format == "screen-json":
             review_output = screen_review_for_request(request)
         _write_value(args.review, "json", review_output)
+        return 0
+
+    if args.command == "flow":
+        run_qr_vault_flow(
+            _FileQrVaultIO(args.request, args.review, args.response, args.approve),
+            _secret_key_from_args(args),
+        )
         return 0
 
     parser.error(f"unsupported command: {args.command}")
