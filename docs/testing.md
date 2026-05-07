@@ -12,6 +12,7 @@ compilation, and `pip check`.
 ## Implemented Tests
 
 - QR envelope round-trip tests.
+- NIP-06 derivation tests against the canonical account `0` shared vector.
 - Signing tests against `NostrSeal/specs` fixtures.
 - Review model tests against every shared review vector for event kind,
   content preview, tag summary, and warnings.
@@ -21,6 +22,7 @@ compilation, and `pip check`.
 - Approval rejection tests.
 - Approved signing response tests.
 - Desktop CLI smoke test for QR request input and QR response output.
+- Desktop CLI smoke test for QR request signing from a NIP-06 mnemonic file.
 
 ## Next Tests
 

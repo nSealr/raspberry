@@ -22,6 +22,8 @@ Nostr event signing.
 - `nostrseal_vault.qr`: v0 `nseal1:` QR envelope helpers.
 - `nostrseal_vault.crypto`: NIP-01 canonical event serialization, event id
   computation, x-only public key derivation, and BIP-340 signing.
+- `nostrseal_vault.nip06`: BIP-39 seed and BIP-32 path derivation for
+  `m/44'/1237'/<account>'/0/0` NIP-06 keys.
 - `nostrseal_vault.review`: deterministic event review model checked against
   shared `NostrSeal/specs` review vectors.
 - `nostrseal_vault.signer`: request handling and explicit approval gate.
@@ -32,6 +34,11 @@ The current CLI is a development harness. It intentionally requires an explicit
 `--approve` flag before producing a `sign_event` response so automated tests and
 desktop experiments preserve the same approval boundary expected on real
 hardware.
+
+The sign command can use either an explicit development `--secret-key` or a
+NIP-06 `--mnemonic-file` plus account index. The mnemonic-file path is still a
+desktop simulation path; the Pi hardware flow should keep seed material in RAM
+and avoid shell arguments for production use.
 
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and never needs key material. This mirrors

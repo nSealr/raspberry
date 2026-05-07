@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .nip06 import derive_nip06_secret
 from .qr import decode_qr_envelope, encode_qr_envelope
 from .review import review_event_template
 from .signer import sign_request, validate_signing_request
@@ -23,12 +24,23 @@ def _write_value(path: Path, fmt: str, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def _secret_key_from_args(args: argparse.Namespace) -> str:
+    if args.secret_key:
+        return args.secret_key
+    mnemonic = args.mnemonic_file.read_text(encoding="utf-8")
+    return derive_nip06_secret(mnemonic, passphrase=args.passphrase, account=args.account)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="nseal-vault")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     sign = subparsers.add_parser("sign", help="Process one NostrSeal signing request")
-    sign.add_argument("--secret-key", required=True, help="Test/development secret key as lowercase hex")
+    key_source = sign.add_mutually_exclusive_group(required=True)
+    key_source.add_argument("--secret-key", help="Test/development secret key as lowercase hex")
+    key_source.add_argument("--mnemonic-file", type=Path, help="NIP-06 mnemonic seed phrase file")
+    sign.add_argument("--account", type=int, default=0, help="NIP-06 account index for mnemonic derivation")
+    sign.add_argument("--passphrase", default="", help="Optional BIP-39 passphrase for mnemonic derivation")
     sign.add_argument("--request", required=True, type=Path, help="Input request path")
     sign.add_argument("--response", required=True, type=Path, help="Output response path")
     sign.add_argument("--input-format", choices=["json", "qr"], default="json")
@@ -49,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "sign":
         request = _read_value(args.request, args.input_format)
-        response = sign_request(request, args.secret_key, approved=args.approve)
+        response = sign_request(request, _secret_key_from_args(args), approved=args.approve)
         _write_value(args.response, args.output_format, response)
         return 0
 

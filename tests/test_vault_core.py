@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
+from nostrseal_vault.nip06 import derive_nip06_secret
 from nostrseal_vault.qr import decode_qr_envelope, encode_qr_envelope
 from nostrseal_vault.review import review_event_template
 from nostrseal_vault.signer import sign_request
@@ -14,6 +15,7 @@ from nostrseal_vault.signer import sign_request
 ROOT = Path(__file__).resolve().parents[1]
 SPECS = ROOT.parent / "specs"
 KEY = json.loads((SPECS / "vectors/keys/test-key-1.json").read_text(encoding="utf-8"))
+NIP06_KEY = json.loads((SPECS / "vectors/keys/nip06-account-0-leader.json").read_text(encoding="utf-8"))
 BASIC_VECTOR = json.loads((SPECS / "vectors/events/kind-1-basic.json").read_text(encoding="utf-8"))
 BASIC_REQUEST = json.loads((SPECS / "examples/request-kind-1-basic.json").read_text(encoding="utf-8"))
 TAGGED_REQUEST = json.loads((SPECS / "examples/request-kind-1-tags.json").read_text(encoding="utf-8"))
@@ -34,6 +36,10 @@ class VaultCoreTests(unittest.TestCase):
         self.assertEqual(actual, expected)
         self.assertTrue(verify_schnorr_signature(signed["pubkey"], signed["id"], signature))
 
+    def assert_valid_signed_event_for_pubkey(self, signed: dict, public_key: str) -> None:
+        self.assertEqual(signed["pubkey"], public_key)
+        self.assertTrue(verify_schnorr_signature(signed["pubkey"], signed["id"], signed["sig"]))
+
     def test_qr_envelope_round_trip_uses_shared_prefix(self) -> None:
         envelope = encode_qr_envelope(BASIC_REQUEST)
 
@@ -45,6 +51,15 @@ class VaultCoreTests(unittest.TestCase):
         signed = sign_event(BASIC_REQUEST["params"]["event_template"], KEY["secret_key"])
 
         self.assert_valid_signed_event(signed)
+
+    def test_nip06_derivation_matches_shared_account_zero_vector(self) -> None:
+        derived = derive_nip06_secret(
+            NIP06_KEY["mnemonic"],
+            passphrase=NIP06_KEY["passphrase"],
+            account=NIP06_KEY["account"],
+        )
+
+        self.assertEqual(derived, NIP06_KEY["secret_key"])
 
     def test_review_model_summarizes_kind_content_and_tags(self) -> None:
         review = review_event_template(TAGGED_REQUEST["params"]["event_template"])
@@ -122,6 +137,41 @@ class VaultCoreTests(unittest.TestCase):
 
             response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
             self.assert_valid_signed_event(response["result"]["event"])
+
+    def test_cli_signs_qr_request_from_nip06_mnemonic_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            mnemonic_path = Path(temp_root) / "mnemonic.txt"
+            request_path = Path(temp_root) / "request.qr"
+            response_path = Path(temp_root) / "response.qr"
+            mnemonic_path.write_text(NIP06_KEY["mnemonic"] + "\n", encoding="utf-8")
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "sign",
+                    "--mnemonic-file",
+                    str(mnemonic_path),
+                    "--account",
+                    str(NIP06_KEY["account"]),
+                    "--request",
+                    str(request_path),
+                    "--response",
+                    str(response_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "qr",
+                    "--approve",
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event_for_pubkey(response["result"]["event"], NIP06_KEY["public_key"])
 
     def test_cli_reviews_qr_request_without_secret_key(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:

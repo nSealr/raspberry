@@ -12,6 +12,8 @@ physical controls, sign BIP-340, and return a signed-event QR.
 - v0 `nseal1:` QR envelope encode/decode.
 - NIP-01 event id computation and BIP-340 signing against shared
   `NostrSeal/specs` fixtures.
+- NIP-06 mnemonic derivation for account `0` and account-indexed key recovery,
+  checked against the canonical NIP-06 test vector in `NostrSeal/specs`.
 - Explicit approval gate: `sign_event` requests return `user_rejected` unless
   approval is provided to the CLI or signer API.
 - Deterministic event review model for kind, content preview, tag summary, and
@@ -50,6 +52,7 @@ Run the desktop CLI simulation with:
 ```sh
 python3 -m nostrseal_vault review --request request.qr --review review.json --input-format qr
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
+python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
 ```
 
 ## License
