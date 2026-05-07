@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
+from nostrseal_vault.controls import ReviewControlSession
 from nostrseal_vault.display import approval_digest_for_request, render_review_pages, screen_review_for_request
 from nostrseal_vault.hardware_flow import run_qr_vault_flow
 from nostrseal_vault.nip06 import derive_nip06_secret
@@ -158,6 +159,35 @@ class VaultCoreTests(unittest.TestCase):
     def test_screen_review_matches_shared_review_screen_vectors(self) -> None:
         for vector in SCREEN_REVIEW_VECTORS:
             self.assertEqual(screen_review_for_request(vector["request"]), vector["screen_review"])
+
+    def test_physical_approval_requires_viewing_all_review_pages(self) -> None:
+        session = ReviewControlSession(screen_review_for_request(TAGGED_REQUEST))
+
+        self.assertEqual(session.current_page["title"], "Event")
+        self.assertFalse(session.can_approve)
+        with self.assertRaises(ValueError):
+            session.approve()
+
+        while session.current_page["action"] != "approve_or_reject":
+            self.assertIsNone(session.handle_button("next"))
+
+        self.assertEqual(session.current_page["title"], "Warnings")
+        self.assertTrue(session.can_approve)
+        self.assertTrue(session.handle_button("approve"))
+
+    def test_physical_rejection_is_available_before_final_page(self) -> None:
+        session = ReviewControlSession(screen_review_for_request(TAGGED_REQUEST))
+
+        self.assertFalse(session.handle_button("reject"))
+        self.assertTrue(session.rejected)
+        self.assertFalse(session.approved)
+
+    def test_physical_approval_rejects_invalid_review_page_order(self) -> None:
+        screen_review = screen_review_for_request(BASIC_REQUEST)
+        screen_review["pages"][0] = dict(screen_review["pages"][0], action="approve_or_reject")
+
+        with self.assertRaises(ValueError):
+            ReviewControlSession(screen_review)
 
     def test_review_model_warns_for_unknown_kind_and_long_content(self) -> None:
         review = review_event_template(

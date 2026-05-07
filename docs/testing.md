@@ -21,6 +21,8 @@ compilation, and `pip check`.
   approval-decision pages.
 - Trusted-display screen review tests against every shared
   `NostrSeal/specs` review-screen vector.
+- Physical-button approval session tests that require all trusted-review pages
+  to be traversed before approval while allowing early rejection.
 - Approval-digest tests proving an approved signing request is rejected when
   the digest no longer matches the rendered review pages.
 - Desktop CLI smoke test for QR request review output as `screen-json`.

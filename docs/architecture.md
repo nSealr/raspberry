@@ -31,6 +31,10 @@ Nostr event signing.
   shared `NostrSeal/specs` review vectors.
 - `nostrseal_vault.display`: deterministic trusted-display page model for
   event, content, tags, warnings, and final approval decisions.
+- `nostrseal_vault.controls`: physical-button approval session model for
+  future GPIO adapters. It requires every trusted-review page to be traversed
+  before approval can succeed and keeps rejection available before the final
+  page.
 - `nostrseal_vault.signer`: request handling and explicit approval gate.
 - `nostrseal_vault.cli`: desktop simulation CLI for JSON and QR file input and
   output.
@@ -60,6 +64,13 @@ orders the pages that a small trusted screen must show and marks the final page
 as `approve_or_reject`. It is still renderer-neutral: real Pi code can map the
 same page objects onto GPIO buttons, a camera loop, and the selected display
 library without changing the signing contract.
+
+`nostrseal_vault.controls` is the first renderer-neutral model for that button
+loop. A session starts on the first page, records which pages have been shown,
+maps `next`, `approve`, and `reject` button actions, and refuses approval until
+the final `approve_or_reject` page has been reached after all pages were seen.
+This gives the future GPIO implementation a tested approval state machine
+before any Raspberry-specific display or button driver is selected.
 
 The `screen-json` output also includes an `approval_digest`. The digest is a
 SHA-256 hash of canonical request metadata, the exact event template, the

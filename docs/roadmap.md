@@ -31,6 +31,11 @@ in `nostrseal_vault.hardware_flow`. Real camera, display, and GPIO adapters are
 still pending. A file-backed `nseal-vault flow` harness now exercises the same
 boundary from the CLI.
 
+Status: the physical-button approval state machine is implemented in
+`nostrseal_vault.controls`. It is still hardware-neutral, but it pins the rule
+that approval can only happen after every trusted-review page has been reached,
+while rejection can happen at any point.
+
 ## Later
 
 - Minimal OS image path.

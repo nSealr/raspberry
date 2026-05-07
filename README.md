@@ -35,6 +35,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - `nseal-vault sign --approval-digest <hex>` can require the signing request to
   match the previously rendered review-page digest before an approved signature
   is produced.
+- Pure-Python physical approval controller for future GPIO adapters. Approval
+  is only accepted after the trusted review pages have been traversed to the
+  final approve/reject page; rejection remains available before the final page.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 
