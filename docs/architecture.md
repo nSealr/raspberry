@@ -65,6 +65,12 @@ as `approve_or_reject`. It is still renderer-neutral: real Pi code can map the
 same page objects onto GPIO buttons, a camera loop, and the selected display
 library without changing the signing contract.
 
+`render_display_frame` is the bounded frame contract above the page model. It
+turns one trusted page into a title, page indicator, wrapped body lines, and an
+action hint while enforcing maximum title, body-line, and line-width limits.
+This gives future ST7789/Waveshare/OLED adapters a deterministic pre-driver
+oracle for text fitting before graphical rendering is implemented.
+
 `nostrseal_vault.controls` is the first renderer-neutral model for that button
 loop. A session starts on the first page, records which pages have been shown,
 maps `next`, `approve`, and `reject` button actions, and refuses approval until

@@ -44,6 +44,12 @@ that state machine to the QR flow boundary. It displays one trusted page at a
 time, reads physical-style `next`, `approve`, and `reject` actions, signs only
 after a complete page traversal and approval, and emits a QR response.
 
+Status: `nostrseal_vault.display.render_display_frame` now renders one bounded
+trusted-display frame at a time, with deterministic title truncation, wrapped
+body lines, page indicator, and action hint. `nseal-vault review
+--output-format display-frame-json` exposes the same frame contract for future
+Raspberry display adapter tests. Real display drivers are still pending.
+
 ## Later
 
 - Minimal OS image path.

@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from .display import screen_review_for_request
+from .display import DisplayFrameLimits, render_display_frame, screen_review_for_request
 from .hardware_flow import run_button_qr_vault_flow, run_qr_vault_flow
 from .nip06 import derive_nip06_secret
 from .qr import decode_qr_envelope, encode_qr_envelope
@@ -107,7 +107,11 @@ def build_parser() -> argparse.ArgumentParser:
     review.add_argument("--request", required=True, type=Path, help="Input request path")
     review.add_argument("--review", required=True, type=Path, help="Output review JSON path")
     review.add_argument("--input-format", choices=["json", "qr"], default="json")
-    review.add_argument("--output-format", choices=["json", "screen-json"], default="json")
+    review.add_argument("--output-format", choices=["json", "screen-json", "display-frame-json"], default="json")
+    review.add_argument("--display-page", type=int, default=0, help="Page index for display-frame-json output")
+    review.add_argument("--max-title-chars", type=int, default=24, help="Maximum trusted-display title characters")
+    review.add_argument("--max-body-lines", type=int, default=6, help="Maximum trusted-display body lines")
+    review.add_argument("--max-line-chars", type=int, default=32, help="Maximum trusted-display body line characters")
 
     flow = subparsers.add_parser("flow", help="Run one hardware-style QR review/sign flow")
     flow_key_source = flow.add_mutually_exclusive_group(required=True)
@@ -156,6 +160,16 @@ def main(argv: list[str] | None = None) -> int:
         review_output = review_event_template(params["event_template"])
         if args.output_format == "screen-json":
             review_output = screen_review_for_request(request)
+        elif args.output_format == "display-frame-json":
+            review_output = render_display_frame(
+                screen_review_for_request(request),
+                page_index=args.display_page,
+                limits=DisplayFrameLimits(
+                    max_title_chars=args.max_title_chars,
+                    max_body_lines=args.max_body_lines,
+                    max_line_chars=args.max_line_chars,
+                ),
+            )
         _write_value(args.review, "json", review_output)
         return 0
 

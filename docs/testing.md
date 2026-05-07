@@ -21,6 +21,9 @@ compilation, and `pip check`.
   approval-decision pages.
 - Trusted-display screen review tests against every shared
   `NostrSeal/specs` review-screen vector.
+- Bounded trusted-display frame tests for deterministic title truncation,
+  body-line wrapping, page indicators, and action hints before real display
+  drivers exist.
 - Physical-button approval session tests that require all trusted-review pages
   to be traversed before approval while allowing early rejection.
 - Review transcript tests against shared `NostrSeal/specs` vectors, covering
@@ -28,6 +31,8 @@ compilation, and `pip check`.
 - Approval-digest tests proving an approved signing request is rejected when
   the digest no longer matches the rendered review pages.
 - Desktop CLI smoke test for QR request review output as `screen-json`.
+- Desktop CLI smoke test for QR request review output as one bounded
+  `display-frame-json` frame.
 - Negative CLI review test proving host-supplied `id` fields are rejected
   before review output is written.
 - Approval rejection tests.

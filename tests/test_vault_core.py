@@ -7,7 +7,13 @@ from pathlib import Path
 
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
 from nostrseal_vault.controls import ReviewControlSession, review_transcript_for_screen_review
-from nostrseal_vault.display import approval_digest_for_request, render_review_pages, screen_review_for_request
+from nostrseal_vault.display import (
+    DisplayFrameLimits,
+    approval_digest_for_request,
+    render_display_frame,
+    render_review_pages,
+    screen_review_for_request,
+)
 from nostrseal_vault.hardware_flow import run_button_qr_vault_flow, run_qr_vault_flow
 from nostrseal_vault.nip06 import derive_nip06_secret
 from nostrseal_vault.qr import decode_qr_envelope, encode_qr_envelope
@@ -209,6 +215,29 @@ class VaultCoreTests(unittest.TestCase):
                 review_transcript_for_screen_review(screen_review, vector["buttons"]),
                 vector["transcript"],
             )
+
+    def test_display_frame_wraps_and_bounds_long_review_lines(self) -> None:
+        vector = next(item for item in REVIEW_VECTORS if item["name"] == "kind-1-long-events-many-tags")
+        screen_review = screen_review_for_request(vector["request"])
+
+        frame = render_display_frame(
+            screen_review,
+            page_index=1,
+            limits=DisplayFrameLimits(max_title_chars=12, max_body_lines=3, max_line_chars=20),
+        )
+
+        self.assertEqual(frame["title"], "Content")
+        self.assertEqual(frame["page_indicator"], f"Page 2/{len(screen_review['pages'])}")
+        self.assertEqual(frame["action_hint"], "Next")
+        self.assertLessEqual(len(frame["body_lines"]), 3)
+        self.assertTrue(all(len(line) <= 20 for line in frame["body_lines"]))
+        self.assertTrue(frame["body_lines"][-1].endswith("..."))
+
+    def test_display_frame_rejects_invalid_display_limits(self) -> None:
+        screen_review = screen_review_for_request(BASIC_REQUEST)
+
+        with self.assertRaisesRegex(ValueError, "display limits must be positive"):
+            render_display_frame(screen_review, page_index=0, limits=DisplayFrameLimits(max_line_chars=0))
 
     def test_physical_approval_requires_viewing_all_review_pages(self) -> None:
         session = ReviewControlSession(screen_review_for_request(TAGGED_REQUEST))
@@ -439,6 +468,44 @@ class VaultCoreTests(unittest.TestCase):
             self.assertEqual(review_output["request_id"], TAGGED_REVIEW_VECTOR["request"]["request_id"])
             self.assertRegex(review_output["approval_digest"], r"^[0-9a-f]{64}$")
             self.assertEqual(review_output["pages"][-1]["action"], "approve_or_reject")
+
+    def test_cli_review_can_write_bounded_display_frame_json(self) -> None:
+        vector = next(item for item in REVIEW_VECTORS if item["name"] == "kind-1-long-events-many-tags")
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            frame_path = Path(temp_root) / "display-frame.json"
+            request_path.write_text(encode_qr_envelope(vector["request"]), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "review",
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(frame_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "display-frame-json",
+                    "--display-page",
+                    "1",
+                    "--max-line-chars",
+                    "20",
+                    "--max-body-lines",
+                    "3",
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            frame = json.loads(frame_path.read_text(encoding="utf-8"))
+            self.assertEqual(frame["title"], "Content")
+            self.assertLessEqual(len(frame["body_lines"]), 3)
+            self.assertTrue(all(len(line) <= 20 for line in frame["body_lines"]))
+            self.assertTrue(frame["body_lines"][-1].endswith("..."))
 
     def test_cli_flow_writes_review_screen_and_signed_response_qr(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:

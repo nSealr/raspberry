@@ -32,6 +32,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - `nseal-vault review --output-format screen-json` renders deterministic
   trusted-display page data plus an `approval_digest` for desktop and future
   Pi display simulations.
+- `nseal-vault review --output-format display-frame-json` renders one bounded
+  display frame with deterministic line wrapping/truncation for future LCD
+  adapter tests.
 - `nseal-vault sign --approval-digest <hex>` can require the signing request to
   match the previously rendered review-page digest before an approved signature
   is produced.
@@ -73,6 +76,7 @@ Run the desktop CLI simulation with:
 ```sh
 python3 -m nostrseal_vault review --request request.qr --review review.json --input-format qr
 python3 -m nostrseal_vault review --request request.qr --review review-screen.json --input-format qr --output-format screen-json
+python3 -m nostrseal_vault review --request request.qr --review display-frame.json --input-format qr --output-format display-frame-json --display-page 0
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --approve
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
