@@ -369,6 +369,20 @@ class VaultCoreTests(unittest.TestCase):
         self.assertEqual(response["ok"], False)
         self.assertEqual(response["error"]["code"], "user_rejected")
 
+    def test_button_qr_vault_flow_matches_shared_review_transcript_vectors(self) -> None:
+        for vector in REVIEW_TRANSCRIPT_VECTORS:
+            hardware = MemoryButtonQrVaultIO(vector["qr_envelope"], list(vector["buttons"]))
+
+            result = run_button_qr_vault_flow(
+                hardware,
+                KEY["secret_key"],
+                display_limits=DisplayFrameLimits(max_line_chars=64),
+            )
+
+            self.assertEqual(result.review_transcript, vector["transcript"])
+            self.assertEqual(result.approval_digest, vector["approval_digest"])
+            self.assertEqual(result.approved, vector["transcript"][-1]["approved_for_signing"])
+
     def test_cli_signs_qr_request_and_outputs_qr_response(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             request_path = Path(temp_root) / "request.qr"

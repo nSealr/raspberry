@@ -82,6 +82,9 @@ The button-driven hardware flow now renders those page states through
 `render_display_frame` before each physical-style input. The file-backed CLI can
 record the displayed frames with `--display-frame-log`, giving display adapters
 a deterministic acceptance trace before real Pi display drivers are wired in.
+The in-process flow result also carries the exact frame/button/decision
+transcript produced during the review loop, which lets tests compare future
+adapter harnesses with shared `NostrSeal/specs` review-transcript vectors.
 
 The `screen-json` output also includes an `approval_digest`. The digest is a
 SHA-256 hash of canonical request metadata, the exact event template, the
@@ -127,4 +130,5 @@ accepting one boolean from `show_review`, it renders one page at a time through
 `read_review_button`, and delegates the state machine to
 `ReviewControlSession`. This keeps physical approval impossible until every
 trusted page has been displayed and the final approve/reject page has been
-reached. Real GPIO/display adapters should attach to this boundary first.
+reached. Its result includes the review transcript actually shown and acted on.
+Real GPIO/display adapters should attach to this boundary first.

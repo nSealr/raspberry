@@ -55,6 +55,11 @@ each physical-style input and can write those frames through `nseal-vault flow
 --display-frame-log`. This turns the hardware-neutral flow into an acceptance
 trace for future Pi display adapters while keeping real drivers pending.
 
+Status: the button-driven QR flow result now records the exact displayed
+frame/button/decision transcript. Tests cross-check that trace against shared
+`NostrSeal/specs` review-transcript vectors under transcript-compatible display
+limits, while real camera, display, and GPIO drivers remain pending.
+
 ## Later
 
 - Minimal OS image path.

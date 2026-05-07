@@ -40,6 +40,7 @@ class QrVaultFlowResult:
     approved: bool
     approval_digest: str
     response: dict[str, Any]
+    review_transcript: list[dict[str, Any]] | None = None
 
 
 def run_qr_vault_flow(io: QrVaultIO, secret_key_hex: str) -> QrVaultFlowResult:
@@ -78,11 +79,21 @@ def run_button_qr_vault_flow(
     approval_digest = str(screen_review["approval_digest"])
     session = ReviewControlSession(screen_review)
     approved: bool | None = None
+    review_transcript: list[dict[str, Any]] = []
 
     while approved is None:
         frame = render_display_frame(screen_review, session.page_index, display_limits)
         io.display_review_frame(screen_review, session.page_index, frame)
-        approved = session.handle_button(io.read_review_button())
+        button = io.read_review_button()
+        approved = session.handle_button(button)
+        review_transcript.append(
+            {
+                "frame": frame,
+                "button": button,
+                "decision": approved,
+                "approved_for_signing": session.approved,
+            }
+        )
 
     response = sign_request(
         request,
@@ -96,4 +107,5 @@ def run_button_qr_vault_flow(
         approved=approved,
         approval_digest=approval_digest,
         response=response,
+        review_transcript=review_transcript,
     )

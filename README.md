@@ -51,6 +51,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - `nseal-vault flow --display-frame-log ...` records the bounded trusted
   display frames shown during a button-driven flow for future display adapter
   acceptance tests.
+- The button-driven flow result carries the displayed frame/button/decision
+  transcript, so adapter harnesses can compare a whole review loop with shared
+  `NostrSeal/specs` review-transcript vectors before real GPIO/display drivers.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 

@@ -45,6 +45,9 @@ compilation, and `pip check`.
   approval and early rejection without signing.
 - Button-driven display-frame log tests proving future display adapters receive
   bounded frames before physical-style input is consumed.
+- Button-driven flow transcript tests proving the displayed frame/button/
+  decision trace can match shared `NostrSeal/specs` review-transcript vectors
+  under transcript-compatible display limits.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
   screen-review JSON and a signed response QR.
 - Desktop CLI smoke test for QR request input and QR response output.
@@ -55,8 +58,8 @@ compilation, and `pip check`.
 - Companion verification of signed output through the file transport.
 - Camera frame input, real display rendering, and GPIO approval tests before
   Raspberry Pi hardware acceptance testing.
-- Cross-check the Raspberry QR vault flow against the shared `NostrSeal/specs`
-  review-screen, review-transcript, and `approval_digest` vectors.
+- Real hardware adapter tests against the existing transcript oracle once
+  camera, display, and GPIO drivers are selected.
 
 Hardware tests must record board, camera, display, OS image, commit, and exact
 procedure.
