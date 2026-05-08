@@ -75,8 +75,8 @@ def validate_signing_request(request: dict[str, Any]) -> dict[str, Any] | None:
         )
     if method == "sign_event":
         params = request.get("params")
-        if not isinstance(params, dict) or not isinstance(params.get("event_template"), dict):
-            return _error_response(_request_id(request), "invalid_request", "Missing event_template.", False)
+        if not isinstance(params, dict):
+            return _error_response(_request_id(request), "invalid_request", "sign_event requires params", False)
         unknown_params = sorted(set(params) - {"event_template"})
         if unknown_params:
             return _error_response(
@@ -85,6 +85,8 @@ def validate_signing_request(request: dict[str, Any]) -> dict[str, Any] | None:
                 f"sign_event params contain unknown fields: {', '.join(unknown_params)}",
                 False,
             )
+        if not isinstance(params.get("event_template"), dict):
+            return _error_response(_request_id(request), "invalid_request", "event_template must be an object", False)
         try:
             review_event_template(params["event_template"])
         except ValueError as exc:
