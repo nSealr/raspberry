@@ -26,6 +26,8 @@ Status: implemented as the first executable Raspberry QR vault foundation.
 - Physical-button approval flow.
 - Signed QR output.
 - Companion verification loop.
+- Pre-signing hardening-vector rejection for unsafe signing requests and
+  constrained-resource violations while preserving stateless RAM-only custody.
 
 Status: the first hardware-agnostic QR vault flow orchestrator is implemented
 in `nostrseal_vault.hardware_flow`. Real camera, display, and GPIO adapters are
@@ -78,3 +80,8 @@ Shared QR vault contracts stay in `NostrSeal/specs`. ESP32-S3 QR vault firmware
 is a separate target in `NostrSeal/esp32`; it should reuse the same vectors and
 approval-digest semantics rather than depending on Raspberry implementation
 code. Review-transcript vectors are part of that shared contract.
+
+The Raspberry/Pi QR vault remains a stateless, air-gapped, RAM-only custody
+line. The pre-signing hardening gate may add parser/rejection conformance, but
+it must not add persistent secret storage, secure-element unlock, or TROPIC01
+dependency to this line.

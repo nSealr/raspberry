@@ -59,6 +59,9 @@ compilation, and `pip check`.
 ## Next Tests
 
 - Companion verification of signed output through the file transport.
+- Shared pre-signing invalid-vector rejection for unsafe event templates,
+  resource-limit violations, and malformed QR requests where the Raspberry
+  parser owns the boundary.
 - Camera frame input, real display rendering, and GPIO approval tests before
   Raspberry Pi hardware acceptance testing.
 - Real hardware adapter tests against the existing transcript oracle once
@@ -74,3 +77,7 @@ workspace is present. GitHub Actions checks out `NostrSeal/raspberry` by itself,
 so tests fall back to fixture snapshots under `tests/fixtures/specs` in
 single-repository CI. Cross-repository drift remains guarded by
 `NostrSeal/lab` integration, which runs against the live sibling repositories.
+
+The Raspberry QR vault must remain stateless and RAM-only while consuming those
+hardening vectors. Rejection conformance must not introduce persistent secret
+storage or TROPIC01 dependencies.
