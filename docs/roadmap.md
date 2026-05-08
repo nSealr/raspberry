@@ -42,7 +42,8 @@ renderer-neutral review transcripts checked against shared
 Status: `nostrseal_vault.hardware_flow.run_button_qr_vault_flow` now connects
 that state machine to the QR flow boundary. It displays one trusted page at a
 time, reads physical-style `next`, `approve`, and `reject` actions, signs only
-after a complete page traversal and approval, and emits a QR response.
+after a complete page traversal and approval, bounds non-terminal button
+streams, and emits a QR response only after a terminal decision.
 
 Status: `nostrseal_vault.display.render_display_frame` now renders one bounded
 trusted-display frame at a time, with deterministic title truncation, wrapped

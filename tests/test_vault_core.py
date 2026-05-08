@@ -96,6 +96,25 @@ class MemoryButtonQrVaultIO:
         self.response_qr = response_qr
 
 
+class NextOnlyButtonQrVaultIO:
+    def __init__(self, request_qr: str) -> None:
+        self.request_qr = request_qr
+        self.displayed_pages: list[tuple[int, str]] = []
+        self.response_qr: str | None = None
+
+    def scan_request_qr(self) -> str:
+        return self.request_qr
+
+    def display_review_frame(self, screen_review: dict, page_index: int, frame: dict) -> None:
+        self.displayed_pages.append((page_index, frame["title"]))
+
+    def read_review_button(self) -> str:
+        return "next"
+
+    def emit_response_qr(self, response_qr: str) -> None:
+        self.response_qr = response_qr
+
+
 class VaultCoreTests(unittest.TestCase):
     def assert_valid_signed_event(self, signed: dict) -> None:
         expected = dict(BASIC_VECTOR["signed_event"])
@@ -368,6 +387,25 @@ class VaultCoreTests(unittest.TestCase):
         response = decode_qr_envelope(hardware.response_qr)
         self.assertEqual(response["ok"], False)
         self.assertEqual(response["error"]["code"], "user_rejected")
+
+    def test_button_qr_vault_flow_rejects_non_terminal_button_stream(self) -> None:
+        hardware = NextOnlyButtonQrVaultIO(encode_qr_envelope(BASIC_REQUEST))
+
+        with self.assertRaisesRegex(RuntimeError, "button review flow did not reach approval or rejection"):
+            run_button_qr_vault_flow(hardware, KEY["secret_key"], max_button_steps=5)
+
+        self.assertEqual(len(hardware.displayed_pages), 5)
+        self.assertEqual(hardware.displayed_pages[-1], (3, "Decision"))
+        self.assertIsNone(hardware.response_qr)
+
+    def test_button_qr_vault_flow_requires_positive_step_limit(self) -> None:
+        hardware = MemoryButtonQrVaultIO(encode_qr_envelope(BASIC_REQUEST), ["reject"])
+
+        with self.assertRaisesRegex(ValueError, "button review flow max steps must be positive"):
+            run_button_qr_vault_flow(hardware, KEY["secret_key"], max_button_steps=0)
+
+        self.assertEqual(hardware.displayed_pages, [])
+        self.assertIsNone(hardware.response_qr)
 
     def test_button_qr_vault_flow_matches_shared_review_transcript_vectors(self) -> None:
         for vector in REVIEW_TRANSCRIPT_VECTORS:

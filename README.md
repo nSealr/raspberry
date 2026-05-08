@@ -47,7 +47,8 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - Hardware-neutral button-driven QR flow boundary for future camera, display,
   and GPIO adapters.
 - `nseal-vault flow --button-sequence ...` file-backed physical-button harness
-  that refuses approval until every trusted review page has been traversed.
+  that refuses approval until every trusted review page has been traversed and
+  bounds non-terminal button streams before future GPIO adapters exist.
 - `nseal-vault flow --display-frame-log ...` records the bounded trusted
   display frames shown during a button-driven flow for future display adapter
   acceptance tests.

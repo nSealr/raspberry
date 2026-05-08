@@ -70,7 +70,11 @@ def run_button_qr_vault_flow(
     io: ButtonQrVaultIO,
     secret_key_hex: str,
     display_limits: DisplayFrameLimits = DisplayFrameLimits(),
+    max_button_steps: int = 32,
 ) -> QrVaultFlowResult:
+    if max_button_steps <= 0:
+        raise ValueError("button review flow max steps must be positive")
+
     request = decode_qr_envelope(io.scan_request_qr())
     if not isinstance(request, dict):
         raise ValueError("QR vault flow requires a JSON object request")
@@ -81,7 +85,7 @@ def run_button_qr_vault_flow(
     approved: bool | None = None
     review_transcript: list[dict[str, Any]] = []
 
-    while approved is None:
+    for _ in range(max_button_steps):
         frame = render_display_frame(screen_review, session.page_index, display_limits)
         io.display_review_frame(screen_review, session.page_index, frame)
         button = io.read_review_button()
@@ -94,6 +98,11 @@ def run_button_qr_vault_flow(
                 "approved_for_signing": session.approved,
             }
         )
+        if approved is not None:
+            break
+
+    if approved is None:
+        raise RuntimeError("button review flow did not reach approval or rejection")
 
     response = sign_request(
         request,

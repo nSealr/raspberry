@@ -42,7 +42,8 @@ compilation, and `pip check`.
 - Hardware-agnostic QR vault flow test with in-memory camera, display/button,
   and response-QR I/O.
 - Button-driven QR vault flow tests proving page-by-page traversal before
-  approval and early rejection without signing.
+  approval, early rejection without signing, and bounded failure for
+  non-terminal button streams.
 - Button-driven display-frame log tests proving future display adapters receive
   bounded frames before physical-style input is consumed.
 - Button-driven flow transcript tests proving the displayed frame/button/

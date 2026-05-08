@@ -132,5 +132,7 @@ accepting one boolean from `show_review`, it renders one page at a time through
 `read_review_button`, and delegates the state machine to
 `ReviewControlSession`. This keeps physical approval impossible until every
 trusted page has been displayed and the final approve/reject page has been
-reached. Its result includes the review transcript actually shown and acted on.
-Real GPIO/display adapters should attach to this boundary first.
+reached. The loop also bounds non-terminal button streams so an adapter cannot
+hang forever by repeatedly returning `next` on the final page. Its result
+includes the review transcript actually shown and acted on. Real GPIO/display
+adapters should attach to this boundary first.
