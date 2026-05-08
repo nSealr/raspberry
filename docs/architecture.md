@@ -37,6 +37,11 @@ Nostr event signing.
   future GPIO adapters. It requires every trusted-review page to be traversed
   before approval can succeed and keeps rejection available before the final
   page.
+- `nostrseal_vault.hardware_flow`: hardware-agnostic QR signer orchestration
+  with injected scan, display, button, and response-QR boundaries.
+- `nostrseal_vault.adapters`: file-backed QR flow adapters used by the CLI and
+  integration smoke tests. These are development adapters for request/review/
+  response files and transcript logs, not camera, display, or GPIO drivers.
 - `nostrseal_vault.signer`: request handling and explicit approval gate.
 - `nostrseal_vault.cli`: desktop simulation CLI for JSON and QR file input and
   output.
@@ -144,3 +149,8 @@ reached. The loop also bounds non-terminal button streams so an adapter cannot
 hang forever by repeatedly returning `next` on the final page. Its result
 includes the review transcript actually shown and acted on. Real GPIO/display
 adapters should attach to this boundary first.
+
+The file-backed adapters live in package code rather than private CLI classes.
+This keeps the CLI as a thin adapter and gives future Raspberry camera,
+display, and GPIO drivers a concrete behavioral reference for when review JSON,
+display-frame logs, button input, and response QR output are allowed to occur.

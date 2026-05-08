@@ -68,6 +68,12 @@ frame/button/decision transcript from the file-backed button harness. This lets
 `NostrSeal/lab` and future adapter tests verify full review-loop traces without
 importing Raspberry implementation code.
 
+Status: the file-backed QR flow adapters now live in
+`nostrseal_vault.adapters` instead of private CLI classes. The CLI remains a
+thin file/argument wrapper around package-owned scan, review, display-frame
+log, button-sequence, and response-QR boundaries; real camera, display, and
+GPIO drivers remain pending.
+
 Status: Raspberry now mirrors the shared NostrSeal v0 implementation-limit
 profile and rejects applicable invalid signing-request and QR-envelope
 hardening vectors before review or signing, while remaining stateless and

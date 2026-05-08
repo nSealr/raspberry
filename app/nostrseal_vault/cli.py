@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .adapters import FileButtonQrVaultIO, FileQrVaultIO
 from .display import DisplayFrameLimits, render_display_frame, screen_review_for_request
 from .hardware_flow import run_button_qr_vault_flow, run_qr_vault_flow
 from .nip06 import derive_nip06_secret
@@ -31,64 +32,6 @@ def _secret_key_from_args(args: argparse.Namespace) -> str:
         return args.secret_key
     mnemonic = args.mnemonic_file.read_text(encoding="utf-8")
     return derive_nip06_secret(mnemonic, passphrase=args.passphrase, account=args.account)
-
-
-class _FileQrVaultIO:
-    def __init__(self, request: Path, review: Path, response: Path, approved: bool) -> None:
-        self.request = request
-        self.review = review
-        self.response = response
-        self.approved = approved
-
-    def scan_request_qr(self) -> str:
-        return self.request.read_text(encoding="utf-8").strip()
-
-    def show_review(self, screen_review: dict) -> bool:
-        self.review.write_text(json.dumps(screen_review, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        return self.approved
-
-    def emit_response_qr(self, response_qr: str) -> None:
-        self.response.write_text(f"{response_qr}\n", encoding="utf-8")
-
-
-class _FileButtonQrVaultIO:
-    def __init__(
-        self,
-        request: Path,
-        review: Path,
-        response: Path,
-        buttons: list[str],
-        display_frame_log: Path | None = None,
-    ) -> None:
-        self.request = request
-        self.review = review
-        self.response = response
-        self.buttons = list(buttons)
-        self.display_frame_log = display_frame_log
-        self.display_frames: list[dict] = []
-        self._wrote_review = False
-
-    def scan_request_qr(self) -> str:
-        return self.request.read_text(encoding="utf-8").strip()
-
-    def display_review_frame(self, screen_review: dict, page_index: int, frame: dict) -> None:
-        if not self._wrote_review:
-            self.review.write_text(json.dumps(screen_review, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            self._wrote_review = True
-        if self.display_frame_log is not None:
-            self.display_frames.append(frame)
-            self.display_frame_log.write_text(
-                json.dumps(self.display_frames, indent=2, ensure_ascii=False) + "\n",
-                encoding="utf-8",
-            )
-
-    def read_review_button(self) -> str:
-        if not self.buttons:
-            raise RuntimeError("button sequence ended before approval or rejection")
-        return self.buttons.pop(0)
-
-    def emit_response_qr(self, response_qr: str) -> None:
-        self.response.write_text(f"{response_qr}\n", encoding="utf-8")
 
 
 def _button_sequence(value: str) -> list[str]:
@@ -206,7 +149,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("flow --review-transcript-log requires --button-sequence")
         if args.button_sequence:
             result = run_button_qr_vault_flow(
-                _FileButtonQrVaultIO(
+                FileButtonQrVaultIO(
                     args.request,
                     args.review,
                     args.response,
@@ -227,7 +170,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
             return 0
         run_qr_vault_flow(
-            _FileQrVaultIO(args.request, args.review, args.response, args.approve),
+            FileQrVaultIO(args.request, args.review, args.response, args.approve),
             _secret_key_from_args(args),
         )
         return 0

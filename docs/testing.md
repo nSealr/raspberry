@@ -51,6 +51,9 @@ compilation, and `pip check`.
   under transcript-compatible display limits.
 - CLI transcript-log tests proving the file-backed button harness can export
   that trace for cross-repo integration and future adapter acceptance tests.
+- File-backed adapter tests proving request scanning, review JSON writes,
+  display-frame log writes, button exhaustion, and response QR output are owned
+  by package code rather than private CLI classes.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
   screen-review JSON and a signed response QR.
 - Desktop CLI smoke test for QR request input and QR response output.

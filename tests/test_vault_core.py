@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
+from nostrseal_vault.adapters import FileButtonQrVaultIO, FileQrVaultIO
 from nostrseal_vault.controls import ReviewControlSession, review_transcript_for_screen_review
 from nostrseal_vault.display import (
     DisplayFrameLimits,
@@ -396,6 +397,49 @@ class VaultCoreTests(unittest.TestCase):
         self.assertIsNotNone(hardware.response_qr)
         response = decode_qr_envelope(hardware.response_qr)
         self.assert_valid_signed_event(response["result"]["event"])
+
+    def test_file_qr_vault_io_writes_review_and_response_boundaries(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review.json"
+            response_path = Path(temp_root) / "response.qr"
+            response_qr = encode_qr_envelope({"version": 1, "request_id": "req-file-io", "ok": False})
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST) + "\n", encoding="utf-8")
+
+            adapter = FileQrVaultIO(request_path, review_path, response_path, approved=True)
+
+            self.assertEqual(adapter.scan_request_qr(), encode_qr_envelope(BASIC_REQUEST))
+            self.assertTrue(adapter.show_review(screen_review_for_request(BASIC_REQUEST)))
+            self.assertEqual(json.loads(review_path.read_text(encoding="utf-8")), screen_review_for_request(BASIC_REQUEST))
+            adapter.emit_response_qr(response_qr)
+            self.assertEqual(response_path.read_text(encoding="utf-8"), response_qr + "\n")
+
+    def test_file_button_qr_vault_io_records_display_frames_and_buttons(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review.json"
+            response_path = Path(temp_root) / "response.qr"
+            frame_log_path = Path(temp_root) / "display-frames.json"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST) + "\n", encoding="utf-8")
+            screen_review = screen_review_for_request(BASIC_REQUEST)
+            frame = render_display_frame(screen_review, 0)
+
+            adapter = FileButtonQrVaultIO(
+                request_path,
+                review_path,
+                response_path,
+                ["next", "reject"],
+                display_frame_log=frame_log_path,
+            )
+
+            self.assertEqual(adapter.scan_request_qr(), encode_qr_envelope(BASIC_REQUEST))
+            adapter.display_review_frame(screen_review, 0, frame)
+            self.assertEqual(json.loads(review_path.read_text(encoding="utf-8")), screen_review)
+            self.assertEqual(json.loads(frame_log_path.read_text(encoding="utf-8")), [frame])
+            self.assertEqual(adapter.read_review_button(), "next")
+            self.assertEqual(adapter.read_review_button(), "reject")
+            with self.assertRaisesRegex(RuntimeError, "button sequence ended before approval or rejection"):
+                adapter.read_review_button()
 
     def test_button_qr_vault_flow_requires_page_traversal_before_approval(self) -> None:
         hardware = MemoryButtonQrVaultIO(encode_qr_envelope(TAGGED_REQUEST), ["next", "next", "next", "approve"])
