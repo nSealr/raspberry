@@ -23,6 +23,8 @@ Nostr event signing.
 ## Implemented Foundation
 
 - `nostrseal_vault.qr`: v0 `nseal1:` QR envelope helpers.
+- `nostrseal_vault.limits`: NostrSeal v0 constrained-signer implementation
+  limits mirrored from `NostrSeal/specs`.
 - `nostrseal_vault.crypto`: NIP-01 canonical event serialization, event id
   computation, x-only public key derivation, and BIP-340 signing.
 - `nostrseal_vault.nip06`: BIP-39 seed and BIP-32 path derivation for
@@ -38,6 +40,12 @@ Nostr event signing.
 - `nostrseal_vault.signer`: request handling and explicit approval gate.
 - `nostrseal_vault.cli`: desktop simulation CLI for JSON and QR file input and
   output.
+
+QR decoding and signing-request validation apply the shared v0 hardening limits
+before trusted review or signing. The Raspberry implementation rejects
+malformed, padded, invalid UTF-8, or oversized QR envelopes and rejects unsafe
+event templates, unknown signing-request fields, and resource-limit violations
+using the shared invalid-vector expectations from `NostrSeal/specs`.
 
 The current CLI is a development harness. It intentionally requires an explicit
 `--approve` flag before producing a `sign_event` response so automated tests and

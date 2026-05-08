@@ -55,13 +55,15 @@ compilation, and `pip check`.
   screen-review JSON and a signed response QR.
 - Desktop CLI smoke test for QR request input and QR response output.
 - Desktop CLI smoke test for QR request signing from a NIP-06 mnemonic file.
+- Shared NostrSeal v0 implementation-limit conformance test against the
+  `NostrSeal/specs` limits profile.
+- Shared pre-signing invalid-vector rejection for unsafe event templates,
+  resource-limit violations, and malformed QR requests where the Raspberry
+  parser owns the boundary.
 
 ## Next Tests
 
 - Companion verification of signed output through the file transport.
-- Shared pre-signing invalid-vector rejection for unsafe event templates,
-  resource-limit violations, and malformed QR requests where the Raspberry
-  parser owns the boundary.
 - Camera frame input, real display rendering, and GPIO approval tests before
   Raspberry Pi hardware acceptance testing.
 - Real hardware adapter tests against the existing transcript oracle once

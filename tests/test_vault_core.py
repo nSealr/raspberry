@@ -54,6 +54,11 @@ DISPLAY_FRAME_VECTORS = [
     for path in sorted((SPECS / "vectors/review-display-frames").glob("*.json"))
 ]
 TAGGED_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-tags.json").read_text(encoding="utf-8"))
+LIMIT_PROFILE = json.loads((SPECS / "vectors/limits/nseal-v0.json").read_text(encoding="utf-8"))
+INVALID_VECTORS = [
+    json.loads(path.read_text(encoding="utf-8"))
+    for path in sorted((SPECS / "vectors/invalid").glob("*.json"))
+]
 
 
 class MemoryQrVaultIO:
@@ -135,6 +140,33 @@ class VaultCoreTests(unittest.TestCase):
         self.assertTrue(envelope.startswith("nseal1:"))
         self.assertNotIn("=", envelope)
         self.assertEqual(decode_qr_envelope(envelope), BASIC_REQUEST)
+
+    def test_limits_match_shared_v0_profile(self) -> None:
+        from nostrseal_vault.limits import NOSTRSEAL_V0_LIMITS
+
+        self.assertEqual(LIMIT_PROFILE["name"], "nostrseal-v0")
+        self.assertEqual(NOSTRSEAL_V0_LIMITS, LIMIT_PROFILE["limits"])
+
+    def test_qr_decoder_rejects_shared_invalid_qr_vectors(self) -> None:
+        vectors = [vector for vector in INVALID_VECTORS if vector["category"] == "qr-envelope"]
+        self.assertGreater(len(vectors), 0)
+
+        for vector in vectors:
+            with self.subTest(vector=vector["name"]):
+                with self.assertRaisesRegex(ValueError, vector["expected_error"]):
+                    decode_qr_envelope(vector["envelope"])
+
+    def test_signer_rejects_shared_invalid_signing_request_vectors(self) -> None:
+        vectors = [vector for vector in INVALID_VECTORS if vector["category"] == "signing-request"]
+        self.assertGreater(len(vectors), 0)
+
+        for vector in vectors:
+            with self.subTest(vector=vector["name"]):
+                response = sign_request(vector["request"], KEY["secret_key"], approved=True)
+
+                self.assertFalse(response["ok"])
+                self.assertEqual(response["error"]["code"], "invalid_request")
+                self.assertIn(vector["expected_error"], response["error"]["message"])
 
     def test_sign_event_matches_shared_vector(self) -> None:
         signed = sign_event(BASIC_REQUEST["params"]["event_template"], KEY["secret_key"])
@@ -780,7 +812,7 @@ class VaultCoreTests(unittest.TestCase):
             )
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("event_template must not contain id", result.stderr)
+            self.assertIn("event_template contains forbidden fields", result.stderr)
             self.assertFalse(review_path.exists())
 
 

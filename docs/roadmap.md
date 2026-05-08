@@ -68,6 +68,11 @@ frame/button/decision transcript from the file-backed button harness. This lets
 `NostrSeal/lab` and future adapter tests verify full review-loop traces without
 importing Raspberry implementation code.
 
+Status: Raspberry now mirrors the shared NostrSeal v0 implementation-limit
+profile and rejects applicable invalid signing-request and QR-envelope
+hardening vectors before review or signing, while remaining stateless and
+RAM-only.
+
 ## Later
 
 - Minimal OS image path.
