@@ -45,10 +45,25 @@ def validate_signing_request(request: dict[str, Any]) -> dict[str, Any] | None:
         or any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._:-" for char in request_id)
     ):
         return _error_response("unknown", "invalid_request", "Missing request_id.", False)
-    if request.get("method") not in {"get_public_key", "sign_event"}:
+    method = request.get("method")
+    if method == "get_capabilities" and "params" in request:
+        return _error_response(
+            _request_id(request),
+            "invalid_request",
+            "get_capabilities must not include params",
+            False,
+        )
+    if method == "get_public_key" and "params" in request:
+        return _error_response(
+            _request_id(request),
+            "invalid_request",
+            "get_public_key must not include params",
+            False,
+        )
+    if method not in {"get_public_key", "sign_event"}:
         return _error_response(_request_id(request), "unsupported_method", "Unsupported signing method.", False)
     allowed_top_level = {"version", "request_id", "method"}
-    if request["method"] == "sign_event":
+    if method == "sign_event":
         allowed_top_level.add("params")
     unknown_top_level = sorted(set(request) - allowed_top_level)
     if unknown_top_level:
@@ -58,7 +73,7 @@ def validate_signing_request(request: dict[str, Any]) -> dict[str, Any] | None:
             f"unknown top-level fields: {', '.join(unknown_top_level)}",
             False,
         )
-    if request["method"] == "sign_event":
+    if method == "sign_event":
         params = request.get("params")
         if not isinstance(params, dict) or not isinstance(params.get("event_template"), dict):
             return _error_response(_request_id(request), "invalid_request", "Missing event_template.", False)
