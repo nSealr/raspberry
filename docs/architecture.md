@@ -150,6 +150,12 @@ hang forever by repeatedly returning `next` on the final page. Its result
 includes the review transcript actually shown and acted on. Real GPIO/display
 adapters should attach to this boundary first.
 
+`run_button_qr_vault_flow_with_secret_provider` is the stateless hardware-facing
+variant for future Pi flows. The secret provider is called only after the review
+loop reaches terminal approval, so early rejection can finish without loading
+seed/key material into memory. The older `run_button_qr_vault_flow` helper stays
+as a compatibility wrapper for the desktop harness.
+
 The file-backed adapters live in package code rather than private CLI classes.
 This keeps the CLI as a thin adapter and gives future Raspberry camera,
 display, and GPIO drivers a concrete behavioral reference for when review JSON,

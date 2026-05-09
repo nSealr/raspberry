@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from .controls import ButtonAction, ReviewControlSession
 from .display import DisplayFrameLimits, render_display_frame, screen_review_for_request
@@ -72,6 +72,20 @@ def run_button_qr_vault_flow(
     display_limits: DisplayFrameLimits = DisplayFrameLimits(),
     max_button_steps: int = 32,
 ) -> QrVaultFlowResult:
+    return run_button_qr_vault_flow_with_secret_provider(
+        io,
+        lambda: secret_key_hex,
+        display_limits=display_limits,
+        max_button_steps=max_button_steps,
+    )
+
+
+def run_button_qr_vault_flow_with_secret_provider(
+    io: ButtonQrVaultIO,
+    secret_key_provider: Callable[[], str],
+    display_limits: DisplayFrameLimits = DisplayFrameLimits(),
+    max_button_steps: int = 32,
+) -> QrVaultFlowResult:
     if max_button_steps <= 0:
         raise ValueError("button review flow max steps must be positive")
 
@@ -104,6 +118,7 @@ def run_button_qr_vault_flow(
     if approved is None:
         raise RuntimeError("button review flow did not reach approval or rejection")
 
+    secret_key_hex = secret_key_provider() if approved else "00" * 32
     response = sign_request(
         request,
         secret_key_hex,

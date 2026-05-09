@@ -68,6 +68,12 @@ frame/button/decision transcript from the file-backed button harness. This lets
 `NostrSeal/lab` and future adapter tests verify full review-loop traces without
 importing Raspberry implementation code.
 
+Status: `run_button_qr_vault_flow_with_secret_provider` now gives future
+stateless Pi adapters a lazy RAM-only secret boundary. The provider is called
+only after complete review traversal and terminal physical approval; rejection
+finishes without loading the secret. The existing CLI-compatible helper remains
+a wrapper around this stricter path.
+
 Status: the file-backed QR flow adapters now live in
 `nostrseal_vault.adapters` instead of private CLI classes. The CLI remains a
 thin file/argument wrapper around package-owned scan, review, display-frame

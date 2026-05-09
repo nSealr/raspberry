@@ -46,6 +46,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   tests, checked against shared `NostrSeal/specs` review-transcript vectors.
 - Hardware-neutral button-driven QR flow boundary for future camera, display,
   and GPIO adapters.
+- Lazy secret-provider boundary for the button-driven flow, so future
+  stateless hardware adapters can load RAM-only secret material only after
+  complete review traversal and physical approval.
 - Shared NostrSeal v0 implementation limits for constrained signers, with
   deterministic rejection of applicable invalid signing-request and QR-envelope
   hardening vectors before trusted review or signing.

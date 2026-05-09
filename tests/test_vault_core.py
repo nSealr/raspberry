@@ -15,7 +15,11 @@ from nostrseal_vault.display import (
     render_review_pages,
     screen_review_for_request,
 )
-from nostrseal_vault.hardware_flow import run_button_qr_vault_flow, run_qr_vault_flow
+from nostrseal_vault.hardware_flow import (
+    run_button_qr_vault_flow,
+    run_button_qr_vault_flow_with_secret_provider,
+    run_qr_vault_flow,
+)
 from nostrseal_vault.nip06 import derive_nip06_secret
 from nostrseal_vault.qr import decode_qr_envelope, encode_qr_envelope
 from nostrseal_vault.review import review_event_template
@@ -459,6 +463,37 @@ class VaultCoreTests(unittest.TestCase):
         result = run_button_qr_vault_flow(hardware, KEY["secret_key"])
 
         self.assertEqual(hardware.displayed_pages, [(0, "Event")])
+        self.assertFalse(result.approved)
+        response = decode_qr_envelope(hardware.response_qr)
+        self.assertEqual(response["ok"], False)
+        self.assertEqual(response["error"]["code"], "user_rejected")
+
+    def test_button_qr_vault_flow_secret_provider_is_lazy_until_approval(self) -> None:
+        hardware = MemoryButtonQrVaultIO(encode_qr_envelope(TAGGED_REQUEST), ["next", "next", "next", "approve"])
+        provider_calls: list[str] = []
+
+        def secret_provider() -> str:
+            provider_calls.append("loaded")
+            return KEY["secret_key"]
+
+        result = run_button_qr_vault_flow_with_secret_provider(hardware, secret_provider)
+
+        self.assertEqual(provider_calls, ["loaded"])
+        self.assertTrue(result.approved)
+        response = decode_qr_envelope(hardware.response_qr)
+        self.assert_valid_signed_event_for_pubkey(response["result"]["event"], KEY["public_key"])
+
+    def test_button_qr_vault_flow_secret_provider_is_not_called_on_rejection(self) -> None:
+        hardware = MemoryButtonQrVaultIO(encode_qr_envelope(BASIC_REQUEST), ["reject"])
+        provider_calls: list[str] = []
+
+        def secret_provider() -> str:
+            provider_calls.append("loaded")
+            return KEY["secret_key"]
+
+        result = run_button_qr_vault_flow_with_secret_provider(hardware, secret_provider)
+
+        self.assertEqual(provider_calls, [])
         self.assertFalse(result.approved)
         response = decode_qr_envelope(hardware.response_qr)
         self.assertEqual(response["ok"], False)
