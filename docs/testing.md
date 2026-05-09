@@ -9,9 +9,11 @@ make ci
 The baseline runs repository verification, Python unit tests, bytecode
 compilation, and `pip check`.
 
-`make setup` installs the local package with pip's in-tree build mode so lab
-integration logs do not include the legacy out-of-tree build deprecation
-warning from older Python 3.9 virtual environments.
+`make setup` installs the local package with pip's in-tree build mode when the
+local pip still exposes that feature flag, so lab integration logs do not
+include the legacy out-of-tree build deprecation warning from older Python 3.9
+virtual environments. Newer pip releases that already use in-tree builds by
+default are left unchanged.
 
 ## Implemented Tests
 

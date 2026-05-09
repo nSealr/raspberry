@@ -129,7 +129,9 @@ class ProjectToolingTests(unittest.TestCase):
     def test_setup_uses_in_tree_build_to_keep_pip_logs_clean(self) -> None:
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
 
-        self.assertIn("--use-feature=in-tree-build .", makefile)
+        self.assertIn("install --use-feature=in-tree-build --help", makefile)
+        self.assertIn("--use-feature=in-tree-build", makefile)
+        self.assertIn("$$PIP_IN_TREE_BUILD", makefile)
 
 
 class VaultCoreTests(unittest.TestCase):
