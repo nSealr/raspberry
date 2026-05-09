@@ -9,6 +9,10 @@ make ci
 The baseline runs repository verification, Python unit tests, bytecode
 compilation, and `pip check`.
 
+`make setup` installs the local package with pip's in-tree build mode so lab
+integration logs do not include the legacy out-of-tree build deprecation
+warning from older Python 3.9 virtual environments.
+
 ## Implemented Tests
 
 - QR envelope round-trip tests.
@@ -66,6 +70,8 @@ compilation, and `pip check`.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,
   resource-limit violations, and malformed QR requests where the Raspberry
   parser owns the boundary.
+- Project tooling test requiring `make setup` to use pip in-tree builds for
+  clean cross-repo integration logs.
 
 ## Next Tests
 

@@ -6,7 +6,7 @@ PIP := $(PYTHON) -m pip
 setup:
 	python3 -m venv .venv
 	$(PIP) install --disable-pip-version-check -r requirements.txt
-	$(PIP) install --disable-pip-version-check .
+	$(PIP) install --disable-pip-version-check --use-feature=in-tree-build .
 
 test:
 	$(PYTHON) scripts/verify_repo.py

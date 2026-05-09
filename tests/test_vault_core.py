@@ -125,6 +125,13 @@ class NextOnlyButtonQrVaultIO:
         self.response_qr = response_qr
 
 
+class ProjectToolingTests(unittest.TestCase):
+    def test_setup_uses_in_tree_build_to_keep_pip_logs_clean(self) -> None:
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+
+        self.assertIn("--use-feature=in-tree-build .", makefile)
+
+
 class VaultCoreTests(unittest.TestCase):
     def assert_valid_signed_event(self, signed: dict) -> None:
         expected = dict(BASIC_VECTOR["signed_event"])
