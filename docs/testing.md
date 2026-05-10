@@ -86,6 +86,10 @@ default are left unchanged.
   parser owns the boundary.
 - Project tooling test requiring `make setup` to use pip in-tree builds for
   clean cross-repo integration logs.
+- OS profile note test requiring future Raspberry image work to preserve the
+  stateless QR vault operating boundary: removable microSD, no swap, no remote
+  access, RAM-only custody, no persistent signing-secret storage, and no
+  TROPIC01 requirement.
 
 ## Next Tests
 

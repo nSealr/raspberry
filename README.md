@@ -77,6 +77,10 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   tests.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
+- `os/stateless-qr-vault-profile.md` records the future Raspberry image
+  acceptance boundary aligned with `NostrSeal/hardware`: removable microSD,
+  wireless disabled or absent, RAM-only custody, no swap during signing, no
+  remote access during signing, and no persistent signing-secret storage.
 
 ## Planned Capabilities
 

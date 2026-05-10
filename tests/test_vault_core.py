@@ -1069,6 +1069,17 @@ class VaultCoreTests(unittest.TestCase):
             self.assertIn("event_template contains forbidden fields", result.stderr)
             self.assertFalse(review_path.exists())
 
+    def test_os_profile_notes_pin_stateless_qr_vault_constraints(self) -> None:
+        text = (ROOT / "os/stateless-qr-vault-profile.md").read_text(encoding="utf-8")
+
+        self.assertIn("NostrSeal/hardware", text)
+        self.assertIn("removable microSD", text)
+        self.assertIn("no swap", text)
+        self.assertIn("no remote access", text)
+        self.assertIn("RAM-only", text)
+        self.assertIn("not a downloadable OS image", text)
+        self.assertIn("does not add or require TROPIC01", text)
+
 
 if __name__ == "__main__":
     unittest.main()

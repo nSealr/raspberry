@@ -101,6 +101,13 @@ profile and rejects applicable invalid signing-request and QR-envelope
 hardening vectors before review or signing, while remaining stateless and
 RAM-only.
 
+Status: `os/stateless-qr-vault-profile.md` now records the future Raspberry
+image acceptance boundary aligned with `NostrSeal/hardware`: removable microSD
+boot media, disabled or absent wireless, RAM-only session custody, no swap
+during signing, no remote access during signing, disabled setup interfaces, and
+no persistent signing-secret storage. It is planning and acceptance criteria,
+not a downloadable OS image.
+
 ## Later
 
 - Minimal OS image path.

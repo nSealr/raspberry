@@ -20,6 +20,13 @@ SeedSigner is a conceptual reference for QR flow, stateless operation, display
 review, and minimal OS philosophy. Bitcoin/PSBT assumptions must not leak into
 Nostr event signing.
 
+`os/stateless-qr-vault-profile.md` is the implementation-side operating profile
+for future Raspberry image work. It mirrors the checked `NostrSeal/hardware`
+OS profile: removable microSD boot media, disabled or absent wireless,
+RAM-only session custody, no swap during signing, no remote access during
+signing, and no persistent signing-secret storage. It is not a downloadable OS
+image or a production security claim.
+
 ## Implemented Foundation
 
 - `nostrseal_vault.qr`: v0 `nseal1:` QR envelope helpers.
