@@ -318,9 +318,12 @@ class VaultCoreTests(unittest.TestCase):
             render_display_frame(screen_review, page_index=0, limits=DisplayFrameLimits(max_line_chars=0))
 
     def test_display_frames_match_shared_vectors(self) -> None:
-        self.assertEqual(
+        self.assertCountEqual(
             [vector["name"] for vector in DISPLAY_FRAME_VECTORS],
-            ["kind-1-long-content-page-1-20x3"],
+            [
+                "kind-1-long-content-page-1-20x3",
+                "kind-1-unicode-boundary-content-4x3",
+            ],
         )
         for vector in DISPLAY_FRAME_VECTORS:
             source = json.loads(
