@@ -771,6 +771,45 @@ class VaultCoreTests(unittest.TestCase):
             self.assertTrue(all(len(line) <= 20 for line in frame["body_lines"]))
             self.assertTrue(frame["body_lines"][-1].endswith("..."))
 
+    def test_cli_review_can_write_detail_pages_json(self) -> None:
+        vector = next(item for item in REVIEW_DETAIL_PAGE_VECTORS if item["name"] == "kind-1-tags-t-display-s3")
+        source = json.loads((SPECS / f"vectors/review/{vector['source_review_vector']}.json").read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            detail_pages_path = Path(temp_root) / "review-detail-pages.json"
+            request_path.write_text(encode_qr_envelope(source["request"]), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "review",
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(detail_pages_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "detail-pages-json",
+                    "--max-title-chars",
+                    str(vector["limits"]["max_title_chars"]),
+                    "--max-line-chars",
+                    str(vector["limits"]["max_line_chars"]),
+                    "--max-body-lines",
+                    str(vector["limits"]["max_body_lines"]),
+                    "--max-compact-line-chars",
+                    str(vector["limits"]["max_compact_line_chars"]),
+                    "--max-compact-body-lines",
+                    str(vector["limits"]["max_compact_body_lines"]),
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            self.assertEqual(json.loads(detail_pages_path.read_text(encoding="utf-8")), vector["pages"])
+
     def test_cli_flow_writes_review_screen_and_signed_response_qr(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             request_path = Path(temp_root) / "request.qr"

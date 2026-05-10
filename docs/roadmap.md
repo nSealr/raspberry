@@ -55,9 +55,11 @@ Raspberry display adapter tests. Real display drivers are still pending.
 
 Status: `nostrseal_vault.display.render_review_detail_pages` now renders the
 complete constrained-display Event/Content/Tags/Decision page contract and
-matches shared `NostrSeal/specs` review-detail-page vectors. This gives future
-Raspberry display adapters the same no-ellipsis, scroll-window review semantics
-as ESP32 while keeping camera/display/GPIO drivers pending.
+matches shared `NostrSeal/specs` review-detail-page vectors.
+`nseal-vault review --output-format detail-pages-json` exposes those pages for
+future adapter harnesses. This gives future Raspberry display adapters the same
+no-ellipsis, scroll-window review semantics as ESP32 while keeping
+camera/display/GPIO drivers pending.
 
 Status: the button-driven QR flow now renders bounded display frames before
 each physical-style input and can write those frames through `nseal-vault flow

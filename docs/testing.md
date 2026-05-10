@@ -47,6 +47,8 @@ default are left unchanged.
 - Desktop CLI smoke test for QR request review output as `screen-json`.
 - Desktop CLI smoke test for QR request review output as one bounded
   `display-frame-json` frame.
+- Desktop CLI smoke test for QR request review output as complete
+  `detail-pages-json` constrained-display pages.
 - Negative CLI review test proving host-supplied `id` fields are rejected
   before review output is written.
 - Approval rejection tests.

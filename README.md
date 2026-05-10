@@ -40,7 +40,8 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   detail pages for Event/Content/Tags/Decision, including scroll-window
   indicators, compact line styles, long-value continuation indentation, and
   explicit `U+XXXX` fallback for unsupported glyphs. These are checked against
-  shared `NostrSeal/specs` review-detail-page vectors without changing the
+  shared `NostrSeal/specs` review-detail-page vectors and exposed by
+  `nseal-vault review --output-format detail-pages-json` without changing the
   `approval_digest` contract.
 - `nseal-vault sign --approval-digest <hex>` can require the signing request to
   match the previously rendered review-page digest before an approved signature
@@ -102,6 +103,7 @@ Run the desktop CLI simulation with:
 python3 -m nostrseal_vault review --request request.qr --review review.json --input-format qr
 python3 -m nostrseal_vault review --request request.qr --review review-screen.json --input-format qr --output-format screen-json
 python3 -m nostrseal_vault review --request request.qr --review display-frame.json --input-format qr --output-format display-frame-json --display-page 0
+python3 -m nostrseal_vault review --request request.qr --review review-detail-pages.json --input-format qr --output-format detail-pages-json
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --approve
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --display-frame-log display-frames.json

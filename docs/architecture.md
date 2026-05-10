@@ -93,7 +93,9 @@ for future display adapters that need the same top-level Event/Content/Tags/
 Decision model as ESP32 without forcing every wrapped line to become a top-level
 approval page. It pins scroll-window indicators, compact body styles, long tag
 continuation indentation, and explicit codepoint fallback while preserving the
-existing `screen-pages` approval digest.
+existing `screen-pages` approval digest. The CLI exposes it through
+`nseal-vault review --output-format detail-pages-json` for adapter harnesses
+and manual review experiments.
 
 `nostrseal_vault.controls` is the first renderer-neutral model for that button
 loop. A session starts on the first page, records which pages have been shown,
