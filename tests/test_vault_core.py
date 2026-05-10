@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
-from nostrseal_vault.adapters import FileButtonQrVaultIO, FileQrVaultIO
+from nostrseal_vault.adapters import ComposedButtonQrVaultIO, FileButtonQrVaultIO, FileQrVaultIO
 from nostrseal_vault.controls import ReviewControlSession, review_transcript_for_screen_review
 from nostrseal_vault.display import (
     DisplayFrameLimits,
@@ -126,6 +126,42 @@ class NextOnlyButtonQrVaultIO:
 
     def read_review_button(self) -> str:
         return "next"
+
+    def emit_response_qr(self, response_qr: str) -> None:
+        self.response_qr = response_qr
+
+
+class FakeQrScanner:
+    def __init__(self, request_qr: str) -> None:
+        self.request_qr = request_qr
+        self.calls = 0
+
+    def scan_request_qr(self) -> str:
+        self.calls += 1
+        return self.request_qr
+
+
+class FakeReviewDisplay:
+    def __init__(self) -> None:
+        self.frames: list[tuple[int, str]] = []
+
+    def display_review_frame(self, screen_review: dict, page_index: int, frame: dict) -> None:
+        self.frames.append((page_index, frame["title"]))
+
+
+class FakeButtonInput:
+    def __init__(self, buttons: list[str]) -> None:
+        self.buttons = list(buttons)
+
+    def read_review_button(self) -> str:
+        if not self.buttons:
+            raise RuntimeError("no more fake buttons")
+        return self.buttons.pop(0)
+
+
+class FakeResponseQrDisplay:
+    def __init__(self) -> None:
+        self.response_qr: str | None = None
 
     def emit_response_qr(self, response_qr: str) -> None:
         self.response_qr = response_qr
@@ -494,6 +530,27 @@ class VaultCoreTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "button sequence ended before approval or rejection"):
                 adapter.read_review_button()
 
+    def test_composed_button_qr_vault_io_delegates_to_adapter_boundaries(self) -> None:
+        scanner = FakeQrScanner(encode_qr_envelope(BASIC_REQUEST))
+        display = FakeReviewDisplay()
+        buttons = FakeButtonInput(["next", "next", "next", "approve"])
+        response_display = FakeResponseQrDisplay()
+        adapter = ComposedButtonQrVaultIO(
+            scanner=scanner,
+            review_display=display,
+            button_input=buttons,
+            response_display=response_display,
+        )
+
+        result = run_button_qr_vault_flow(adapter, KEY["secret_key"])
+
+        self.assertEqual(scanner.calls, 1)
+        self.assertEqual(display.frames, [(0, "Event"), (1, "Content"), (2, "Tags"), (3, "Decision")])
+        self.assertTrue(result.approved)
+        self.assertIsNotNone(response_display.response_qr)
+        response = decode_qr_envelope(response_display.response_qr)
+        self.assert_valid_signed_event(response["result"]["event"])
+
     def test_button_qr_vault_flow_requires_page_traversal_before_approval(self) -> None:
         hardware = MemoryButtonQrVaultIO(encode_qr_envelope(TAGGED_REQUEST), ["next", "next", "next", "approve"])
 
@@ -517,7 +574,7 @@ class VaultCoreTests(unittest.TestCase):
         self.assertEqual(response["ok"], False)
         self.assertEqual(response["error"]["code"], "user_rejected")
 
-    def test_button_qr_vault_flow_secret_provider_is_lazy_until_approval(self) -> None:
+    def test_button_qr_vault_flow_uses_secret_provider_for_approved_session_author(self) -> None:
         hardware = MemoryButtonQrVaultIO(encode_qr_envelope(TAGGED_REQUEST), ["next", "next", "next", "approve"])
         provider_calls: list[str] = []
 

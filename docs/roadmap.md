@@ -88,6 +88,12 @@ thin file/argument wrapper around package-owned scan, review, display-frame
 log, button-sequence, and response-QR boundaries; real camera, display, and
 GPIO drivers remain pending.
 
+Status: `nostrseal_vault.adapters.ComposedButtonQrVaultIO` now exposes the
+next adapter boundary for real Raspberry drivers by composing scanner,
+trusted-display, physical-button, and response-QR components behind the tested
+button-driven QR flow. This is still hardware-neutral and does not add camera,
+display, or GPIO drivers.
+
 Status: Raspberry now mirrors the shared NostrSeal v0 implementation-limit
 profile and rejects applicable invalid signing-request and QR-envelope
 hardening vectors before review or signing, while remaining stateless and

@@ -41,8 +41,10 @@ Nostr event signing.
 - `nostrseal_vault.hardware_flow`: hardware-agnostic QR signer orchestration
   with injected scan, display, button, and response-QR boundaries.
 - `nostrseal_vault.adapters`: file-backed QR flow adapters used by the CLI and
-  integration smoke tests. These are development adapters for request/review/
-  response files and transcript logs, not camera, display, or GPIO drivers.
+  integration smoke tests, plus a composed button-flow adapter boundary that
+  keeps scanner, trusted display, physical button input, and response QR output
+  independently replaceable before real camera/display/GPIO drivers exist.
+  These are development and driver-facing adapters, not production Pi drivers.
 - `nostrseal_vault.signer`: request handling and explicit approval gate.
 - `nostrseal_vault.cli`: desktop simulation CLI for JSON and QR file input and
   output.
@@ -164,12 +166,21 @@ includes the review transcript actually shown and acted on. Real GPIO/display
 adapters should attach to this boundary first.
 
 `run_button_qr_vault_flow_with_secret_provider` is the stateless hardware-facing
-variant for future Pi flows. The secret provider is called only after the review
-loop reaches terminal approval, so early rejection can finish without loading
-seed/key material into memory. The older `run_button_qr_vault_flow` helper stays
-as a compatibility wrapper for the desktop harness.
+variant for future Pi flows. The secret provider is called after request QR
+decode and before review so the signer-derived author pubkey can be displayed
+and bound into the `approval_digest`. That key material must remain RAM-only for
+the current signing session; early rejection still refuses to sign and emits a
+rejection response, but it is not a no-key-loaded path. The older
+`run_button_qr_vault_flow` helper stays as a compatibility wrapper for the
+desktop harness.
 
 The file-backed adapters live in package code rather than private CLI classes.
 This keeps the CLI as a thin adapter and gives future Raspberry camera,
 display, and GPIO drivers a concrete behavioral reference for when review JSON,
 display-frame logs, button input, and response QR output are allowed to occur.
+
+`ComposedButtonQrVaultIO` is the first non-file adapter boundary for that same
+flow. It delegates request scanning, frame display, button reads, and response
+QR output to four small interfaces, so a future Pi camera, display library,
+GPIO button module, and QR response renderer can be swapped independently while
+the review/signing state machine stays unchanged.

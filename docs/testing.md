@@ -72,6 +72,9 @@ default are left unchanged.
 - File-backed adapter tests proving request scanning, review JSON writes,
   display-frame log writes, button exhaustion, and response QR output are owned
   by package code rather than private CLI classes.
+- Composed adapter tests proving future scanner, trusted-display,
+  physical-button, and response-QR components can plug into the button-driven
+  QR flow without bypassing review traversal or approval-digest binding.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
   screen-review JSON and a signed response QR.
 - Desktop CLI smoke test for QR request input and QR response output.

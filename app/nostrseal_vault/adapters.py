@@ -2,7 +2,54 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
+
+
+class QrScanner(Protocol):
+    def scan_request_qr(self) -> str:
+        """Return one scanned NostrSeal request QR envelope."""
+
+
+class ReviewDisplay(Protocol):
+    def display_review_frame(self, screen_review: dict[str, Any], page_index: int, frame: dict[str, Any]) -> None:
+        """Render one bounded trusted review frame."""
+
+
+class ReviewButtonInput(Protocol):
+    def read_review_button(self) -> str:
+        """Return one physical review button action."""
+
+
+class ResponseQrDisplay(Protocol):
+    def emit_response_qr(self, response_qr: str) -> None:
+        """Display or export one NostrSeal response QR envelope."""
+
+
+class ComposedButtonQrVaultIO:
+    def __init__(
+        self,
+        *,
+        scanner: QrScanner,
+        review_display: ReviewDisplay,
+        button_input: ReviewButtonInput,
+        response_display: ResponseQrDisplay,
+    ) -> None:
+        self.scanner = scanner
+        self.review_display = review_display
+        self.button_input = button_input
+        self.response_display = response_display
+
+    def scan_request_qr(self) -> str:
+        return self.scanner.scan_request_qr()
+
+    def display_review_frame(self, screen_review: dict[str, Any], page_index: int, frame: dict[str, Any]) -> None:
+        self.review_display.display_review_frame(screen_review, page_index, frame)
+
+    def read_review_button(self) -> str:
+        return self.button_input.read_review_button()
+
+    def emit_response_qr(self, response_qr: str) -> None:
+        self.response_display.emit_response_qr(response_qr)
 
 
 class FileQrVaultIO:

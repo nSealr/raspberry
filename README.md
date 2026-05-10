@@ -53,6 +53,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   tests, checked against shared `NostrSeal/specs` review-transcript vectors.
 - Hardware-neutral button-driven QR flow boundary for future camera, display,
   and GPIO adapters.
+- Composable hardware adapter boundary that keeps QR scanning, trusted display,
+  physical button input, and response QR output as separate attach points before
+  real Pi drivers are selected.
 - RAM-only secret-provider boundary for the button-driven flow. The key is
   loaded for the signing session before review so the trusted screen can bind
   the displayed author pubkey into the `approval_digest`; signing still only
