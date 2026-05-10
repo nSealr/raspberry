@@ -88,6 +88,13 @@ action hint while enforcing maximum title, body-line, and line-width limits.
 This gives future ST7789/Waveshare/OLED adapters a deterministic pre-driver
 oracle for text fitting before graphical rendering is implemented.
 
+`render_review_detail_pages` is the complete constrained-display page contract
+for future display adapters that need the same top-level Event/Content/Tags/
+Decision model as ESP32 without forcing every wrapped line to become a top-level
+approval page. It pins scroll-window indicators, compact body styles, long tag
+continuation indentation, and explicit codepoint fallback while preserving the
+existing `screen-pages` approval digest.
+
 `nostrseal_vault.controls` is the first renderer-neutral model for that button
 loop. A session starts on the first page, records which pages have been shown,
 maps `next`, `approve`, and `reject` button actions, and refuses approval until

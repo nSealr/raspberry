@@ -16,6 +16,15 @@ class DisplayFrameLimits:
     max_line_chars: int = 32
 
 
+@dataclass(frozen=True)
+class ReviewDetailPageLimits:
+    max_title_chars: int = 18
+    max_body_lines: int = 5
+    max_line_chars: int = 26
+    max_compact_body_lines: int = 9
+    max_compact_line_chars: int = 48
+
+
 def render_display_frame(
     screen_review: dict[str, Any],
     page_index: int,
@@ -67,6 +76,28 @@ def render_review_pages(review: dict[str, Any]) -> list[dict[str, object]]:
     ]
 
 
+def render_review_detail_pages(
+    review: dict[str, Any],
+    limits: ReviewDetailPageLimits = ReviewDetailPageLimits(),
+) -> list[dict[str, object]]:
+    _validate_detail_page_limits(limits)
+    pages: list[dict[str, object]] = []
+    _append_detail_pages(pages, "Event", *_detail_event_lines(review, limits), limits, 1, 4)
+    _append_detail_pages(pages, "Content", *_detail_content_lines(review, limits), limits, 2, 4)
+    _append_detail_pages(pages, "Tags", *_detail_tag_lines(review, limits), limits, 3, 4)
+    pages.append(
+        {
+            "title": "Decision",
+            "lines": ["Approve signing only if all pages match."],
+            "action": "approve_or_reject",
+            "page_indicator": "Page 4/4",
+            "body_line_styles": [],
+            "logical_page_id": "Decision",
+        }
+    )
+    return pages
+
+
 def _tag_lines(review: dict[str, Any]) -> list[str]:
     tag_count = int(review["tag_count"])
     if tag_count == 0:
@@ -81,9 +112,180 @@ def _tag_lines(review: dict[str, Any]) -> list[str]:
     return lines
 
 
+_DISPLAY_SAFE_ASCII = set(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789"
+    " !\"#$%&'()*+,-./:;<=>?@[\\]_{|}~"
+)
+
+
+def _display_safe_text(text: str) -> str:
+    out: list[str] = []
+    for char in text:
+        codepoint = ord(char)
+        if codepoint <= 0x7F and char in _DISPLAY_SAFE_ASCII:
+            out.append(char)
+        else:
+            out.append(f"U+{codepoint:04X}")
+    return "".join(out)
+
+
+def _split_exact_display_lines(text: str, width: int) -> list[str]:
+    if text == "":
+        return [""]
+    return [text[index:index + width] for index in range(0, len(text), width)]
+
+
+def _append_detail_value_lines(lines: list[str], styles: list[str], value: str, width: int) -> None:
+    for line in _split_exact_display_lines(value, width):
+        lines.append(line)
+        styles.append("value")
+
+
+def _append_detail_tag_item_lines(lines: list[str], styles: list[str], value: str, width: int) -> None:
+    if value == "":
+        return
+    safe_value = _display_safe_text(value)
+    continuation_indent = "  "
+    continuation_width = width - len(continuation_indent) if width > len(continuation_indent) else width
+    position = 0
+    first_line = True
+    while position < len(safe_value):
+        line_width = width if first_line else continuation_width
+        line = safe_value[position:position + line_width]
+        if not first_line and width > len(continuation_indent):
+            line = continuation_indent + line
+        lines.append(line)
+        styles.append("value")
+        position += line_width
+        first_line = False
+
+
+def _detail_event_lines(
+    review: dict[str, Any],
+    limits: ReviewDetailPageLimits,
+) -> tuple[list[str], list[str]]:
+    lines = [
+        f"Kind {review['kind']}",
+        f"Created {review['created_at']}",
+        "Author",
+    ]
+    styles = ["meta", "meta", "meta"]
+    _append_detail_tag_item_lines(lines, styles, str(review["author_pubkey"]), limits.max_compact_line_chars)
+    return lines, styles
+
+
+def _detail_content_lines(
+    review: dict[str, Any],
+    limits: ReviewDetailPageLimits,
+) -> tuple[list[str], list[str]]:
+    content = str(review["content"])
+    if content == "":
+        return ["empty content"], ["meta"]
+    safe_content = _display_safe_text(content)
+    if len(safe_content) <= limits.max_compact_line_chars:
+        return [safe_content], ["normal"]
+    lines = [f"bytes: {len(content.encode('utf-8'))}"]
+    styles = ["meta"]
+    _append_detail_value_lines(lines, styles, safe_content, limits.max_compact_line_chars)
+    return lines, styles
+
+
+def _detail_tag_lines(
+    review: dict[str, Any],
+    limits: ReviewDetailPageLimits,
+) -> tuple[list[str], list[str]]:
+    tags = review["tags"]
+    if not tags:
+        return ["No tags"], ["normal"]
+    lines: list[str] = []
+    styles: list[str] = []
+    for index, tag in enumerate(tags, start=1):
+        lines.append(f"Tag {index}/{len(tags)}")
+        styles.append("meta")
+        if tag:
+            for item in tag:
+                _append_detail_tag_item_lines(lines, styles, str(item), limits.max_compact_line_chars)
+        else:
+            lines.append("empty tag")
+            styles.append("value")
+    return lines, styles
+
+
+def _detail_page_indicator(
+    page_index: int,
+    page_count: int,
+    first_line: int,
+    last_line: int,
+    line_count: int,
+) -> str:
+    base = f"Page {page_index}/{page_count}"
+    if line_count == 0 or (first_line == 1 and last_line >= line_count):
+        return base
+    return f"{base} Lines {first_line}-{last_line}/{line_count}"
+
+
+def _append_detail_pages(
+    pages: list[dict[str, object]],
+    title: str,
+    lines: list[str],
+    styles: list[str],
+    limits: ReviewDetailPageLimits,
+    logical_page_index: int,
+    logical_page_count: int,
+) -> None:
+    lines_per_screen = limits.max_compact_body_lines if styles else limits.max_body_lines
+    total = len(lines) if lines else 1
+    position = 0
+    while position < total:
+        first_position = position
+        body_lines: list[str] = []
+        body_styles: list[str] = []
+        for _ in range(lines_per_screen):
+            if position >= len(lines):
+                break
+            body_lines.append(lines[position])
+            body_styles.append(styles[position] if position < len(styles) else "normal")
+            position += 1
+        if not body_lines:
+            body_lines = [""]
+            body_styles = ["normal"]
+            position = total
+        pages.append(
+            {
+                "title": title,
+                "lines": body_lines,
+                "action": "next",
+                "page_indicator": _detail_page_indicator(
+                    logical_page_index,
+                    logical_page_count,
+                    first_position + 1,
+                    position,
+                    total,
+                ),
+                "body_line_styles": body_styles,
+                "logical_page_id": title,
+            }
+        )
+        if position >= total:
+            break
+
+
 def _validate_display_limits(limits: DisplayFrameLimits) -> None:
     if limits.max_title_chars <= 0 or limits.max_body_lines <= 0 or limits.max_line_chars <= 0:
         raise ValueError("display limits must be positive")
+
+
+def _validate_detail_page_limits(limits: ReviewDetailPageLimits) -> None:
+    if (
+        limits.max_title_chars <= 0
+        or limits.max_body_lines <= 0
+        or limits.max_line_chars <= 0
+        or limits.max_compact_body_lines <= 0
+        or limits.max_compact_line_chars <= 0
+    ):
+        raise ValueError("review detail-page limits must be positive")
 
 
 def _wrap_body_lines(value: object, limits: DisplayFrameLimits) -> list[str]:

@@ -10,8 +10,10 @@ from nostrseal_vault.adapters import FileButtonQrVaultIO, FileQrVaultIO
 from nostrseal_vault.controls import ReviewControlSession, review_transcript_for_screen_review
 from nostrseal_vault.display import (
     DisplayFrameLimits,
+    ReviewDetailPageLimits,
     approval_digest_for_request,
     render_display_frame,
+    render_review_detail_pages,
     render_review_pages,
     screen_review_for_request,
 )
@@ -57,6 +59,10 @@ REVIEW_TRANSCRIPT_VECTORS = [
 DISPLAY_FRAME_VECTORS = [
     json.loads(path.read_text(encoding="utf-8"))
     for path in sorted((SPECS / "vectors/review-display-frames").glob("*.json"))
+]
+REVIEW_DETAIL_PAGE_VECTORS = [
+    json.loads(path.read_text(encoding="utf-8"))
+    for path in sorted((SPECS / "vectors/review-detail-pages").glob("*.json"))
 ]
 TAGGED_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-tags.json").read_text(encoding="utf-8"))
 LIMIT_PROFILE = json.loads((SPECS / "vectors/limits/nseal-v0.json").read_text(encoding="utf-8"))
@@ -337,6 +343,27 @@ class VaultCoreTests(unittest.TestCase):
             )
 
             self.assertEqual(frame, vector["frame"])
+
+    def test_review_detail_pages_match_shared_vectors(self) -> None:
+        self.assertCountEqual(
+            [vector["name"] for vector in REVIEW_DETAIL_PAGE_VECTORS],
+            [
+                "kind-1-long-events-many-tags-t-display-s3",
+                "kind-1-tags-t-display-s3",
+                "kind-1-unicode-boundary-t-display-s3",
+            ],
+        )
+        for vector in REVIEW_DETAIL_PAGE_VECTORS:
+            source = json.loads(
+                (SPECS / f"vectors/review/{vector['source_review_vector']}.json").read_text(encoding="utf-8")
+            )
+            review = review_event_template(source["request"]["params"]["event_template"])
+
+            self.assertEqual(
+                render_review_detail_pages(review, limits=ReviewDetailPageLimits(**vector["limits"])),
+                vector["pages"],
+            )
+            self.assertEqual(approval_digest_for_request(source["request"]), vector["approval_digest"])
 
     def test_physical_approval_requires_viewing_all_review_pages(self) -> None:
         session = ReviewControlSession(screen_review_for_request(TAGGED_REQUEST))

@@ -36,6 +36,12 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   display frame with deterministic line wrapping/truncation for future LCD
   adapter tests, checked against shared `NostrSeal/specs`
   review-display-frame vectors.
+- The core display package can also render complete constrained-display
+  detail pages for Event/Content/Tags/Decision, including scroll-window
+  indicators, compact line styles, long-value continuation indentation, and
+  explicit `U+XXXX` fallback for unsupported glyphs. These are checked against
+  shared `NostrSeal/specs` review-detail-page vectors without changing the
+  `approval_digest` contract.
 - `nseal-vault sign --approval-digest <hex>` can require the signing request to
   match the previously rendered review-page digest before an approved signature
   is produced.
