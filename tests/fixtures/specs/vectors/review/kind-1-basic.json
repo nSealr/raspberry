@@ -15,12 +15,11 @@
   },
   "review": {
     "kind": 1,
-    "kind_name": "Short Text Note",
     "created_at": 1710000000,
-    "content_preview": "NostrSeal fixture: basic kind 1 event.",
-    "content_length": 38,
+    "author_pubkey": "4f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa",
+    "content": "NostrSeal fixture: basic kind 1 event.",
+    "content_utf8_bytes": 38,
     "tag_count": 0,
-    "tag_summary": [],
-    "warnings": []
+    "tags": []
   }
 }

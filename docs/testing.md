@@ -20,10 +20,11 @@ default are left unchanged.
 - QR envelope round-trip tests.
 - NIP-06 derivation tests against the canonical account `0` shared vector.
 - Signing tests against `NostrSeal/specs` fixtures.
-- Review model tests against every shared review vector for event kind,
-  content preview, tag summary, and warnings.
+- Review model tests against every shared review vector for raw event kind,
+  created_at, signer author pubkey, complete content, and complete structured
+  tags.
 - Desktop CLI smoke test for QR request review output without a secret key.
-- Trusted-display page tests for event, content, tag, warning, and final
+- Trusted-display page tests for event, content, tag, and final
   approval-decision pages.
 - Trusted-display screen review tests against every shared
   `NostrSeal/specs` review-screen vector.
@@ -50,9 +51,10 @@ default are left unchanged.
 - Button-driven QR vault flow tests proving page-by-page traversal before
   approval, early rejection without signing, and bounded failure for
   non-terminal button streams.
-- Lazy secret-provider tests proving future stateless Pi adapters load
-  seed/key material only after complete review traversal and physical approval,
-  and not on rejection.
+- RAM-only secret-provider tests proving future stateless Pi adapters load
+  session key material before review to derive the displayed author pubkey,
+  while still refusing to sign unless complete review traversal and physical
+  approval succeed.
 - Button-driven display-frame log tests proving future display adapters receive
   bounded frames before physical-style input is consumed.
 - Button-driven flow transcript tests proving the displayed frame/button/

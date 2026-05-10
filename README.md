@@ -23,9 +23,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   checked against the canonical NIP-06 test vector in `NostrSeal/specs`.
 - Explicit approval gate: `sign_event` requests return `user_rejected` unless
   approval is provided to the CLI or signer API.
-- Deterministic event review model for kind, content preview, tag summary, and
-  warnings before approval, checked against every shared `NostrSeal/specs`
-  review vector.
+- Deterministic event review model for raw kind, created_at, signer author
+  pubkey, complete content, and complete structured tags before approval,
+  checked against every shared `NostrSeal/specs` review vector.
 - `nseal-vault review` renders deterministic review JSON from a request without
   requiring a secret key or producing a signature. It uses the same request
   validation as the signing path for host-supplied event fields.
@@ -46,9 +46,10 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   tests, checked against shared `NostrSeal/specs` review-transcript vectors.
 - Hardware-neutral button-driven QR flow boundary for future camera, display,
   and GPIO adapters.
-- Lazy secret-provider boundary for the button-driven flow, so future
-  stateless hardware adapters can load RAM-only secret material only after
-  complete review traversal and physical approval.
+- RAM-only secret-provider boundary for the button-driven flow. The key is
+  loaded for the signing session before review so the trusted screen can bind
+  the displayed author pubkey into the `approval_digest`; signing still only
+  occurs after complete review traversal and physical approval.
 - Shared NostrSeal v0 implementation limits for constrained signers, with
   deterministic rejection of applicable invalid signing-request and QR-envelope
   hardening vectors before trusted review or signing.
@@ -71,7 +72,8 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 
 - Raspberry/Pi QR-only signing flow.
 - Stateless key/session mode.
-- Display review for event kind, content, tags, and risk warnings.
+- Display review for raw event kind, signer author, full content, full tags,
+  and final approve/reject decision.
 - Verifiable minimal OS image path.
 
 ## Initial Layout

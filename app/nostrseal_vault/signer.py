@@ -119,7 +119,8 @@ def sign_request(
     if not approved:
         return _error_response(request["request_id"], "user_rejected", "User approval is required before signing.", True)
 
-    if approval_digest is not None and approval_digest != approval_digest_for_request(request):
+    author_pubkey = xonly_pubkey_from_secret(secret_key_hex)
+    if approval_digest is not None and approval_digest != approval_digest_for_request(request, author_pubkey=author_pubkey):
         return _error_response(
             request["request_id"],
             "approval_digest_mismatch",

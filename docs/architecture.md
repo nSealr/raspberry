@@ -31,8 +31,9 @@ Nostr event signing.
   `m/44'/1237'/<account>'/0/0` NIP-06 keys.
 - `nostrseal_vault.review`: deterministic event review model checked against
   shared `NostrSeal/specs` review vectors.
-- `nostrseal_vault.display`: deterministic trusted-display page model for
-  event, content, tags, warnings, and final approval decisions.
+- `nostrseal_vault.display`: deterministic trusted-display page model for raw
+  event kind, signer author pubkey, complete content, complete tags, and final
+  approval decisions.
 - `nostrseal_vault.controls`: physical-button approval session model for
   future GPIO adapters. It requires every trusted-review page to be traversed
   before approval can succeed and keeps rejection available before the final
@@ -63,14 +64,17 @@ desktop simulation path; the Pi hardware flow should keep seed material in RAM
 and avoid shell arguments for production use.
 
 The `review` command is intentionally separate from `sign`: it takes a request,
-produces deterministic review JSON, and never needs key material. This mirrors
-the future display flow where review must happen before approval and signing.
+produces deterministic review JSON, and does not sign. In desktop-only mode it
+uses the deterministic fixture author pubkey; the hardware flow derives the
+author pubkey from the RAM-only session key before review so the displayed
+author is signer-derived and bound into the `approval_digest`.
 
 The review model is not a UI. It is the deterministic data contract that a Pi
-Zero display flow must render before approval: event kind, content preview, tag
-summary, and warnings. The shared vectors prevent the Pi display flow,
-companion harness, and future ESP32 display work from drifting on review
-semantics.
+Zero display flow must render before approval: raw event kind, created_at,
+signer author pubkey, complete content, and complete structured tags. It does
+not infer kind meanings, abbreviate tag values, or add heuristic warnings. The
+shared vectors prevent the Pi display flow, companion harness, and future ESP32
+display work from drifting on review semantics.
 
 The display page model is the next contract above the raw review data. It
 orders the pages that a small trusted screen must show and marks the final page

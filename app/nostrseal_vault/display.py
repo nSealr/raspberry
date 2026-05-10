@@ -38,19 +38,20 @@ def render_display_frame(
 
 
 def render_review_pages(review: dict[str, Any]) -> list[dict[str, object]]:
-    pages: list[dict[str, object]] = [
+    return [
         {
             "title": "Event",
             "lines": [
                 f"Kind {review['kind']}",
-                str(review["kind_name"]),
                 f"Created {review['created_at']}",
+                "Author",
+                str(review["author_pubkey"]),
             ],
             "action": "next",
         },
         {
             "title": "Content",
-            "lines": [str(review["content_preview"])],
+            "lines": [str(review["content"])],
             "action": "next",
         },
         {
@@ -58,34 +59,26 @@ def render_review_pages(review: dict[str, Any]) -> list[dict[str, object]]:
             "lines": _tag_lines(review),
             "action": "next",
         },
+        {
+            "title": "Decision",
+            "lines": ["Approve signing only if all pages match."],
+            "action": "approve_or_reject",
+        },
     ]
-
-    warnings = list(review.get("warnings", []))
-    if warnings:
-        pages.append(
-            {
-                "title": "Warnings",
-                "lines": [str(warning) for warning in warnings],
-                "action": "approve_or_reject",
-            }
-        )
-    else:
-        pages.append(
-            {
-                "title": "Decision",
-                "lines": ["Approve signing only if all pages match."],
-                "action": "approve_or_reject",
-            }
-        )
-    return pages
 
 
 def _tag_lines(review: dict[str, Any]) -> list[str]:
     tag_count = int(review["tag_count"])
     if tag_count == 0:
         return ["No tags"]
-    label = "1 tag" if tag_count == 1 else f"{tag_count} tags"
-    return [label, *[str(item) for item in review.get("tag_summary", [])]]
+    lines: list[str] = []
+    for index, tag in enumerate(review["tags"], start=1):
+        lines.append(f"Tag {index}/{tag_count}")
+        if tag:
+            lines.extend(str(item) for item in tag)
+        else:
+            lines.append("empty tag")
+    return lines
 
 
 def _validate_display_limits(limits: DisplayFrameLimits) -> None:
@@ -135,8 +128,8 @@ def _action_hint(action: str) -> str:
     raise ValueError("unsupported review page action")
 
 
-def screen_review_for_request(request: dict[str, Any]) -> dict[str, Any]:
-    review = _review_for_request(request)
+def screen_review_for_request(request: dict[str, Any], author_pubkey: str | None = None) -> dict[str, Any]:
+    review = _review_for_request(request, author_pubkey=author_pubkey)
     pages = render_review_pages(review)
     return {
         "format": "screen-pages",
@@ -146,16 +139,18 @@ def screen_review_for_request(request: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def approval_digest_for_request(request: dict[str, Any]) -> str:
-    review = _review_for_request(request)
+def approval_digest_for_request(request: dict[str, Any], author_pubkey: str | None = None) -> str:
+    review = _review_for_request(request, author_pubkey=author_pubkey)
     return _approval_digest(request, review, render_review_pages(review))
 
 
-def _review_for_request(request: dict[str, Any]) -> dict[str, Any]:
+def _review_for_request(request: dict[str, Any], author_pubkey: str | None = None) -> dict[str, Any]:
     params = request.get("params")
     if not isinstance(params, dict) or not isinstance(params.get("event_template"), dict):
         raise ValueError("screen review requires params.event_template")
-    return review_event_template(params["event_template"])
+    if author_pubkey is None:
+        return review_event_template(params["event_template"])
+    return review_event_template(params["event_template"], author_pubkey=author_pubkey)
 
 
 def _approval_digest(

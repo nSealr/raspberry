@@ -15,15 +15,11 @@
   },
   "review": {
     "kind": 30078,
-    "kind_name": "Unknown",
     "created_at": 1710000180,
-    "content_preview": "",
-    "content_length": 0,
+    "author_pubkey": "4f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa",
+    "content": "",
+    "content_utf8_bytes": 0,
     "tag_count": 0,
-    "tag_summary": [],
-    "warnings": [
-      "Unknown event kind.",
-      "Empty content."
-    ]
+    "tags": []
   }
 }

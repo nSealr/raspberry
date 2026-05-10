@@ -196,16 +196,16 @@ class VaultCoreTests(unittest.TestCase):
 
         self.assertEqual(derived, NIP06_KEY["secret_key"])
 
-    def test_review_model_summarizes_kind_content_and_tags(self) -> None:
+    def test_review_model_preserves_raw_event_fields_and_author(self) -> None:
         review = review_event_template(TAGGED_REQUEST["params"]["event_template"])
 
         self.assertEqual(review["kind"], 1)
-        self.assertEqual(review["kind_name"], "Short Text Note")
-        self.assertEqual(review["content_preview"], "NostrSeal fixture: tagged kind 1 event.")
+        self.assertEqual(review["created_at"], 1710000060)
+        self.assertEqual(review["author_pubkey"], KEY["public_key"])
+        self.assertEqual(review["content"], "NostrSeal fixture: tagged kind 1 event.")
+        self.assertEqual(review["content_utf8_bytes"], 39)
         self.assertEqual(review["tag_count"], 2)
-        self.assertIn("p: 4f355bdc...", review["tag_summary"])
-        self.assertIn("t: nostrseal", review["tag_summary"])
-        self.assertIn("Event includes pubkey mentions.", review["warnings"])
+        self.assertEqual(review["tags"], TAGGED_REQUEST["params"]["event_template"]["tags"])
 
     def test_review_model_matches_shared_review_vectors(self) -> None:
         for vector in REVIEW_VECTORS:
@@ -214,7 +214,7 @@ class VaultCoreTests(unittest.TestCase):
                 vector["review"],
             )
 
-    def test_review_pages_prioritize_kind_content_tags_and_warnings(self) -> None:
+    def test_review_pages_prioritize_raw_event_content_tags_and_decision(self) -> None:
         review = review_event_template(TAGGED_REQUEST["params"]["event_template"])
 
         pages = render_review_pages(review)
@@ -224,7 +224,7 @@ class VaultCoreTests(unittest.TestCase):
             [
                 {
                     "title": "Event",
-                    "lines": ["Kind 1", "Short Text Note", "Created 1710000060"],
+                    "lines": ["Kind 1", "Created 1710000060", "Author", KEY["public_key"]],
                     "action": "next",
                 },
                 {
@@ -234,12 +234,21 @@ class VaultCoreTests(unittest.TestCase):
                 },
                 {
                     "title": "Tags",
-                    "lines": ["2 tags", "p: 4f355bdc...", "t: nostrseal"],
+                    "lines": [
+                        "Tag 1/2",
+                        "p",
+                        KEY["public_key"],
+                        "",
+                        "mention",
+                        "Tag 2/2",
+                        "t",
+                        "nostrseal",
+                    ],
                     "action": "next",
                 },
                 {
-                    "title": "Warnings",
-                    "lines": ["Event includes pubkey mentions."],
+                    "title": "Decision",
+                    "lines": ["Approve signing only if all pages match."],
                     "action": "approve_or_reject",
                 },
             ],
@@ -337,7 +346,7 @@ class VaultCoreTests(unittest.TestCase):
         while session.current_page["action"] != "approve_or_reject":
             self.assertIsNone(session.handle_button("next"))
 
-        self.assertEqual(session.current_page["title"], "Warnings")
+        self.assertEqual(session.current_page["title"], "Decision")
         self.assertTrue(session.can_approve)
         self.assertTrue(session.handle_button("approve"))
 
@@ -355,7 +364,7 @@ class VaultCoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ReviewControlSession(screen_review)
 
-    def test_review_model_warns_for_unknown_kind_and_long_content(self) -> None:
+    def test_review_model_does_not_infer_unknown_kind_or_long_content_warnings(self) -> None:
         review = review_event_template(
             {
                 "created_at": 1710000000,
@@ -365,10 +374,11 @@ class VaultCoreTests(unittest.TestCase):
             }
         )
 
-        self.assertEqual(review["kind_name"], "Unknown")
-        self.assertEqual(len(review["content_preview"]), 123)
-        self.assertIn("Unknown event kind.", review["warnings"])
-        self.assertIn("Long content.", review["warnings"])
+        self.assertEqual(review["kind"], 30078)
+        self.assertEqual(review["content"], "x" * 420)
+        self.assertEqual(review["content_utf8_bytes"], 420)
+        self.assertNotIn("kind_name", review)
+        self.assertNotIn("warnings", review)
 
     def test_sign_request_requires_explicit_approval(self) -> None:
         response = sign_request(BASIC_REQUEST, KEY["secret_key"], approved=False)
@@ -459,7 +469,7 @@ class VaultCoreTests(unittest.TestCase):
 
         result = run_button_qr_vault_flow(hardware, KEY["secret_key"])
 
-        self.assertEqual(hardware.displayed_pages, [(0, "Event"), (1, "Content"), (2, "Tags"), (3, "Warnings")])
+        self.assertEqual(hardware.displayed_pages, [(0, "Event"), (1, "Content"), (2, "Tags"), (3, "Decision")])
         self.assertEqual(result.approval_digest, screen_review_for_request(TAGGED_REQUEST)["approval_digest"])
         self.assertTrue(result.approved)
         self.assertIsNotNone(hardware.response_qr)
@@ -492,7 +502,7 @@ class VaultCoreTests(unittest.TestCase):
         response = decode_qr_envelope(hardware.response_qr)
         self.assert_valid_signed_event_for_pubkey(response["result"]["event"], KEY["public_key"])
 
-    def test_button_qr_vault_flow_secret_provider_is_not_called_on_rejection(self) -> None:
+    def test_button_qr_vault_flow_loads_key_before_rejection_to_bind_author(self) -> None:
         hardware = MemoryButtonQrVaultIO(encode_qr_envelope(BASIC_REQUEST), ["reject"])
         provider_calls: list[str] = []
 
@@ -502,7 +512,7 @@ class VaultCoreTests(unittest.TestCase):
 
         result = run_button_qr_vault_flow_with_secret_provider(hardware, secret_provider)
 
-        self.assertEqual(provider_calls, [])
+        self.assertEqual(provider_calls, ["loaded"])
         self.assertFalse(result.approved)
         response = decode_qr_envelope(hardware.response_qr)
         self.assertEqual(response["ok"], False)

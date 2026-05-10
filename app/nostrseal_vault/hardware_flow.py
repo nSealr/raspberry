@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Protocol
 
 from .controls import ButtonAction, ReviewControlSession
+from .crypto import xonly_pubkey_from_secret
 from .display import DisplayFrameLimits, render_display_frame, screen_review_for_request
 from .qr import decode_qr_envelope, encode_qr_envelope
 from .signer import sign_request
@@ -48,7 +49,8 @@ def run_qr_vault_flow(io: QrVaultIO, secret_key_hex: str) -> QrVaultFlowResult:
     if not isinstance(request, dict):
         raise ValueError("QR vault flow requires a JSON object request")
 
-    screen_review = screen_review_for_request(request)
+    author_pubkey = xonly_pubkey_from_secret(secret_key_hex)
+    screen_review = screen_review_for_request(request, author_pubkey=author_pubkey)
     approval_digest = str(screen_review["approval_digest"])
     approved = io.show_review(screen_review)
     response = sign_request(
@@ -93,7 +95,9 @@ def run_button_qr_vault_flow_with_secret_provider(
     if not isinstance(request, dict):
         raise ValueError("QR vault flow requires a JSON object request")
 
-    screen_review = screen_review_for_request(request)
+    secret_key_hex = secret_key_provider()
+    author_pubkey = xonly_pubkey_from_secret(secret_key_hex)
+    screen_review = screen_review_for_request(request, author_pubkey=author_pubkey)
     approval_digest = str(screen_review["approval_digest"])
     session = ReviewControlSession(screen_review)
     approved: bool | None = None
@@ -118,7 +122,6 @@ def run_button_qr_vault_flow_with_secret_provider(
     if approved is None:
         raise RuntimeError("button review flow did not reach approval or rejection")
 
-    secret_key_hex = secret_key_provider() if approved else "00" * 32
     response = sign_request(
         request,
         secret_key_hex,
