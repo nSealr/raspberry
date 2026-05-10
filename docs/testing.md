@@ -18,6 +18,9 @@ default are left unchanged.
 ## Implemented Tests
 
 - QR envelope round-trip tests.
+- QR envelope encode-side limit tests proving static v0 QR writers reject
+  payloads that would exceed `max_static_qr_decoded_json_bytes` before emitting
+  an envelope.
 - NIP-06 derivation tests against the canonical account `0` shared vector.
 - Signing tests against `NostrSeal/specs` fixtures.
 - Review model tests against every shared review vector for raw event kind,

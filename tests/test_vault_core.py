@@ -46,6 +46,19 @@ NIP06_KEY = json.loads((SPECS / "vectors/keys/nip06-account-0-leader.json").read
 BASIC_VECTOR = json.loads((SPECS / "vectors/events/kind-1-basic.json").read_text(encoding="utf-8"))
 BASIC_REQUEST = json.loads((SPECS / "examples/request-kind-1-basic.json").read_text(encoding="utf-8"))
 TAGGED_REQUEST = json.loads((SPECS / "examples/request-kind-1-tags.json").read_text(encoding="utf-8"))
+SCROLL_DETAIL_REQUEST = {
+    "version": 1,
+    "request_id": "req-scroll-detail",
+    "method": "sign_event",
+    "params": {
+        "event_template": {
+            "created_at": 1710000000,
+            "kind": 1,
+            "tags": [["t", f"tag{index}"] for index in range(4)],
+            "content": "review detail tags",
+        }
+    },
+}
 REVIEW_VECTORS = [
     json.loads(path.read_text(encoding="utf-8"))
     for path in sorted((SPECS / "vectors/review").glob("*.json"))
@@ -200,6 +213,12 @@ class VaultCoreTests(unittest.TestCase):
         self.assertTrue(envelope.startswith("nseal1:"))
         self.assertNotIn("=", envelope)
         self.assertEqual(decode_qr_envelope(envelope), BASIC_REQUEST)
+
+    def test_qr_encoder_rejects_oversized_static_payloads(self) -> None:
+        oversized = {"payload": "x" * (LIMIT_PROFILE["limits"]["max_static_qr_decoded_json_bytes"] + 1)}
+
+        with self.assertRaisesRegex(ValueError, "QR decoded JSON exceeds max_static_qr_decoded_json_bytes"):
+            encode_qr_envelope(oversized)
 
     def test_limits_match_shared_v0_profile(self) -> None:
         from nostrseal_vault.limits import NOSTRSEAL_V0_LIMITS
@@ -643,8 +662,7 @@ class VaultCoreTests(unittest.TestCase):
             self.assertEqual(result.approved, vector["transcript"][-1]["approved_for_signing"])
 
     def test_detail_button_qr_vault_flow_uses_logical_pages_without_forced_scroll(self) -> None:
-        vector = next(item for item in REVIEW_VECTORS if item["name"] == "kind-1-long-events-many-tags")
-        request = vector["request"]
+        request = SCROLL_DETAIL_REQUEST
         hardware = MemoryButtonQrVaultIO(encode_qr_envelope(request), ["next", "next", "next", "approve"])
 
         result = run_detail_button_qr_vault_flow(hardware, KEY["secret_key"])
@@ -654,7 +672,7 @@ class VaultCoreTests(unittest.TestCase):
             [
                 ("Event", "Page 1/4"),
                 ("Content", "Page 2/4"),
-                ("Tags", "Page 3/4 Lines 1-9/29"),
+                ("Tags", "Page 3/4 Lines 1-9/12"),
                 ("Decision", "Page 4/4"),
             ],
         )
@@ -666,11 +684,10 @@ class VaultCoreTests(unittest.TestCase):
         self.assertTrue(result.approved)
 
     def test_detail_button_qr_vault_flow_scrolls_inside_logical_page(self) -> None:
-        vector = next(item for item in REVIEW_VECTORS if item["name"] == "kind-1-long-events-many-tags")
-        request = vector["request"]
+        request = SCROLL_DETAIL_REQUEST
         hardware = MemoryButtonQrVaultIO(
             encode_qr_envelope(request),
-            ["next", "next", "scroll", "scroll", "next", "approve"],
+            ["next", "next", "scroll", "next", "approve"],
         )
 
         result = run_detail_button_qr_vault_flow(hardware, KEY["secret_key"])
@@ -680,9 +697,8 @@ class VaultCoreTests(unittest.TestCase):
             [
                 ("Event", "Page 1/4"),
                 ("Content", "Page 2/4"),
-                ("Tags", "Page 3/4 Lines 1-9/29"),
-                ("Tags", "Page 3/4 Lines 10-18/29"),
-                ("Tags", "Page 3/4 Lines 19-27/29"),
+                ("Tags", "Page 3/4 Lines 1-9/12"),
+                ("Tags", "Page 3/4 Lines 10-12/12"),
                 ("Decision", "Page 4/4"),
             ],
         )

@@ -63,6 +63,10 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - Shared NostrSeal v0 implementation limits for constrained signers, with
   deterministic rejection of applicable invalid signing-request and QR-envelope
   hardening vectors before trusted review or signing.
+- QR envelope encoding now enforces the same static decoded-JSON byte limit as
+  decoding, so the Raspberry flow does not emit response QR payloads that v0
+  readers would immediately reject. Larger responses remain future animated or
+  chunked QR work.
 - `nseal-vault flow --button-sequence ...` file-backed physical-button harness
   that refuses approval until every trusted review page has been traversed and
   bounds non-terminal button streams before future GPIO adapters exist.

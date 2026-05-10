@@ -19,6 +19,8 @@ def encode_qr_envelope(value: object) -> str:
     import base64
 
     payload = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    if len(payload) > NOSTRSEAL_V0_LIMITS["max_static_qr_decoded_json_bytes"]:
+        raise ValueError("QR decoded JSON exceeds max_static_qr_decoded_json_bytes")
     encoded = base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
     return f"{QR_ENVELOPE_PREFIX}{encoded}"
 
