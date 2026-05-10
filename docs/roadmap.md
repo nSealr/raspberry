@@ -77,10 +77,12 @@ frame/button/decision transcript from the file-backed button harness. This lets
 importing Raspberry implementation code.
 
 Status: `run_button_qr_vault_flow_with_secret_provider` now gives future
-stateless Pi adapters a lazy RAM-only secret boundary. The provider is called
-only after complete review traversal and terminal physical approval; rejection
-finishes without loading the secret. The existing CLI-compatible helper remains
-a wrapper around this stricter path.
+stateless Pi adapters a RAM-only session secret boundary. The provider is
+called after QR decode and before review so the trusted screen can display and
+bind the signer-derived author pubkey into the `approval_digest`; rejection
+still refuses to sign, and approval still requires complete review traversal
+plus terminal physical approval. The existing CLI-compatible helper remains a
+wrapper around this path.
 
 Status: the file-backed QR flow adapters now live in
 `nostrseal_vault.adapters` instead of private CLI classes. The CLI remains a
