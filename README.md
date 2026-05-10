@@ -75,6 +75,11 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - `nseal-vault flow --review-transcript-log ...` writes that same transcript
   from the file-backed button harness for cross-repo and adapter acceptance
   tests.
+- `nseal-vault flow --review-mode detail` lets the button-driven harness use
+  complete Event/Content/Tags/Decision detail pages. `next` advances between
+  top-level logical pages, `scroll` moves within long Content or Tags windows,
+  and approval is accepted only on the Decision page. The signing
+  `approval_digest` remains the shared `screen-pages` digest.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 - `os/stateless-qr-vault-profile.md` records the future Raspberry image
@@ -115,6 +120,7 @@ python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --display-frame-log display-frames.json
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --review-transcript-log review-transcript.json
+python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qr --button-sequence next,next,scroll,next,approve --review-mode detail
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve --approval-digest <hex>
 python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve

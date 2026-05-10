@@ -12,7 +12,7 @@ from .display import (
     render_review_detail_pages,
     screen_review_for_request,
 )
-from .hardware_flow import run_button_qr_vault_flow, run_qr_vault_flow
+from .hardware_flow import run_button_qr_vault_flow, run_detail_button_qr_vault_flow, run_qr_vault_flow
 from .nip06 import derive_nip06_secret
 from .qr import decode_qr_envelope, encode_qr_envelope
 from .review import review_event_template
@@ -52,7 +52,7 @@ def _button_sequence(value: str) -> list[str]:
     buttons = [item.strip() for item in value.split(",") if item.strip()]
     if not buttons:
         raise argparse.ArgumentTypeError("button sequence must not be empty")
-    invalid = [button for button in buttons if button not in {"next", "approve", "reject"}]
+    invalid = [button for button in buttons if button not in {"next", "scroll", "approve", "reject"}]
     if invalid:
         raise argparse.ArgumentTypeError(f"unsupported button action: {invalid[0]}")
     return buttons
@@ -126,6 +126,24 @@ def build_parser() -> argparse.ArgumentParser:
     flow.add_argument("--max-title-chars", type=int, default=24, help="Maximum trusted-display title characters")
     flow.add_argument("--max-body-lines", type=int, default=6, help="Maximum trusted-display body lines")
     flow.add_argument("--max-line-chars", type=int, default=32, help="Maximum trusted-display body line characters")
+    flow.add_argument(
+        "--review-mode",
+        choices=["screen", "detail"],
+        default="screen",
+        help="Use legacy screen pages or complete detail pages for the button-driven review flow",
+    )
+    flow.add_argument(
+        "--max-compact-body-lines",
+        type=int,
+        default=9,
+        help="Maximum compact trusted-display body lines for detail review mode",
+    )
+    flow.add_argument(
+        "--max-compact-line-chars",
+        type=int,
+        default=48,
+        help="Maximum compact trusted-display body line characters for detail review mode",
+    )
 
     return parser
 
@@ -189,22 +207,40 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("flow --display-frame-log requires --button-sequence")
         if args.review_transcript_log and not args.button_sequence:
             parser.error("flow --review-transcript-log requires --button-sequence")
+        if args.review_mode == "detail" and not args.button_sequence:
+            parser.error("flow --review-mode detail requires --button-sequence")
+        if args.review_mode == "screen" and args.button_sequence and "scroll" in args.button_sequence:
+            parser.error("flow scroll button requires --review-mode detail")
         if args.button_sequence:
-            result = run_button_qr_vault_flow(
-                FileButtonQrVaultIO(
-                    args.request,
-                    args.review,
-                    args.response,
-                    args.button_sequence,
-                    display_frame_log=args.display_frame_log,
-                ),
-                _secret_key_from_args(args),
-                display_limits=DisplayFrameLimits(
-                    max_title_chars=args.max_title_chars,
-                    max_body_lines=args.max_body_lines,
-                    max_line_chars=args.max_line_chars,
-                ),
+            adapter = FileButtonQrVaultIO(
+                args.request,
+                args.review,
+                args.response,
+                args.button_sequence,
+                display_frame_log=args.display_frame_log,
             )
+            if args.review_mode == "detail":
+                result = run_detail_button_qr_vault_flow(
+                    adapter,
+                    _secret_key_from_args(args),
+                    detail_limits=ReviewDetailPageLimits(
+                        max_title_chars=args.max_title_chars,
+                        max_body_lines=args.max_body_lines,
+                        max_line_chars=args.max_line_chars,
+                        max_compact_body_lines=args.max_compact_body_lines,
+                        max_compact_line_chars=args.max_compact_line_chars,
+                    ),
+                )
+            else:
+                result = run_button_qr_vault_flow(
+                    adapter,
+                    _secret_key_from_args(args),
+                    display_limits=DisplayFrameLimits(
+                        max_title_chars=args.max_title_chars,
+                        max_body_lines=args.max_body_lines,
+                        max_line_chars=args.max_line_chars,
+                    ),
+                )
             if args.review_transcript_log is not None:
                 args.review_transcript_log.write_text(
                     json.dumps(result.review_transcript, indent=2, ensure_ascii=False) + "\n",

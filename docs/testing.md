@@ -69,6 +69,10 @@ default are left unchanged.
   under transcript-compatible display limits.
 - CLI transcript-log tests proving the file-backed button harness can export
   that trace for cross-repo integration and future adapter acceptance tests.
+- Detail button-flow tests proving complete Event/Content/Tags/Decision pages
+  can use top-level `next` navigation, intra-page `scroll`, preserved
+  detail-page indicators/body styles, and the CLI `--review-mode detail` path
+  without changing the shared `screen-pages` approval digest.
 - File-backed adapter tests proving request scanning, review JSON writes,
   display-frame log writes, button exhaustion, and response QR output are owned
   by package code rather than private CLI classes.

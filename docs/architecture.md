@@ -123,6 +123,15 @@ adapter harnesses with shared `NostrSeal/specs` review-transcript vectors.
 The file-backed CLI can write this trace with `--review-transcript-log`, giving
 cross-repo smoke tests the same oracle without importing Raspberry internals.
 
+For future Raspberry display adapters that need the complete no-ellipsis review
+body, `run_detail_button_qr_vault_flow` and `nseal-vault flow --review-mode
+detail` use the `review-detail-pages-v0` page model. `next` advances between
+Event, Content, Tags, and Decision; `scroll` moves through additional windows
+inside the current logical page. This mirrors the ESP32 T-Display S3 review UX
+without changing the signing digest: approval is still bound to the shared
+`screen-pages` `approval_digest`, and signing still requires terminal physical
+approval on the Decision page.
+
 The `screen-json` output also includes an `approval_digest`. The digest is a
 SHA-256 hash of canonical request metadata, the exact event template, the
 review model, and the rendered page model. It is not a secret and is not shown

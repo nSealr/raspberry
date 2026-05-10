@@ -46,6 +46,32 @@ def render_display_frame(
     }
 
 
+def render_review_detail_frame(
+    detail_review: dict[str, Any],
+    page_index: int,
+) -> dict[str, Any]:
+    pages = detail_review.get("pages")
+    if not isinstance(pages, list) or not all(isinstance(page, dict) for page in pages):
+        raise ValueError("review detail pages must be a list of objects")
+    if page_index < 0 or page_index >= len(pages):
+        raise ValueError("review detail page index out of range")
+
+    page = pages[page_index]
+    lines = page.get("lines")
+    if not isinstance(lines, list):
+        raise ValueError("review detail page lines must be a list")
+    styles = page.get("body_line_styles", [])
+    if not isinstance(styles, list):
+        raise ValueError("review detail page body_line_styles must be a list")
+    return {
+        "title": str(page["title"]),
+        "page_indicator": str(page.get("page_indicator") or f"Page {page_index + 1}/{len(pages)}"),
+        "body_lines": [str(line) for line in lines],
+        "action_hint": _action_hint(str(page.get("action"))),
+        "body_line_styles": [str(style) for style in styles],
+    }
+
+
 def render_review_pages(review: dict[str, Any]) -> list[dict[str, object]]:
     return [
         {

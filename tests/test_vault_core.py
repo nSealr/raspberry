@@ -13,11 +13,13 @@ from nostrseal_vault.display import (
     ReviewDetailPageLimits,
     approval_digest_for_request,
     render_display_frame,
+    render_review_detail_frame,
     render_review_detail_pages,
     render_review_pages,
     screen_review_for_request,
 )
 from nostrseal_vault.hardware_flow import (
+    run_detail_button_qr_vault_flow,
     run_button_qr_vault_flow,
     run_button_qr_vault_flow_with_secret_provider,
     run_qr_vault_flow,
@@ -95,6 +97,7 @@ class MemoryButtonQrVaultIO:
         self.request_qr = request_qr
         self.buttons = list(buttons)
         self.displayed_pages: list[tuple[int, str]] = []
+        self.frames: list[dict] = []
         self.response_qr: str | None = None
 
     def scan_request_qr(self) -> str:
@@ -102,6 +105,7 @@ class MemoryButtonQrVaultIO:
 
     def display_review_frame(self, screen_review: dict, page_index: int, frame: dict) -> None:
         self.displayed_pages.append((page_index, frame["title"]))
+        self.frames.append(frame)
 
     def read_review_button(self) -> str:
         if not self.buttons:
@@ -638,6 +642,67 @@ class VaultCoreTests(unittest.TestCase):
             self.assertEqual(result.approval_digest, vector["approval_digest"])
             self.assertEqual(result.approved, vector["transcript"][-1]["approved_for_signing"])
 
+    def test_detail_button_qr_vault_flow_uses_logical_pages_without_forced_scroll(self) -> None:
+        vector = next(item for item in REVIEW_VECTORS if item["name"] == "kind-1-long-events-many-tags")
+        request = vector["request"]
+        hardware = MemoryButtonQrVaultIO(encode_qr_envelope(request), ["next", "next", "next", "approve"])
+
+        result = run_detail_button_qr_vault_flow(hardware, KEY["secret_key"])
+
+        self.assertEqual(
+            [(frame["title"], frame["page_indicator"]) for frame in hardware.frames],
+            [
+                ("Event", "Page 1/4"),
+                ("Content", "Page 2/4"),
+                ("Tags", "Page 3/4 Lines 1-9/29"),
+                ("Decision", "Page 4/4"),
+            ],
+        )
+        self.assertEqual(hardware.frames[2]["action_hint"], "Next/Scroll")
+        self.assertEqual(
+            result.approval_digest,
+            screen_review_for_request(request, author_pubkey=KEY["public_key"])["approval_digest"],
+        )
+        self.assertTrue(result.approved)
+
+    def test_detail_button_qr_vault_flow_scrolls_inside_logical_page(self) -> None:
+        vector = next(item for item in REVIEW_VECTORS if item["name"] == "kind-1-long-events-many-tags")
+        request = vector["request"]
+        hardware = MemoryButtonQrVaultIO(
+            encode_qr_envelope(request),
+            ["next", "next", "scroll", "scroll", "next", "approve"],
+        )
+
+        result = run_detail_button_qr_vault_flow(hardware, KEY["secret_key"])
+
+        self.assertEqual(
+            [(frame["title"], frame["page_indicator"]) for frame in hardware.frames],
+            [
+                ("Event", "Page 1/4"),
+                ("Content", "Page 2/4"),
+                ("Tags", "Page 3/4 Lines 1-9/29"),
+                ("Tags", "Page 3/4 Lines 10-18/29"),
+                ("Tags", "Page 3/4 Lines 19-27/29"),
+                ("Decision", "Page 4/4"),
+            ],
+        )
+        self.assertTrue(result.approved)
+
+    def test_detail_review_frame_preserves_page_indicator_and_styles(self) -> None:
+        vector = next(item for item in REVIEW_DETAIL_PAGE_VECTORS if item["name"] == "kind-1-long-events-many-tags-t-display-s3")
+        detail_review = {
+            "format": "review-detail-pages-v0",
+            "approval_digest": vector["approval_digest"],
+            "pages": vector["pages"],
+        }
+
+        frame = render_review_detail_frame(detail_review, 2)
+
+        self.assertEqual(frame["title"], "Tags")
+        self.assertEqual(frame["page_indicator"], "Page 3/4 Lines 1-9/29")
+        self.assertEqual(frame["body_lines"], vector["pages"][2]["lines"])
+        self.assertEqual(frame["body_line_styles"], vector["pages"][2]["body_line_styles"])
+
     def test_cli_signs_qr_request_and_outputs_qr_response(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             request_path = Path(temp_root) / "request.qr"
@@ -1040,6 +1105,42 @@ class VaultCoreTests(unittest.TestCase):
             )
 
             self.assertEqual(json.loads(transcript_log_path.read_text(encoding="utf-8")), vector["transcript"])
+
+    def test_cli_flow_can_use_detail_review_pages_for_button_sequence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-detail.json"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(TAGGED_REQUEST), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "flow",
+                    "--secret-key",
+                    KEY["secret_key"],
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--response",
+                    str(response_path),
+                    "--button-sequence",
+                    "next,next,next,approve",
+                    "--review-mode",
+                    "detail",
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            review_output = json.loads(review_path.read_text(encoding="utf-8"))
+            self.assertEqual(review_output["format"], "review-detail-pages-v0")
+            self.assertEqual(review_output["pages"][2]["page_indicator"], "Page 3/4")
+            response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event_for_pubkey(response["result"]["event"], KEY["public_key"])
 
     def test_cli_review_rejects_host_supplied_event_id(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:

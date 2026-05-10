@@ -76,6 +76,13 @@ frame/button/decision transcript from the file-backed button harness. This lets
 `NostrSeal/lab` and future adapter tests verify full review-loop traces without
 importing Raspberry implementation code.
 
+Status: `nseal-vault flow --review-mode detail` now lets the file-backed
+button harness render complete Event/Content/Tags/Decision detail pages. The
+flow uses top-level `next` navigation plus `scroll` within long logical pages,
+so future Raspberry display adapters can inspect long content/tags without
+forcing every scroll window before Decision. The shared `screen-pages`
+`approval_digest` remains the signing binding.
+
 Status: `NostrSeal/lab` integration now drives the file-backed
 `nseal-vault flow` path and verifies the signed response QR with
 `NostrSeal/companion` `nseal verify-response`. This closes the desktop
