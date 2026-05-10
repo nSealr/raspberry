@@ -77,6 +77,9 @@ default are left unchanged.
   QR flow without bypassing review traversal or approval-digest binding.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
   screen-review JSON and a signed response QR.
+- Cross-repo lab integration verifies the file-backed QR flow output through
+  `NostrSeal/companion` `nseal verify-response`, proving the signed response QR
+  can be checked by the host-side companion contract.
 - Desktop CLI smoke test for QR request input and QR response output.
 - Desktop CLI smoke test for QR request signing from a NIP-06 mnemonic file.
 - Shared NostrSeal v0 implementation-limit conformance test against the
@@ -93,7 +96,6 @@ default are left unchanged.
 
 ## Next Tests
 
-- Companion verification of signed output through the file transport.
 - Camera frame input, real display rendering, and GPIO approval tests before
   Raspberry Pi hardware acceptance testing.
 - Real hardware adapter tests against the existing transcript oracle once

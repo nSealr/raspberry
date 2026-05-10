@@ -76,6 +76,12 @@ frame/button/decision transcript from the file-backed button harness. This lets
 `NostrSeal/lab` and future adapter tests verify full review-loop traces without
 importing Raspberry implementation code.
 
+Status: `NostrSeal/lab` integration now drives the file-backed
+`nseal-vault flow` path and verifies the signed response QR with
+`NostrSeal/companion` `nseal verify-response`. This closes the desktop
+companion verification loop for the hardware-agnostic Raspberry QR vault path
+without adding camera, display, or GPIO drivers.
+
 Status: `run_button_qr_vault_flow_with_secret_provider` now gives future
 stateless Pi adapters a RAM-only session secret boundary. The provider is
 called after QR decode and before review so the trusted screen can display and
