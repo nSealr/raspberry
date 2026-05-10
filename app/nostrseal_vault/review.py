@@ -54,18 +54,19 @@ def _require_template(template: dict[str, Any]) -> None:
 
 def review_event_template(
     template: dict[str, Any],
-    author_pubkey: str = DEVELOPMENT_REVIEW_AUTHOR_PUBKEY,
+    author_pubkey: str | None = DEVELOPMENT_REVIEW_AUTHOR_PUBKEY,
 ) -> dict[str, Any]:
     _require_template(template)
 
     kind = template["kind"]
     content = template["content"]
     tags = template["tags"]
+    selected_author_pubkey = DEVELOPMENT_REVIEW_AUTHOR_PUBKEY if author_pubkey is None else author_pubkey
 
     return {
         "kind": kind,
         "created_at": template["created_at"],
-        "author_pubkey": author_pubkey,
+        "author_pubkey": selected_author_pubkey,
         "content": content,
         "content_utf8_bytes": utf8_size(content),
         "tag_count": len(tags),

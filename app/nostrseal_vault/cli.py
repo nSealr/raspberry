@@ -34,6 +34,14 @@ def _secret_key_from_args(args: argparse.Namespace) -> str:
     return derive_nip06_secret(mnemonic, passphrase=args.passphrase, account=args.account)
 
 
+def _author_pubkey(value: str | None) -> str | None:
+    if value is None:
+        return None
+    if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+        raise argparse.ArgumentTypeError("author pubkey must be 32-byte lowercase hex")
+    return value
+
+
 def _button_sequence(value: str) -> list[str]:
     buttons = [item.strip() for item in value.split(",") if item.strip()]
     if not buttons:
@@ -66,6 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
     review.add_argument("--review", required=True, type=Path, help="Output review JSON path")
     review.add_argument("--input-format", choices=["json", "qr"], default="json")
     review.add_argument("--output-format", choices=["json", "screen-json", "display-frame-json"], default="json")
+    review.add_argument("--author-pubkey", type=_author_pubkey, help="Signer author pubkey to bind into review output")
     review.add_argument("--display-page", type=int, default=0, help="Page index for display-frame-json output")
     review.add_argument("--max-title-chars", type=int, default=24, help="Maximum trusted-display title characters")
     review.add_argument("--max-body-lines", type=int, default=6, help="Maximum trusted-display body lines")
@@ -124,12 +133,12 @@ def main(argv: list[str] | None = None) -> int:
         params = request.get("params")
         if not isinstance(params, dict) or not isinstance(params.get("event_template"), dict):
             parser.error("review requires params.event_template")
-        review_output = review_event_template(params["event_template"])
+        review_output = review_event_template(params["event_template"], author_pubkey=args.author_pubkey)
         if args.output_format == "screen-json":
-            review_output = screen_review_for_request(request)
+            review_output = screen_review_for_request(request, author_pubkey=args.author_pubkey)
         elif args.output_format == "display-frame-json":
             review_output = render_display_frame(
-                screen_review_for_request(request),
+                screen_review_for_request(request, author_pubkey=args.author_pubkey),
                 page_index=args.display_page,
                 limits=DisplayFrameLimits(
                     max_title_chars=args.max_title_chars,

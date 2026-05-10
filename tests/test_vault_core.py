@@ -673,6 +673,36 @@ class VaultCoreTests(unittest.TestCase):
             self.assertRegex(review_output["approval_digest"], r"^[0-9a-f]{64}$")
             self.assertEqual(review_output["pages"][-1]["action"], "approve_or_reject")
 
+    def test_cli_review_can_bind_explicit_author_pubkey(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-screen.json"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "review",
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "screen-json",
+                    "--author-pubkey",
+                    NIP06_KEY["public_key"],
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            review_output = json.loads(review_path.read_text(encoding="utf-8"))
+            self.assertEqual(review_output["pages"][0]["lines"], ["Kind 1", "Created 1710000000", "Author", NIP06_KEY["public_key"]])
+
     def test_cli_review_can_write_bounded_display_frame_json(self) -> None:
         vector = next(item for item in REVIEW_VECTORS if item["name"] == "kind-1-long-events-many-tags")
         with tempfile.TemporaryDirectory() as temp_root:
