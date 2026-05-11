@@ -143,6 +143,12 @@ default are left unchanged.
 
 - SeedSigner-compatible Pi Zero board/runtime smoke planning against the
   available Raspberry Pi Zero using `nseal-vault hardware-probe`.
+- Fill the validated
+  `NostrSeal/hardware/templates/raspberry-qr-vault-full-flow-smoke.json`
+  template only after a real Pi Zero run proves camera `nseal1` QR scanning,
+  trusted display review, GPIO `next`/`scroll`/`approve`/`reject`, response QR
+  output, companion `verify-response`, request id and `approval_digest`
+  binding, no USB data transport, and RAM-only custody.
 - Concrete Pi camera frame-source and QR decoder integration through an
   OV5647/ZeroCam path, concrete ST7789 draw-target integration on a
   Waveshare-compatible 240x240 display HAT, and GPIO approval/navigation tests

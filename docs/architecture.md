@@ -302,3 +302,12 @@ missing modules, or unverifiable wireless evidence produce `blocked` checks
 rather than implicit success. A passing probe is only setup evidence; camera QR
 quality, trusted display readability, GPIO approval behavior, OS image
 acceptance, and production security still need separate reports.
+
+The hardware repo now carries the matching full-flow report template for that
+later Pi Zero session. A completed Raspberry QR-flow report must prove the
+camera scanned `nseal1` request QR frames, the trusted display rendered the
+Event/Content/Tags/Decision review, GPIO buttons drove
+`next`/`scroll`/`approve`/`reject`, the device emitted the signed-event
+response QR only after approval, the companion verified the response against
+the request, and the session used no USB data transport, persistent secret, or
+TROPIC01.
