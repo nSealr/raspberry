@@ -239,10 +239,14 @@
         "title": "Decision",
         "page_indicator": "Page 4/4",
         "body_lines": [
-          "Approve signing only if all pages match."
+          "Approve signing only if al",
+          "l pages match."
         ],
         "action_hint": "Approve / Reject",
-        "body_line_styles": []
+        "body_line_styles": [
+          "normal",
+          "normal"
+        ]
       },
       "button": "approve",
       "decision": true,

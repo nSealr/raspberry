@@ -49,7 +49,9 @@ def render_display_frame(
 def render_review_detail_frame(
     detail_review: dict[str, Any],
     page_index: int,
+    limits: ReviewDetailPageLimits = ReviewDetailPageLimits(),
 ) -> dict[str, Any]:
+    _validate_detail_page_limits(limits)
     pages = detail_review.get("pages")
     if not isinstance(pages, list) or not all(isinstance(page, dict) for page in pages):
         raise ValueError("review detail pages must be a list of objects")
@@ -63,12 +65,13 @@ def render_review_detail_frame(
     styles = page.get("body_line_styles", [])
     if not isinstance(styles, list):
         raise ValueError("review detail page body_line_styles must be a list")
+    body_lines, body_styles = _bounded_detail_frame_body_lines(lines, styles, limits)
     return {
         "title": str(page["title"]),
         "page_indicator": str(page.get("page_indicator") or f"Page {page_index + 1}/{len(pages)}"),
-        "body_lines": [str(line) for line in lines],
+        "body_lines": body_lines,
         "action_hint": _action_hint(str(page.get("action"))),
-        "body_line_styles": [str(style) for style in styles],
+        "body_line_styles": body_styles,
     }
 
 
@@ -338,6 +341,40 @@ def _wrap_body_lines(value: object, limits: DisplayFrameLimits) -> list[str]:
         wrapped = wrapped[: limits.max_body_lines]
         wrapped[-1] = _truncate_for_display(wrapped[-1], limits.max_line_chars, force_ellipsis=True)
     return [_truncate_for_display(line, limits.max_line_chars) for line in wrapped]
+
+
+def _detail_frame_compact_style(style: str) -> bool:
+    return style in {"meta", "value"}
+
+
+def _bounded_detail_frame_body_lines(
+    lines: list[Any],
+    styles: list[Any],
+    limits: ReviewDetailPageLimits,
+) -> tuple[list[str], list[str]]:
+    wrapped: list[str] = []
+    wrapped_styles: list[str] = []
+    has_compact_style = False
+    for index, line in enumerate(lines):
+        style = str(styles[index]) if index < len(styles) else "normal"
+        has_compact_style = has_compact_style or _detail_frame_compact_style(style)
+        width = limits.max_compact_line_chars if _detail_frame_compact_style(style) else limits.max_line_chars
+        parts = _split_exact_display_lines(str(line), width)
+        wrapped.extend(parts)
+        wrapped_styles.extend([style] * len(parts))
+
+    max_lines = limits.max_compact_body_lines if has_compact_style else limits.max_body_lines
+    if len(wrapped) > max_lines:
+        wrapped = wrapped[:max_lines]
+        wrapped_styles = wrapped_styles[:max_lines]
+        style = wrapped_styles[-1] if wrapped_styles else "normal"
+        width = limits.max_compact_line_chars if _detail_frame_compact_style(style) else limits.max_line_chars
+        wrapped[-1] = _truncate_for_display(wrapped[-1], width, force_ellipsis=True)
+    for index, line in enumerate(wrapped):
+        style = wrapped_styles[index] if index < len(wrapped_styles) else "normal"
+        width = limits.max_compact_line_chars if _detail_frame_compact_style(style) else limits.max_line_chars
+        wrapped[index] = _truncate_for_display(line, width)
+    return wrapped, wrapped_styles
 
 
 def _truncate_for_display(text: str, max_chars: int, *, force_ellipsis: bool = False) -> str:

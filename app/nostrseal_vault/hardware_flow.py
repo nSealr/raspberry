@@ -205,7 +205,7 @@ def run_detail_button_qr_vault_flow_with_secret_provider(
     review_transcript: list[dict[str, Any]] = []
 
     for _ in range(max_button_steps):
-        frame = render_review_detail_frame(detail_review, session.page_index)
+        frame = render_review_detail_frame(detail_review, session.page_index, limits=detail_limits)
         if session.can_scroll and frame["action_hint"] == "Next":
             frame["action_hint"] = "Next/Scroll"
         io.display_review_frame(detail_review, session.page_index, frame)
