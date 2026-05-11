@@ -312,6 +312,14 @@ class VaultCoreTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "BIP-39 checksum"):
             normalize_mnemonic_words(bad_words)
 
+        with self.assertRaisesRegex(ValueError, "mnemonic word count"):
+            normalize_mnemonic_words(NIP06_KEY["mnemonic"].split()[:11])
+
+        unknown_word = NIP06_KEY["mnemonic"].split()
+        unknown_word[0] = "notaword"
+        with self.assertRaisesRegex(ValueError, "BIP-39 English wordlist"):
+            normalize_mnemonic_words(unknown_word)
+
     def test_mnemonic_session_secret_provider_reads_words_once_and_derives_nip06_secret(self) -> None:
         word_input = FakeMnemonicWordInput(NIP06_KEY["mnemonic"].split())
         provider = MnemonicSessionSecretProvider(

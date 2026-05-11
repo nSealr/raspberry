@@ -10,6 +10,7 @@ from .nip06 import derive_nip06_secret
 
 VALID_MNEMONIC_WORD_COUNTS = (12, 15, 18, 21, 24)
 _ENGLISH_MNEMONIC = Mnemonic("english")
+_ENGLISH_WORDLIST = frozenset(_ENGLISH_MNEMONIC.wordlist)
 
 
 class MnemonicWordInput(Protocol):
@@ -25,8 +26,7 @@ def normalize_mnemonic_words(words: list[str] | tuple[str, ...]) -> str:
         counts = ", ".join(str(count) for count in VALID_MNEMONIC_WORD_COUNTS)
         raise ValueError(f"mnemonic word count must be one of {counts}")
 
-    wordlist = set(_ENGLISH_MNEMONIC.wordlist)
-    unknown = [word for word in normalized if word not in wordlist]
+    unknown = [word for word in normalized if word not in _ENGLISH_WORDLIST]
     if unknown:
         raise ValueError(f"mnemonic word is not in the BIP-39 English wordlist: {unknown[0]}")
 
