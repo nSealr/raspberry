@@ -158,6 +158,11 @@ right/down/center/KEY1 GPIO inputs to `next`/`scroll`/`approve`/`reject` and is
 covered with injected-GPIO tests, while real Pi hardware acceptance remains
 pending.
 
+Status: `nostrseal_vault.st7789_layout` now provides a SeedSigner-compatible
+240x240 ST7789 trusted-review layout plan. It emits bounded draw commands for
+title, page indicator, styled body lines, and action hint, giving the future
+Pi display driver a tested pre-pixel layout contract.
+
 Status: Raspberry now mirrors the shared NostrSeal v0 implementation-limit
 profile and rejects applicable invalid signing-request and QR-envelope
 hardening vectors before review or signing, while remaining stateless and

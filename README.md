@@ -69,6 +69,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   pages, center press approves on the Decision page, and KEY1 rejects from any
   page. The profile is testable with injected GPIO and does not claim physical
   acceptance until run on the Pi kit.
+- SeedSigner-compatible ST7789 240x240 layout planner for trusted-review
+  frames. It produces bounded draw commands for title, page indicator, styled
+  body lines, and action hint before a real PIL/spidev display driver exists.
 - RAM-only secret-provider boundary for the button-driven flow. The key is
   loaded for the signing session before review so the trusted screen can bind
   the displayed author pubkey into the `approval_digest`; signing still only
@@ -131,7 +134,7 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - Stateless key/session mode.
 - Display review for raw event kind, signer author, full content, full tags,
   and final approve/reject decision.
-- SeedSigner-compatible Pi Zero camera/display drivers and physical GPIO
+- SeedSigner-compatible Pi Zero camera/display drivers and physical GPIO/display
   acceptance runs.
 - Verifiable minimal OS image path.
 

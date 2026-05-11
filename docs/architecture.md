@@ -73,6 +73,9 @@ image or a production security claim.
   the review actions to BOARD pins from the SeedSigner hardware reference while
   keeping GPIO access injectable for tests; it is not a completed hardware
   acceptance claim.
+- `nostrseal_vault.st7789_layout`: SeedSigner-compatible 240x240 ST7789 layout
+  planner for trusted-review frames. It turns renderer-neutral frame data into
+  bounded draw commands before a Pi display library or SPI driver is selected.
 - `nostrseal_vault.hardware_probe`: non-destructive SeedSigner-compatible
   Raspberry probe reporting for future Pi Zero hardware smoke runs. It checks
   board model, expected GPIO/SPI/camera Python modules, camera/SPI boot config
@@ -173,6 +176,11 @@ point: GPIO BOARD pin 37 maps to `next`, BOARD pin 35 maps to `scroll`, BOARD
 pin 33 maps to `approve`, and BOARD pin 40 maps to `reject`. The adapter checks
 `reject` before `approve` when multiple pins are low so simultaneous presses do
 not accidentally prefer signing.
+
+The ST7789 layout planner is the matching display attachment point. It does not
+draw pixels yet; it produces bounded commands for a 240x240 screen so the later
+PIL/Waveshare/spidev adapter can be tested against positions, styles, and body
+area limits before physical display acceptance.
 
 For future Raspberry display adapters that need the complete no-ellipsis review
 body, `run_detail_button_qr_vault_flow` and `nseal-vault flow --review-mode

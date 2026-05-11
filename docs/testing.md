@@ -95,6 +95,9 @@ default are left unchanged.
   map is stable, all buttons are configured as pull-up inputs, right/down/
   center/KEY1 map to `next`/`scroll`/`approve`/`reject`, and no press times out
   deterministically under injected GPIO.
+- SeedSigner-compatible ST7789 layout tests proving trusted-review draw
+  commands stay within the 240x240 display, preserve meta/value/normal body
+  styles, and reject body layouts that would overlap the footer/action area.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
   screen-review JSON and a signed response QR.
 - Cross-repo lab integration verifies the file-backed QR flow output through
@@ -135,8 +138,9 @@ default are left unchanged.
   GPIO approval/navigation tests before Raspberry Pi hardware acceptance
   testing.
 - Real hardware adapter tests against the existing transcript oracle once
-  camera/display drivers are selected and the SeedSigner-compatible GPIO profile
-  is exercised on the Pi HAT.
+  camera/display drivers are selected, the ST7789 layout plan is rendered on
+  the display HAT, and the SeedSigner-compatible GPIO profile is exercised on
+  the Pi HAT.
 
 Hardware tests must record board, camera, display, OS image, commit, and exact
 procedure.
