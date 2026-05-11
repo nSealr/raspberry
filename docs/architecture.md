@@ -181,6 +181,9 @@ The ST7789 layout planner is the matching display attachment point. It does not
 draw pixels yet; it produces bounded commands for a 240x240 screen so the later
 PIL/Waveshare/spidev adapter can be tested against positions, styles, and body
 area limits before physical display acceptance.
+The file-backed button harness can write that same layout trace through
+`nseal-vault flow --st7789-layout-log`, keeping display adapter acceptance tied
+to the exact frames shown during review.
 
 For future Raspberry display adapters that need the complete no-ellipsis review
 body, `run_detail_button_qr_vault_flow` and `nseal-vault flow --review-mode

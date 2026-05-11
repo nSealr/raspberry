@@ -163,6 +163,11 @@ Status: `nostrseal_vault.st7789_layout` now provides a SeedSigner-compatible
 title, page indicator, styled body lines, and action hint, giving the future
 Pi display driver a tested pre-pixel layout contract.
 
+Status: `nseal-vault flow --st7789-layout-log` now exports the ST7789 layout
+commands generated from each button-driven review frame, so future display
+driver tests can compare the physical adapter against a committed harness
+trace.
+
 Status: Raspberry now mirrors the shared NostrSeal v0 implementation-limit
 profile and rejects applicable invalid signing-request and QR-envelope
 hardening vectors before review or signing, while remaining stateless and

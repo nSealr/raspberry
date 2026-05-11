@@ -101,6 +101,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - `nseal-vault flow --display-frame-log ...` records the bounded trusted
   display frames shown during a button-driven flow for future display adapter
   acceptance tests.
+- `nseal-vault flow --st7789-layout-log ...` records the SeedSigner-compatible
+  240x240 draw commands derived from each displayed frame for future
+  Waveshare/ST7789 driver acceptance.
 - The button-driven flow result carries the displayed frame/button/decision
   transcript, so adapter harnesses can compare a whole review loop with shared
   `NostrSeal/specs` review-transcript vectors before real GPIO/display drivers.
@@ -162,6 +165,7 @@ python3 -m nostrseal_vault review --request request.qr --review review-detail-pa
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --approve
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --display-frame-log display-frames.json
+python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --st7789-layout-log display-layout.json
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --review-transcript-log review-transcript.json
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qr --button-sequence next,next,scroll,next,approve --review-mode detail
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qra --button-sequence next,next,scroll,next,approve --review-mode detail --output-format qr-animated

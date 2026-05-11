@@ -98,6 +98,8 @@ default are left unchanged.
 - SeedSigner-compatible ST7789 layout tests proving trusted-review draw
   commands stay within the 240x240 display, preserve meta/value/normal body
   styles, and reject body layouts that would overlap the footer/action area.
+- CLI ST7789 layout-log test proving the button-driven flow can export bounded
+  SeedSigner-compatible draw commands for every displayed review frame.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
   screen-review JSON and a signed response QR.
 - Cross-repo lab integration verifies the file-backed QR flow output through

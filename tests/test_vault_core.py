@@ -1519,6 +1519,46 @@ class VaultCoreTests(unittest.TestCase):
             self.assertTrue(all(len(line) <= 20 for line in frames[1]["body_lines"]))
             self.assertTrue(frames[1]["body_lines"][-1].endswith("..."))
 
+    def test_cli_flow_can_write_st7789_layout_log_for_button_sequence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-screen.json"
+            response_path = Path(temp_root) / "response.qr"
+            layout_log_path = Path(temp_root) / "display-layout.json"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "flow",
+                    "--secret-key",
+                    KEY["secret_key"],
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--response",
+                    str(response_path),
+                    "--button-sequence",
+                    "next,reject",
+                    "--st7789-layout-log",
+                    str(layout_log_path),
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            layouts = json.loads(layout_log_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(layouts), 2)
+            self.assertTrue(any(command["role"] == "title" for command in layouts[0]))
+            self.assertTrue(any(command["role"] == "action_hint" for command in layouts[0]))
+            for layout in layouts:
+                for command in layout:
+                    self.assertLessEqual(command["x"] + command["width"], 240)
+                    self.assertLessEqual(command["y"] + command["height"], 240)
+
     def test_cli_flow_can_write_review_transcript_log_for_button_sequence(self) -> None:
         vector = next(item for item in REVIEW_TRANSCRIPT_VECTORS if item["name"] == "kind-1-basic-approve")
         with tempfile.TemporaryDirectory() as temp_root:

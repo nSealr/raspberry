@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Any, Protocol
 
+from .st7789_layout import layout_seed_signer_st7789_review_frame
+
 
 class QrScanner(Protocol):
     def scan_request_qr(self) -> str:
@@ -78,13 +80,16 @@ class FileButtonQrVaultIO:
         response: Path,
         buttons: list[str],
         display_frame_log: Path | None = None,
+        st7789_layout_log: Path | None = None,
     ) -> None:
         self.request = request
         self.review = review
         self.response = response
         self.buttons = list(buttons)
         self.display_frame_log = display_frame_log
+        self.st7789_layout_log = st7789_layout_log
         self.display_frames: list[dict[str, Any]] = []
+        self.st7789_layouts: list[list[dict[str, object]]] = []
         self._wrote_review = False
 
     def scan_request_qr(self) -> str:
@@ -98,6 +103,12 @@ class FileButtonQrVaultIO:
             self.display_frames.append(frame)
             self.display_frame_log.write_text(
                 json.dumps(self.display_frames, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+        if self.st7789_layout_log is not None:
+            self.st7789_layouts.append(layout_seed_signer_st7789_review_frame(frame))
+            self.st7789_layout_log.write_text(
+                json.dumps(self.st7789_layouts, indent=2, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
 

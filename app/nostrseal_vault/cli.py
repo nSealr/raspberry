@@ -183,6 +183,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     flow.add_argument("--display-frame-log", type=Path, help="Output bounded display frames shown by --button-sequence")
     flow.add_argument(
+        "--st7789-layout-log",
+        type=Path,
+        help="Output SeedSigner-compatible 240x240 ST7789 draw commands shown by --button-sequence",
+    )
+    flow.add_argument(
         "--review-transcript-log",
         type=Path,
         help="Output displayed frame/button/decision transcript shown by --button-sequence",
@@ -280,6 +285,8 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("flow accepts either --approve or --button-sequence, not both")
         if args.display_frame_log and not args.button_sequence:
             parser.error("flow --display-frame-log requires --button-sequence")
+        if args.st7789_layout_log and not args.button_sequence:
+            parser.error("flow --st7789-layout-log requires --button-sequence")
         if args.review_transcript_log and not args.button_sequence:
             parser.error("flow --review-transcript-log requires --button-sequence")
         if args.review_mode == "detail" and not args.button_sequence:
@@ -294,6 +301,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.response,
                 args.button_sequence,
                 display_frame_log=args.display_frame_log,
+                st7789_layout_log=args.st7789_layout_log,
             )
             if args.review_mode == "detail":
                 result = run_detail_button_qr_vault_flow(
