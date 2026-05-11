@@ -91,6 +91,10 @@ default are left unchanged.
 - Composed adapter tests proving future scanner, trusted-display,
   physical-button, and response-QR components can plug into the button-driven
   QR flow without bypassing review traversal or approval-digest binding.
+- SeedSigner-compatible GPIO profile tests proving the 40-pin HAT BOARD pin
+  map is stable, all buttons are configured as pull-up inputs, right/down/
+  center/KEY1 map to `next`/`scroll`/`approve`/`reject`, and no press times out
+  deterministically under injected GPIO.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
   screen-review JSON and a signed response QR.
 - Cross-repo lab integration verifies the file-backed QR flow output through
@@ -131,7 +135,8 @@ default are left unchanged.
   GPIO approval/navigation tests before Raspberry Pi hardware acceptance
   testing.
 - Real hardware adapter tests against the existing transcript oracle once
-  camera, display, and GPIO drivers are selected.
+  camera/display drivers are selected and the SeedSigner-compatible GPIO profile
+  is exercised on the Pi HAT.
 
 Hardware tests must record board, camera, display, OS image, commit, and exact
 procedure.

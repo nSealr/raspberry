@@ -152,6 +152,12 @@ trusted-display, physical-button, and response-QR components behind the tested
 button-driven QR flow. This is still hardware-neutral and does not add camera,
 display, or GPIO drivers.
 
+Status: `nostrseal_vault.seed_signer_hardware` now pins the first
+SeedSigner-compatible 40-pin HAT button profile in package code. It maps
+right/down/center/KEY1 GPIO inputs to `next`/`scroll`/`approve`/`reject` and is
+covered with injected-GPIO tests, while real Pi hardware acceptance remains
+pending.
+
 Status: Raspberry now mirrors the shared NostrSeal v0 implementation-limit
 profile and rejects applicable invalid signing-request and QR-envelope
 hardening vectors before review or signing, while remaining stateless and

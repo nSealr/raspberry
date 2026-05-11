@@ -68,6 +68,11 @@ image or a production security claim.
   keeps scanner, trusted display, physical button input, and response QR output
   independently replaceable before real camera/display/GPIO drivers exist.
   These are development and driver-facing adapters, not production Pi drivers.
+- `nostrseal_vault.seed_signer_hardware`: SeedSigner-compatible 40-pin
+  Waveshare-style HAT button profile and optional GPIO input adapter. It pins
+  the review actions to BOARD pins from the SeedSigner hardware reference while
+  keeping GPIO access injectable for tests; it is not a completed hardware
+  acceptance claim.
 - `nostrseal_vault.hardware_probe`: non-destructive SeedSigner-compatible
   Raspberry probe reporting for future Pi Zero hardware smoke runs. It checks
   board model, expected GPIO/SPI/camera Python modules, camera/SPI boot config
@@ -162,6 +167,12 @@ transcript produced during the review loop, which lets tests compare future
 adapter harnesses with shared `NostrSeal/specs` review-transcript vectors.
 The file-backed CLI can write this trace with `--review-transcript-log`, giving
 cross-repo smoke tests the same oracle without importing Raspberry internals.
+
+The SeedSigner-compatible GPIO profile is the first concrete Pi HAT attachment
+point: GPIO BOARD pin 37 maps to `next`, BOARD pin 35 maps to `scroll`, BOARD
+pin 33 maps to `approve`, and BOARD pin 40 maps to `reject`. The adapter checks
+`reject` before `approve` when multiple pins are low so simultaneous presses do
+not accidentally prefer signing.
 
 For future Raspberry display adapters that need the complete no-ellipsis review
 body, `run_detail_button_qr_vault_flow` and `nseal-vault flow --review-mode

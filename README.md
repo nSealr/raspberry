@@ -64,6 +64,11 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - Composable hardware adapter boundary that keeps QR scanning, trusted display,
   physical button input, and response QR output as separate attach points before
   real Pi drivers are selected.
+- SeedSigner-compatible 40-pin GPIO button profile for the Waveshare-style HAT:
+  right advances top-level review pages, down scrolls inside long Content/Tags
+  pages, center press approves on the Decision page, and KEY1 rejects from any
+  page. The profile is testable with injected GPIO and does not claim physical
+  acceptance until run on the Pi kit.
 - RAM-only secret-provider boundary for the button-driven flow. The key is
   loaded for the signing session before review so the trusted screen can bind
   the displayed author pubkey into the `approval_digest`; signing still only
@@ -126,7 +131,8 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - Stateless key/session mode.
 - Display review for raw event kind, signer author, full content, full tags,
   and final approve/reject decision.
-- SeedSigner-compatible Pi Zero camera/display/GPIO adapters.
+- SeedSigner-compatible Pi Zero camera/display drivers and physical GPIO
+  acceptance runs.
 - Verifiable minimal OS image path.
 
 ## Initial Layout
