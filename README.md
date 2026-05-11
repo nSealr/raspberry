@@ -16,9 +16,13 @@ offline QR, local review, physical approval, and RAM-only custody boundary.
 
 The QR vault pattern is shared across signer families. Its common contracts live
 in `NostrSeal/specs`: QR envelope, review model, review-screen vectors,
-`approval_digest`, identity/policy descriptors, and signing vectors. This repository implements the
-Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
-`NostrSeal/esp32`.
+`approval_digest`, identity/policy descriptors, signing vectors, and the
+feature conformance matrix at
+`vectors/features/signer-feature-matrix-v0.json`. This repository implements
+the Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs
+in `NostrSeal/esp32`. When the Raspberry QR vault and ESP32 QR vault both
+support a feature, their final behavior must match the shared `contract_id`
+even if current hardware readiness differs.
 
 ## Current Capabilities
 

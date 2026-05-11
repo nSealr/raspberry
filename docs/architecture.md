@@ -56,6 +56,12 @@ must not turn the Raspberry QR vault into a policy-automated signer, persistent
 grant target, persistent seed store, secure-element unlock path, or TROPIC01
 route.
 
+Feature target and current status are tracked in `NostrSeal/specs`
+`vectors/features/signer-feature-matrix-v0.json`. The Raspberry QR vault is in
+the stateless QR vault parity group with the ESP32 QR vault: features can be at
+different implementation stages, but shared features must keep the same
+behavior through the common `contract_id` and vectors.
+
 ## Implemented Foundation
 
 - `nostrseal_vault.qr`: v0 `nseal1:` QR envelope helpers.
