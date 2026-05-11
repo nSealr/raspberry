@@ -173,6 +173,12 @@ profile and rejects applicable invalid signing-request and QR-envelope
 hardening vectors before review or signing, while remaining stateless and
 RAM-only.
 
+Status: Raspberry now has an explicit shared identity/policy boundary through
+the `nseal-account-descriptor-v0` route `raspberry_qr_vault` and
+`policy-manual-only-qr-vault`. The route stays `stateless_session`,
+`manual_only`, and `persistent_grants: false`; this does not add policy
+automation, persistent storage, or TROPIC01 to the Raspberry QR vault.
+
 Status: `os/stateless-qr-vault-profile.md` now records the future Raspberry
 image acceptance boundary aligned with `NostrSeal/hardware`: removable microSD
 boot media, disabled or absent wireless, RAM-only session custody, no swap

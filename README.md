@@ -16,7 +16,7 @@ offline QR, local review, physical approval, and RAM-only custody boundary.
 
 The QR vault pattern is shared across signer families. Its common contracts live
 in `NostrSeal/specs`: QR envelope, review model, review-screen vectors,
-`approval_digest`, and signing vectors. This repository implements the
+`approval_digest`, identity/policy descriptors, and signing vectors. This repository implements the
 Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 `NostrSeal/esp32`.
 
@@ -28,6 +28,11 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   `NostrSeal/specs` fixtures.
 - NIP-06 mnemonic derivation for account `0` and account-indexed key recovery,
   checked against the canonical NIP-06 test vector in `NostrSeal/specs`.
+- The shared `nseal-account-descriptor-v0` route
+  `raspberry_qr_vault` is treated as a stateless-session, manual-only route
+  bound to `policy-manual-only-qr-vault` with `persistent_grants: false`.
+  This repository must not add policy automation, persistent grants, or
+  TROPIC01 to that route.
 - Explicit approval gate: `sign_event` requests return `user_rejected` unless
   approval is provided to the CLI or signer API.
 - Deterministic event review model for raw kind, created_at, signer author

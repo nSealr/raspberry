@@ -199,7 +199,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--review-mode",
         choices=["screen", "detail"],
         default="screen",
-        help="Use legacy screen pages or complete detail pages for the button-driven review flow",
+        help="Use digest-bound screen pages or complete detail pages for the button-driven review flow",
     )
     flow.add_argument(
         "--max-compact-body-lines",

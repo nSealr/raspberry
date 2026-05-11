@@ -40,6 +40,22 @@ RAM-only session custody, no swap during signing, no remote access during
 signing, and no persistent signing-secret storage. It is not a downloadable OS
 image or a production security claim.
 
+## Identity And Policy Boundary
+
+The Raspberry route is pinned by the shared
+`NostrSeal/specs` `nseal-account-descriptor-v0` vector
+`raspberry-qr-nip06-account-0`: route type `raspberry_qr_vault`, transport
+`qr`, custody `stateless_session`, trusted review `device_display`, and policy
+support `manual_only`.
+
+That descriptor references `policy-manual-only-qr-vault`, whose effective
+Raspberry rule is `persistent_grants: false`: every `sign_event` requires local
+trusted review plus physical approval in the current session. The companion may
+store labels, route metadata, account index, and policy profile ids, but it
+must not turn the Raspberry QR vault into a policy-automated signer, persistent
+grant target, persistent seed store, secure-element unlock path, or TROPIC01
+route.
+
 ## Implemented Foundation
 
 - `nostrseal_vault.qr`: v0 `nseal1:` QR envelope helpers.

@@ -95,6 +95,10 @@ INVALID_VECTORS = [
     json.loads(path.read_text(encoding="utf-8"))
     for path in sorted((SPECS / "vectors/invalid").glob("*.json"))
 ]
+RASPBERRY_ACCOUNT_DESCRIPTOR = json.loads(
+    (SPECS / "vectors/accounts/raspberry-qr-nip06-account-0.json").read_text(encoding="utf-8")
+)
+MANUAL_QR_POLICY = json.loads((SPECS / "vectors/policies/manual-only-qr-vault.json").read_text(encoding="utf-8"))
 
 
 class MemoryQrVaultIO:
@@ -1671,6 +1675,28 @@ class VaultCoreTests(unittest.TestCase):
         self.assertIn("command-line secret arguments", text)
         self.assertIn("not a downloadable OS image", text)
         self.assertIn("does not add or require TROPIC01", text)
+
+    def test_identity_policy_docs_pin_manual_stateless_route(self) -> None:
+        route = RASPBERRY_ACCOUNT_DESCRIPTOR["signer_route"]
+        self.assertEqual(route["type"], "raspberry_qr_vault")
+        self.assertEqual(route["custody"], "stateless_session")
+        self.assertEqual(route["policy_support"], "manual_only")
+        self.assertFalse(RASPBERRY_ACCOUNT_DESCRIPTOR["capabilities"]["persistent_grants"])
+        self.assertEqual(RASPBERRY_ACCOUNT_DESCRIPTOR["policy_profile_id"], MANUAL_QR_POLICY["policy_id"])
+
+        docs = "\n".join(
+            [
+                (ROOT / "README.md").read_text(encoding="utf-8"),
+                (ROOT / "docs/architecture.md").read_text(encoding="utf-8"),
+                (ROOT / "docs/roadmap.md").read_text(encoding="utf-8"),
+                (ROOT / "docs/testing.md").read_text(encoding="utf-8"),
+            ]
+        )
+        self.assertIn("nseal-account-descriptor-v0", docs)
+        self.assertIn("raspberry_qr_vault", docs)
+        self.assertIn("policy-manual-only-qr-vault", docs)
+        self.assertIn("persistent_grants: false", docs)
+        self.assertNotIn("legacy screen pages", (ROOT / "app/nostrseal_vault/cli.py").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

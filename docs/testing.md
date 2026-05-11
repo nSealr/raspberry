@@ -25,6 +25,10 @@ default are left unchanged.
   reversed input order, missing-frame rejection, checksum rejection, and
   `nseal-vault` CLI `qr-animated` request/response output.
 - NIP-06 derivation tests against the canonical account `0` shared vector.
+- Shared identity/policy boundary tests proving the Raspberry account
+  descriptor uses `nseal-account-descriptor-v0`, route `raspberry_qr_vault`,
+  `policy-manual-only-qr-vault`, stateless custody, manual-only policy support,
+  and `persistent_grants: false`.
 - Signing tests against `NostrSeal/specs` fixtures.
 - Review model tests against every shared review vector for raw event kind,
   created_at, signer author pubkey, complete content, and complete structured
