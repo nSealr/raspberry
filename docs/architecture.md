@@ -68,6 +68,11 @@ image or a production security claim.
   keeps scanner, trusted display, physical button input, and response QR output
   independently replaceable before real camera/display/GPIO drivers exist.
   These are development and driver-facing adapters, not production Pi drivers.
+- `nostrseal_vault.hardware_probe`: non-destructive SeedSigner-compatible
+  Raspberry probe reporting for future Pi Zero hardware smoke runs. It checks
+  board model, expected GPIO/SPI/camera Python modules, camera/SPI boot config
+  markers, swap state, and wireless absence/blocking evidence without
+  producing signatures or claiming hardware acceptance.
 - `nostrseal_vault.signer`: request handling and explicit approval gate.
 - `nostrseal_vault.cli`: desktop simulation CLI for JSON and QR file input and
   output.
@@ -247,3 +252,10 @@ navigation/approve/reject through the Waveshare HAT GPIO button layout, and
 response QR rendering on the same display. SeedSigner code remains a reference
 for hardware behavior and OS shape; NostrSeal owns the Nostr event parser,
 review contract, signing contract, and stateless session flow.
+
+`nseal-vault hardware-probe` is the first command intended for a later physical
+Pi Zero session. It is deliberately read-only and conservative: missing files,
+missing modules, or unverifiable wireless evidence produce `blocked` checks
+rather than implicit success. A passing probe is only setup evidence; camera QR
+quality, trusted display readability, GPIO approval behavior, OS image
+acceptance, and production security still need separate reports.

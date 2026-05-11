@@ -117,11 +117,15 @@ default are left unchanged.
   stateless QR vault operating boundary: removable microSD, no swap, no remote
   access, RAM-only custody, no persistent signing-secret storage, and no
   TROPIC01 requirement.
+- SeedSigner-compatible hardware probe tests proving a complete fake Pi Zero
+  profile reports ready, a non-Pi environment reports blocked, and the
+  `nseal-vault hardware-probe --out` CLI writes a safe report without requiring
+  hardware.
 
 ## Next Tests
 
 - SeedSigner-compatible Pi Zero board/runtime smoke planning against the
-  available Raspberry Pi Zero.
+  available Raspberry Pi Zero using `nseal-vault hardware-probe`.
 - Camera frame input through a Pi Zero-compatible OV5647/ZeroCam path, real
   display rendering on a Waveshare-compatible ST7789 240x240 display HAT, and
   GPIO approval/navigation tests before Raspberry Pi hardware acceptance

@@ -114,6 +114,11 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   physical target is the available Raspberry Pi Zero; full hardware acceptance
   still requires the SeedSigner-style camera, ST7789 240x240 display HAT, GPIO
   controls, and OS profile smoke evidence.
+- `nseal-vault hardware-probe --out <report.json>` writes a non-destructive
+  SeedSigner-compatible Pi Zero probe report for future hardware smoke runs.
+  It checks board model, GPIO/SPI/camera Python modules, camera/SPI boot config
+  markers, swap state, and wireless absence/blocking evidence without claiming
+  production readiness.
 
 ## Planned Capabilities
 
@@ -161,6 +166,7 @@ python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --respon
 python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
 printf '%s\n' '<mnemonic words>' | python3 -m nostrseal_vault sign --mnemonic-stdin --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
 printf '%s\n' word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 | python3 -m nostrseal_vault sign --mnemonic-words-stdin --mnemonic-word-count 12 --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
+python3 -m nostrseal_vault hardware-probe --out hardware-probe.json
 ```
 
 ## License

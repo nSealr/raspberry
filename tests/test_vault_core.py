@@ -24,6 +24,8 @@ from nostrseal_vault.hardware_flow import (
     run_button_qr_vault_flow_with_secret_provider,
     run_qr_vault_flow,
 )
+from nostrseal_vault.hardware_probe import run_seed_signer_compatibility_probe
+from nostrseal_vault.cli import main as vault_cli_main
 from nostrseal_vault.nip06 import derive_nip06_secret
 from nostrseal_vault.qr import (
     ANIMATED_QR_ENVELOPE_PREFIX,
@@ -211,6 +213,60 @@ class ProjectToolingTests(unittest.TestCase):
         self.assertIn("install --use-feature=in-tree-build --help", makefile)
         self.assertIn("--use-feature=in-tree-build", makefile)
         self.assertIn("$$PIP_IN_TREE_BUILD", makefile)
+
+
+class HardwareProbeTests(unittest.TestCase):
+    def test_seed_signer_probe_passes_with_pi_zero_profile(self) -> None:
+        files = {
+            "/proc/device-tree/model": "Raspberry Pi Zero Rev 1.3\x00",
+            "/boot/config.txt": "start_x=1\ndtparam=spi=on\n",
+            "/proc/swaps": "Filename\tType\tSize\tUsed\tPriority\n",
+        }
+
+        report = run_seed_signer_compatibility_probe(
+            read_text=lambda path: files[str(path)],
+            find_module=lambda name: name in {"RPi.GPIO", "spidev", "picamera"},
+        )
+
+        self.assertTrue(report["ready_for_hardware_acceptance"])
+        self.assertFalse(report["production_signing_enabled"])
+        self.assertFalse(report["persistent_secret_present"])
+        self.assertFalse(report["tropic01_used"])
+        self.assertEqual(
+            {check["id"]: check["status"] for check in report["checks"]},
+            {
+                "board_model": "pass",
+                "gpio_python_module": "pass",
+                "spi_python_module": "pass",
+                "camera_python_module": "pass",
+                "boot_camera_enabled": "pass",
+                "boot_spi_enabled": "pass",
+                "swap_disabled": "pass",
+                "wireless_absent_or_blocked": "pass",
+            },
+        )
+
+    def test_seed_signer_probe_blocks_non_pi_environment(self) -> None:
+        report = run_seed_signer_compatibility_probe(
+            read_text=lambda path: (_ for _ in ()).throw(FileNotFoundError(str(path))),
+            find_module=lambda name: False,
+        )
+
+        self.assertFalse(report["ready_for_hardware_acceptance"])
+        self.assertIn("not a completed hardware acceptance report", " ".join(report["limitations"]))
+        self.assertEqual(report["checks"][0]["id"], "board_model")
+        self.assertEqual(report["checks"][0]["status"], "blocked")
+
+    def test_hardware_probe_cli_writes_report_without_requiring_hardware(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            output = Path(temp_root) / "probe.json"
+
+            exit_code = vault_cli_main(["hardware-probe", "--out", str(output)])
+
+            self.assertEqual(exit_code, 0)
+            report = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(report["format"], "nseal-raspberry-seedsigner-compatibility-probe-v0")
+            self.assertFalse(report["production_signing_enabled"])
 
 
 class VaultCoreTests(unittest.TestCase):

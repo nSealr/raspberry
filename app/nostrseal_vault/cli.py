@@ -14,6 +14,7 @@ from .display import (
     screen_review_for_request,
 )
 from .hardware_flow import run_button_qr_vault_flow, run_detail_button_qr_vault_flow, run_qr_vault_flow
+from .hardware_probe import run_seed_signer_compatibility_probe
 from .nip06 import derive_nip06_secret
 from .qr import (
     decode_animated_qr_envelope_frames,
@@ -208,6 +209,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Maximum compact trusted-display body line characters for detail review mode",
     )
 
+    hardware_probe = subparsers.add_parser(
+        "hardware-probe",
+        help="Write a non-destructive SeedSigner-compatible Raspberry hardware probe report",
+    )
+    hardware_probe.add_argument("--out", required=True, type=Path, help="Output probe report JSON path")
+    hardware_probe.add_argument(
+        "--require-ready",
+        action="store_true",
+        help="Return non-zero when the probe is not ready for hardware acceptance",
+    )
+
     return parser
 
 
@@ -318,6 +330,13 @@ def main(argv: list[str] | None = None) -> int:
             _secret_key_from_args(args, parser),
             response_encoder=response_encoder,
         )
+        return 0
+
+    if args.command == "hardware-probe":
+        report = run_seed_signer_compatibility_probe()
+        args.out.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        if args.require_ready and not report["ready_for_hardware_acceptance"]:
+            return 1
         return 0
 
     parser.error(f"unsupported command: {args.command}")

@@ -28,6 +28,12 @@ not add a new solution family, persistent secret storage, or TROPIC01; it makes
 the future Raspberry adapters target the same practical kit shape as
 SeedSigner.
 
+Status: `nseal-vault hardware-probe` now produces a non-destructive
+SeedSigner-compatible Pi Zero setup report. It gives the later physical smoke a
+repeatable way to check board model, GPIO/SPI/camera Python modules,
+camera/SPI boot config markers, swap state, and wireless absence/blocking
+evidence before camera/display/GPIO adapters are treated as accepted.
+
 ## M6: Raspberry Prototype
 
 - SeedSigner-compatible camera/display abstraction.
