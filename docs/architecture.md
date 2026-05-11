@@ -98,7 +98,8 @@ route.
   outside the Pi image. The display side now includes an optional PIL
   framebuffer draw target that can present rendered review frames to a
   Waveshare/SeedSigner-style display driver object without importing that
-  driver in CI.
+  driver in CI, plus an optional `python-qrcode` response matrix renderer for
+  signed-event QR output.
 - `nostrseal_vault.st7789_layout`: SeedSigner-compatible 240x240 ST7789 layout
   planner for trusted-review frames. It turns renderer-neutral frame data into
   bounded draw commands before a Pi display library or SPI driver is selected.
@@ -314,6 +315,11 @@ commands, draws rectangles and text into a 240x240 PIL image, and hands that
 image to an injected presenter. A later Pi-specific presenter can wrap a
 Waveshare or SeedSigner ST7789 driver, while tests keep the framebuffer path
 independent from physical SPI/display libraries.
+
+`PythonQrcodeMatrixRenderer` is the matching optional renderer for signed-event
+response QR output. It uses `python-qrcode` when available in the Pi image,
+validates the resulting matrix, and feeds the same centered ST7789 response
+display adapter that tests already exercise with injected matrices.
 
 `nseal-vault hardware-probe` is the first command intended for a later physical
 Pi Zero session. It is deliberately read-only and conservative: missing files,

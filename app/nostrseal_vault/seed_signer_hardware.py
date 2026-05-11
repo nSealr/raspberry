@@ -359,7 +359,7 @@ class SeedSignerSt7789ResponseQrDisplay:
         self.quiet_zone_modules = quiet_zone_modules
 
     def emit_response_qr(self, response_qr: str) -> None:
-        matrix = self._validated_matrix(self.qr_renderer.render_qr_matrix(response_qr))
+        matrix = _validated_qr_matrix(self.qr_renderer.render_qr_matrix(response_qr))
         modules = len(matrix) + (self.quiet_zone_modules * 2)
         module_size = min(self.width, self.height) // modules
         if module_size <= 0:
@@ -382,21 +382,26 @@ class SeedSignerSt7789ResponseQrDisplay:
                     )
         self.target.present()
 
-    @staticmethod
-    def _validated_matrix(matrix: Sequence[Sequence[bool]]) -> Sequence[Sequence[bool]]:
-        if not matrix:
-            raise ValueError("QR matrix must not be empty")
-        width = len(matrix[0])
-        if width == 0:
-            raise ValueError("QR matrix must not be empty")
-        for row in matrix:
-            if len(row) != width:
-                raise ValueError("QR matrix must be rectangular")
-            if any(type(item) is not bool for item in row):
-                raise ValueError("QR matrix values must be booleans")
-        if len(matrix) != width:
-            raise ValueError("QR matrix must be square")
-        return matrix
+
+class PythonQrcodeMatrixRenderer:
+    """Optional python-qrcode matrix renderer for signed response QR output."""
+
+    def __init__(self, *, qrcode_module: object | None = None, border: int = 0) -> None:
+        if border < 0:
+            raise ValueError("QR border must be non-negative")
+        if qrcode_module is None:
+            try:
+                qrcode_module = importlib.import_module("qrcode")
+            except ModuleNotFoundError as exc:
+                raise RuntimeError("python-qrcode is required for response QR matrix rendering") from exc
+        self.qrcode_module = qrcode_module
+        self.border = border
+
+    def render_qr_matrix(self, payload: str) -> Sequence[Sequence[bool]]:
+        qr = self.qrcode_module.QRCode(border=self.border)
+        qr.add_data(payload)
+        qr.make(fit=True)
+        return _validated_qr_matrix(qr.get_matrix())
 
 
 def create_seed_signer_gpio_button_input() -> SeedSignerGpioButtonInput:
@@ -414,8 +419,21 @@ def create_seed_signer_camera_qr_scanner() -> SeedSignerCameraQrScanner:
     )
 
 
-def create_seed_signer_st7789_review_display(*, present_image: Callable[[object], None]) -> SeedSignerSt7789ReviewDisplay:
+def create_seed_signer_st7789_review_display(
+    *,
+    present_image: Callable[[object], None],
+) -> SeedSignerSt7789ReviewDisplay:
     return SeedSignerSt7789ReviewDisplay(target=PillowSt7789DrawTarget(present_image=present_image))
+
+
+def create_seed_signer_st7789_response_qr_display(
+    *,
+    present_image: Callable[[object], None],
+) -> SeedSignerSt7789ResponseQrDisplay:
+    return SeedSignerSt7789ResponseQrDisplay(
+        target=PillowSt7789DrawTarget(present_image=present_image),
+        qr_renderer=PythonQrcodeMatrixRenderer(),
+    )
 
 
 def _load_image_from_jpeg_bytes(value: bytes) -> object:
@@ -442,6 +460,22 @@ def _pil_color(color: str) -> tuple[int, int, int]:
         return PIL_COLOR_MAP[color]
     except KeyError as exc:
         raise ValueError(f"unsupported ST7789 color: {color}") from exc
+
+
+def _validated_qr_matrix(matrix: Sequence[Sequence[bool]]) -> Sequence[Sequence[bool]]:
+    if not matrix:
+        raise ValueError("QR matrix must not be empty")
+    width = len(matrix[0])
+    if width == 0:
+        raise ValueError("QR matrix must not be empty")
+    for row in matrix:
+        if len(row) != width:
+            raise ValueError("QR matrix must be rectangular")
+        if any(type(item) is not bool for item in row):
+            raise ValueError("QR matrix values must be booleans")
+    if len(matrix) != width:
+        raise ValueError("QR matrix must be square")
+    return matrix
 
 
 def _clip_text_for_width(text: str, scale: int, max_width: int | None) -> str:

@@ -8,6 +8,7 @@ from nostrseal_vault.seed_signer_hardware import (
     GPIO_PUD_UP,
     PiCameraJpegFrameSource,
     PillowSt7789DrawTarget,
+    PythonQrcodeMatrixRenderer,
     PyzbarQrDecoder,
     SEEDSIGNER_40_PIN_BUTTON_PROFILE,
     SeedSignerCameraQrScanner,
@@ -112,6 +113,32 @@ class FakeQrMatrixRenderer:
     def render_qr_matrix(self, payload: str) -> list[list[bool]]:
         self.payloads.append(payload)
         return self.matrix
+
+
+class FakeQrCode:
+    def __init__(self, matrix: list[list[bool]]) -> None:
+        self.matrix = matrix
+        self.data: list[str] = []
+        self.made_fit: bool | None = None
+
+    def add_data(self, payload: str) -> None:
+        self.data.append(payload)
+
+    def make(self, fit: bool) -> None:
+        self.made_fit = fit
+
+    def get_matrix(self) -> list[list[bool]]:
+        return self.matrix
+
+
+class FakeQrcodeModule:
+    def __init__(self, qr: FakeQrCode) -> None:
+        self.qr = qr
+        self.kwargs: dict[str, object] | None = None
+
+    def QRCode(self, **kwargs: object) -> FakeQrCode:
+        self.kwargs = kwargs
+        return self.qr
 
 
 class FakePiCamera:
@@ -272,6 +299,23 @@ class SeedSignerHardwareTests(unittest.TestCase):
         target.present()
 
         self.assertEqual(presented[0].operations, [("text", (0, 0), "ab", (255, 255, 0), "font-1")])
+
+    def test_python_qrcode_renderer_returns_boolean_matrix(self) -> None:
+        qr = FakeQrCode([[True, False], [False, True]])
+        qrcode_module = FakeQrcodeModule(qr)
+        renderer = PythonQrcodeMatrixRenderer(qrcode_module=qrcode_module)
+
+        self.assertEqual(renderer.render_qr_matrix("nseal1:response"), [[True, False], [False, True]])
+        self.assertEqual(qr.data, ["nseal1:response"])
+        self.assertTrue(qr.made_fit)
+        self.assertEqual(qrcode_module.kwargs, {"border": 0})
+
+    def test_python_qrcode_renderer_rejects_non_boolean_matrix(self) -> None:
+        qr = FakeQrCode([[True, 1]])  # type: ignore[list-item]
+        renderer = PythonQrcodeMatrixRenderer(qrcode_module=FakeQrcodeModule(qr))
+
+        with self.assertRaisesRegex(ValueError, "QR matrix values must be booleans"):
+            renderer.render_qr_matrix("nseal1:response")
 
     def test_st7789_review_display_renders_layout_commands_to_target(self) -> None:
         target = FakeDrawTarget()
