@@ -439,11 +439,12 @@ class VaultCoreTests(unittest.TestCase):
             self.assertEqual(screen_review_for_request(vector["request"]), vector["screen_review"])
 
     def test_review_transcripts_match_shared_vectors(self) -> None:
+        screen_vectors = [vector for vector in REVIEW_TRANSCRIPT_VECTORS if vector.get("review_mode", "screen") == "screen"]
         self.assertEqual(
-            [vector["name"] for vector in REVIEW_TRANSCRIPT_VECTORS],
+            [vector["name"] for vector in screen_vectors],
             ["kind-1-basic-approve", "kind-1-basic-reject"],
         )
-        for vector in REVIEW_TRANSCRIPT_VECTORS:
+        for vector in screen_vectors:
             request = decode_qr_envelope(vector["qr_envelope"])
             screen_review = screen_review_for_request(request)
 
@@ -744,12 +745,22 @@ class VaultCoreTests(unittest.TestCase):
     def test_button_qr_vault_flow_matches_shared_review_transcript_vectors(self) -> None:
         for vector in REVIEW_TRANSCRIPT_VECTORS:
             hardware = MemoryButtonQrVaultIO(vector["qr_envelope"], list(vector["buttons"]))
-
-            result = run_button_qr_vault_flow(
-                hardware,
-                KEY["secret_key"],
-                display_limits=DisplayFrameLimits(max_line_chars=64),
-            )
+            if vector.get("review_mode", "screen") == "detail":
+                detail_vector = next(
+                    item for item in REVIEW_DETAIL_PAGE_VECTORS if item["name"] == vector["detail_review_vector"]
+                )
+                result = run_detail_button_qr_vault_flow(
+                    hardware,
+                    KEY["secret_key"],
+                    detail_limits=ReviewDetailPageLimits(**detail_vector["limits"]),
+                    response_encoder=lambda response: "\n".join(encode_animated_qr_envelope_frames(response)),
+                )
+            else:
+                result = run_button_qr_vault_flow(
+                    hardware,
+                    KEY["secret_key"],
+                    display_limits=DisplayFrameLimits(max_line_chars=64),
+                )
 
             self.assertEqual(result.review_transcript, vector["transcript"])
             self.assertEqual(result.approval_digest, vector["approval_digest"])

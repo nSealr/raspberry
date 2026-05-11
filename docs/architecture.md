@@ -171,6 +171,10 @@ before each physical-style button input, the terminal decision, and the
 approval state. It is checked against shared `NostrSeal/specs`
 review-transcript vectors so Raspberry display/GPIO adapters and ESP32 firmware
 adapter tests can use the same frame/button/decision oracle.
+The stricter `run_detail_button_qr_vault_flow` path also consumes detail-mode
+review-transcript vectors, including `scroll` actions inside long Content or
+Tags windows. This keeps the no-ellipsis constrained-display path aligned with
+ESP32 without forcing every scroll window before the Decision page.
 
 ## Hardware Flow Boundary
 

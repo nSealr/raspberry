@@ -50,7 +50,8 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   is only accepted after the trusted review pages have been traversed to the
   final approve/reject page; rejection remains available before the final page.
 - Deterministic review transcript generation for future display/GPIO adapter
-  tests, checked against shared `NostrSeal/specs` review-transcript vectors.
+  tests, checked against shared `NostrSeal/specs` review-transcript vectors,
+  including detail-mode `Next/Scroll` traversal for long tag windows.
 - Hardware-neutral button-driven QR flow boundary for future camera, display,
   and GPIO adapters.
 - Composable hardware adapter boundary that keeps QR scanning, trusted display,

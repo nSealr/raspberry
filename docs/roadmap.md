@@ -82,6 +82,11 @@ frame/button/decision transcript from the file-backed button harness. This lets
 `NostrSeal/lab` and future adapter tests verify full review-loop traces without
 importing Raspberry implementation code.
 
+Status: Raspberry now consumes shared detail-mode review-transcript vectors for
+long tag scroll windows. The checked flow uses `next` for top-level
+Event/Content/Tags/Decision navigation and `scroll` inside Tags while keeping
+approval gated on the final Decision page.
+
 Status: `nseal-vault flow --review-mode detail` now lets the file-backed
 button harness render complete Event/Content/Tags/Decision detail pages. The
 flow uses top-level `next` navigation plus `scroll` within long logical pages,

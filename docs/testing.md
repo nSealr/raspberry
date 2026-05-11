@@ -48,6 +48,9 @@ default are left unchanged.
   to be traversed before approval while allowing early rejection.
 - Review transcript tests against shared `NostrSeal/specs` vectors, covering
   displayed frame, button sequence, terminal decision, and approval state.
+- Detail-mode review transcript tests against shared `NostrSeal/specs` vectors,
+  covering `Next/Scroll` traversal across long tag windows without changing the
+  `screen-pages` approval digest.
 - Approval-digest tests proving an approved signing request is rejected when
   the digest no longer matches the rendered review pages.
 - Desktop CLI smoke test for QR request review output as `screen-json`.
