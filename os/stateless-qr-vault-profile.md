@@ -13,6 +13,9 @@ future Buildroot, Raspberry Pi OS Lite, or SeedSigner-OS-inspired work.
 
 - Boot from removable microSD media.
 - Keep signing key material RAM-only for each signing session.
+- Require seed entry or session-secret input that avoids seed files,
+  command-line secret arguments, shell history, and persistent storage during
+  acceptance runs.
 - Require disabled or physically absent wireless before signing.
 - Require no swap during signing, so session key material cannot be paged to
   boot media.
@@ -32,6 +35,9 @@ Future Raspberry hardware reports must record:
 - Wi-Fi/Bluetooth blocked or absent evidence;
 - swap status evidence;
 - SSH and remote-login disabled evidence;
+- seed-entry or session-secret input evidence showing no seed file,
+  command-line secret argument, shell history entry, or persistent secret is
+  used for the acceptance flow;
 - no persistent signing secret after shutdown;
 - power-cycle evidence showing an unfinished signing session is lost.
 

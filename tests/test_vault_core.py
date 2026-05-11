@@ -1422,6 +1422,8 @@ class VaultCoreTests(unittest.TestCase):
         self.assertIn("no swap", text)
         self.assertIn("no remote access", text)
         self.assertIn("RAM-only", text)
+        self.assertIn("seed files", text)
+        self.assertIn("command-line secret arguments", text)
         self.assertIn("not a downloadable OS image", text)
         self.assertIn("does not add or require TROPIC01", text)
 
