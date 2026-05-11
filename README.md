@@ -77,6 +77,12 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - SeedSigner-compatible ST7789 240x240 layout planner for trusted-review
   frames. It produces bounded draw commands for title, page indicator, styled
   body lines, and action hint before a real PIL/spidev display driver exists.
+- SeedSigner-compatible driver-facing adapter boundaries for the Pi QR vault:
+  an injected camera-frame QR scanner, an ST7789 review display adapter that
+  applies the bounded layout commands to an injected draw target, and an ST7789
+  response-QR display adapter that renders an injected QR matrix with a quiet
+  zone. These are hardware-facing boundaries for Pi bring-up, not completed
+  physical acceptance.
 - RAM-only secret-provider boundary for the button-driven flow. The key is
   loaded for the signing session before review so the trusted screen can bind
   the displayed author pubkey into the `approval_digest`; signing still only
@@ -142,8 +148,8 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - Stateless key/session mode.
 - Display review for raw event kind, signer author, full content, full tags,
   and final approve/reject decision.
-- SeedSigner-compatible Pi Zero camera/display drivers and physical GPIO/display
-  acceptance runs.
+- SeedSigner-compatible Pi Zero camera/display draw-target integrations and
+  physical GPIO/display acceptance runs.
 - Verifiable minimal OS image path.
 
 ## Initial Layout

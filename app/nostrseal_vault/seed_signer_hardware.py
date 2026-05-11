@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import importlib
 from dataclasses import dataclass
-from typing import Callable, Protocol
+from typing import Callable, Protocol, Sequence
+
+from .st7789_layout import (
+    SEEDSIGNER_ST7789_HEIGHT,
+    SEEDSIGNER_ST7789_WIDTH,
+    layout_seed_signer_st7789_review_frame,
+)
 
 
 BOARD_MODE = "BOARD"
@@ -20,6 +26,32 @@ class GpioLike(Protocol):
         ...
 
     def input(self, pin: int) -> object:
+        ...
+
+
+class CameraFrameSource(Protocol):
+    def capture_frame(self) -> object:
+        ...
+
+
+class QrDecoder(Protocol):
+    def decode_qr(self, frame: object) -> str | None:
+        ...
+
+
+class St7789DrawTarget(Protocol):
+    def fill_rect(self, x: int, y: int, width: int, height: int, color: str) -> None:
+        ...
+
+    def draw_text(self, text: str, x: int, y: int, scale: int, color: str, max_width: int | None = None) -> None:
+        ...
+
+    def present(self) -> None:
+        ...
+
+
+class QrMatrixRenderer(Protocol):
+    def render_qr_matrix(self, payload: str) -> Sequence[Sequence[bool]]:
         ...
 
 
@@ -105,6 +137,137 @@ class SeedSignerGpioButtonInput:
             polls += 1
             self.sleep(self.poll_delay_s)
         raise TimeoutError("no SeedSigner-compatible button press observed")
+
+
+class SeedSignerCameraQrScanner:
+    """Camera QR scanner boundary for the SeedSigner-compatible Pi target."""
+
+    def __init__(
+        self,
+        *,
+        frame_source: CameraFrameSource,
+        qr_decoder: QrDecoder,
+        sleep: Callable[[float], None] | None = None,
+        poll_delay_s: float = 0.05,
+    ) -> None:
+        self.frame_source = frame_source
+        self.qr_decoder = qr_decoder
+        self.sleep = sleep or _default_sleep
+        self.poll_delay_s = poll_delay_s
+
+    def scan_request_qr(self, max_frames: int | None = None) -> str:
+        frames = 0
+        while max_frames is None or frames < max_frames:
+            frame = self.frame_source.capture_frame()
+            decoded = self.qr_decoder.decode_qr(frame)
+            if decoded is not None and decoded.strip():
+                return decoded.strip()
+            frames += 1
+            self.sleep(self.poll_delay_s)
+        raise TimeoutError("no NostrSeal request QR decoded")
+
+
+class SeedSignerSt7789ReviewDisplay:
+    """Review-display adapter that applies bounded ST7789 layout commands."""
+
+    def __init__(self, *, target: St7789DrawTarget) -> None:
+        self.target = target
+
+    def display_review_frame(
+        self,
+        _screen_review: dict[str, object],
+        _page_index: int,
+        frame: dict[str, object],
+    ) -> None:
+        for command in layout_seed_signer_st7789_review_frame(frame):
+            self._apply_command(command)
+        self.target.present()
+
+    def _apply_command(self, command: dict[str, object]) -> None:
+        command_type = command.get("type")
+        if command_type == "rect":
+            self.target.fill_rect(
+                int(command["x"]),
+                int(command["y"]),
+                int(command["width"]),
+                int(command["height"]),
+                str(command["color"]),
+            )
+            return
+        if command_type == "text":
+            self.target.draw_text(
+                str(command["text"]),
+                int(command["x"]),
+                int(command["y"]),
+                int(command["scale"]),
+                str(command["color"]),
+                max_width=int(command["width"]),
+            )
+            return
+        raise ValueError(f"unsupported ST7789 layout command type: {command_type}")
+
+
+class SeedSignerSt7789ResponseQrDisplay:
+    """Response-QR display adapter for a centered matrix on a 240x240 ST7789."""
+
+    def __init__(
+        self,
+        *,
+        target: St7789DrawTarget,
+        qr_renderer: QrMatrixRenderer,
+        width: int = SEEDSIGNER_ST7789_WIDTH,
+        height: int = SEEDSIGNER_ST7789_HEIGHT,
+        quiet_zone_modules: int = 4,
+    ) -> None:
+        if width <= 0 or height <= 0:
+            raise ValueError("display dimensions must be positive")
+        if quiet_zone_modules < 0:
+            raise ValueError("QR quiet zone must be non-negative")
+        self.target = target
+        self.qr_renderer = qr_renderer
+        self.width = width
+        self.height = height
+        self.quiet_zone_modules = quiet_zone_modules
+
+    def emit_response_qr(self, response_qr: str) -> None:
+        matrix = self._validated_matrix(self.qr_renderer.render_qr_matrix(response_qr))
+        modules = len(matrix) + (self.quiet_zone_modules * 2)
+        module_size = min(self.width, self.height) // modules
+        if module_size <= 0:
+            raise ValueError("QR matrix does not fit display")
+        qr_size = modules * module_size
+        origin_x = (self.width - qr_size) // 2
+        origin_y = (self.height - qr_size) // 2
+
+        self.target.fill_rect(0, 0, self.width, self.height, "black")
+        self.target.fill_rect(origin_x, origin_y, qr_size, qr_size, "white")
+        for row_index, row in enumerate(matrix):
+            for column_index, enabled in enumerate(row):
+                if enabled:
+                    self.target.fill_rect(
+                        origin_x + ((column_index + self.quiet_zone_modules) * module_size),
+                        origin_y + ((row_index + self.quiet_zone_modules) * module_size),
+                        module_size,
+                        module_size,
+                        "black",
+                    )
+        self.target.present()
+
+    @staticmethod
+    def _validated_matrix(matrix: Sequence[Sequence[bool]]) -> Sequence[Sequence[bool]]:
+        if not matrix:
+            raise ValueError("QR matrix must not be empty")
+        width = len(matrix[0])
+        if width == 0:
+            raise ValueError("QR matrix must not be empty")
+        for row in matrix:
+            if len(row) != width:
+                raise ValueError("QR matrix must be rectangular")
+            if any(type(item) is not bool for item in row):
+                raise ValueError("QR matrix values must be booleans")
+        if len(matrix) != width:
+            raise ValueError("QR matrix must be square")
+        return matrix
 
 
 def create_seed_signer_gpio_button_input() -> SeedSignerGpioButtonInput:

@@ -88,7 +88,11 @@ route.
   Waveshare-style HAT button profile and optional GPIO input adapter. It pins
   the review actions to BOARD pins from the SeedSigner hardware reference while
   keeping GPIO access injectable for tests; it is not a completed hardware
-  acceptance claim.
+  acceptance claim. The same module owns driver-facing Pi adapter boundaries
+  for camera QR scanning, ST7789 trusted-review rendering, and ST7789
+  response-QR display. The adapters depend on injected frame sources, QR
+  decoders, draw targets, and QR matrix renderers, so package tests can pin
+  behavior before choosing concrete Pi camera/display libraries.
 - `nostrseal_vault.st7789_layout`: SeedSigner-compatible 240x240 ST7789 layout
   planner for trusted-review frames. It turns renderer-neutral frame data into
   bounded draw commands before a Pi display library or SPI driver is selected.

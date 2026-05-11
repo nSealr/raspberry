@@ -163,6 +163,13 @@ Status: `nostrseal_vault.st7789_layout` now provides a SeedSigner-compatible
 title, page indicator, styled body lines, and action hint, giving the future
 Pi display driver a tested pre-pixel layout contract.
 
+Status: `nostrseal_vault.seed_signer_hardware` now includes injected
+driver-facing adapters for SeedSigner-compatible Pi bring-up: a camera QR
+scanner boundary, an ST7789 trusted-review display boundary, and an ST7789
+response-QR display boundary. These adapters are testable without Pi hardware
+and do not claim physical camera/display acceptance until connected to real
+frame sources, draw targets, QR rendering, and the available Pi Zero kit.
+
 Status: `nseal-vault flow --st7789-layout-log` now exports the ST7789 layout
 commands generated from each button-driven review frame, so future display
 driver tests can compare the physical adapter against a committed harness

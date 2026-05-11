@@ -102,6 +102,10 @@ default are left unchanged.
 - SeedSigner-compatible ST7789 layout tests proving trusted-review draw
   commands stay within the 240x240 display, preserve meta/value/normal body
   styles, and reject body layouts that would overlap the footer/action area.
+- SeedSigner-compatible driver-facing adapter tests proving camera QR scanning
+  polls injected frames until a payload is decoded, ST7789 review rendering
+  applies bounded layout commands to an injected draw target, and ST7789
+  response-QR rendering draws a validated centered matrix with a quiet zone.
 - CLI ST7789 layout-log test proving the button-driven flow can export bounded
   SeedSigner-compatible draw commands for every displayed review frame.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
@@ -139,10 +143,10 @@ default are left unchanged.
 
 - SeedSigner-compatible Pi Zero board/runtime smoke planning against the
   available Raspberry Pi Zero using `nseal-vault hardware-probe`.
-- Camera frame input through a Pi Zero-compatible OV5647/ZeroCam path, real
-  display rendering on a Waveshare-compatible ST7789 240x240 display HAT, and
-  GPIO approval/navigation tests before Raspberry Pi hardware acceptance
-  testing.
+- Concrete Pi camera frame-source and QR decoder integration through an
+  OV5647/ZeroCam path, concrete ST7789 draw-target integration on a
+  Waveshare-compatible 240x240 display HAT, and GPIO approval/navigation tests
+  before Raspberry Pi hardware acceptance testing.
 - Real hardware adapter tests against the existing transcript oracle once
   camera/display drivers are selected, the ST7789 layout plan is rendered on
   the display HAT, and the SeedSigner-compatible GPIO profile is exercised on
