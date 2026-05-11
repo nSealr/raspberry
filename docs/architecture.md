@@ -56,6 +56,19 @@ must not turn the Raspberry QR vault into a policy-automated signer, persistent
 grant target, persistent seed store, secure-element unlock path, or TROPIC01
 route.
 
+The final product key-source model is a RAM-only session keyring. It may load
+manual BIP-39 words, SeedSigner Standard SeedQR, SeedSigner CompactSeedQR,
+plain mnemonic QR, `nsec` QR, or locally generated mnemonic/standalone-key
+material for the current session. BIP-39 passphrases create separate seed
+namespaces and are entered separately from public account metadata. Policies
+belong to the resulting public key, but QR vault routes have only the
+manual-only policy and no persistent policy state.
+
+MicroSD/file transfer of secret material is excluded from the QR vault
+acceptance model. The Raspberry microSD remains boot media. Secret export, if
+later implemented, must be a danger-zone recovery flow with local review and
+physical confirmation, not part of ordinary signing.
+
 Feature target and current status are tracked in `NostrSeal/specs`
 `vectors/features/signer-feature-matrix-v0.json`. The Raspberry QR vault is in
 the stateless QR vault parity group with the ESP32 QR vault: features can be at

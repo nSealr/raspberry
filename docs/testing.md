@@ -168,6 +168,10 @@ default are left unchanged.
   camera/display drivers are selected, the ST7789 layout plan is rendered on
   the display HAT, and the SeedSigner-compatible GPIO profile is exercised on
   the Pi HAT.
+- SeedSigner Standard SeedQR and CompactSeedQR import tests for RAM-only
+  BIP-39/NIP-06 session loading, including warnings that shared Bitcoin/Nostr
+  mnemonics share compromise risk and excluding Bitcoin descriptors, xpubs,
+  PSBTs, wallet policy, and microSD/file secret transfer.
 
 Hardware tests must record board, camera, display, OS image, commit, and exact
 procedure.

@@ -32,6 +32,12 @@ even if current hardware readiness differs.
   `NostrSeal/specs` fixtures.
 - NIP-06 mnemonic derivation for account `0` and account-indexed key recovery,
   checked against the canonical NIP-06 test vector in `NostrSeal/specs`.
+- Final product key-source goals for the RAM-only session keyring: manual
+  BIP-39 word entry, SeedSigner Standard SeedQR, SeedSigner CompactSeedQR,
+  plain BIP-39 mnemonic QR, Nostr `nsec` QR, local mnemonic generation, and
+  local standalone-key generation. SeedSigner-compatible import is BIP-39 seed
+  import for NIP-06 Nostr derivation; it does not import Bitcoin descriptors,
+  xpubs, PSBTs, or wallet policy.
 - The shared `nseal-account-descriptor-v0` route
   `raspberry_qr_vault` is treated as a stateless-session, manual-only route
   bound to `policy-manual-only-qr-vault` with `persistent_grants: false`.
