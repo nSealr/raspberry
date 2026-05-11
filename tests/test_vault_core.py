@@ -978,6 +978,42 @@ class VaultCoreTests(unittest.TestCase):
             response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
             self.assert_valid_signed_event_for_pubkey(response["result"]["event"], NIP06_KEY["public_key"])
 
+    def test_cli_signs_qr_request_from_stdin_mnemonic_words(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "sign",
+                    "--mnemonic-words-stdin",
+                    "--mnemonic-word-count",
+                    "12",
+                    "--account",
+                    str(NIP06_KEY["account"]),
+                    "--request",
+                    str(request_path),
+                    "--response",
+                    str(response_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "qr",
+                    "--approve",
+                ],
+                cwd=ROOT,
+                input="\n".join(NIP06_KEY["mnemonic"].split()) + "\n",
+                text=True,
+                check=True,
+            )
+
+            response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event_for_pubkey(response["result"]["event"], NIP06_KEY["public_key"])
+
     def test_cli_reviews_qr_request_without_secret_key(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             request_path = Path(temp_root) / "request.qr"
@@ -1298,6 +1334,42 @@ class VaultCoreTests(unittest.TestCase):
                 ],
                 cwd=ROOT,
                 input=NIP06_KEY["mnemonic"] + "\n",
+                text=True,
+                check=True,
+            )
+
+            response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event_for_pubkey(response["result"]["event"], NIP06_KEY["public_key"])
+
+    def test_cli_flow_can_read_mnemonic_words_from_stdin(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-screen.json"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "flow",
+                    "--mnemonic-words-stdin",
+                    "--mnemonic-word-count",
+                    "12",
+                    "--account",
+                    str(NIP06_KEY["account"]),
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--response",
+                    str(response_path),
+                    "--button-sequence",
+                    "next,next,next,approve",
+                ],
+                cwd=ROOT,
+                input="\n".join(NIP06_KEY["mnemonic"].split()) + "\n",
                 text=True,
                 check=True,
             )

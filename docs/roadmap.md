@@ -115,6 +115,12 @@ It validates English wordlist membership and checksum, derives the NIP-06
 session key once, and plugs into the existing RAM-only secret-provider flow.
 Real Pi keypad/display UX and production memory-hardening remain pending.
 
+Status: `nseal-vault sign --mnemonic-words-stdin` and `nseal-vault flow
+--mnemonic-words-stdin` now expose that controller through the desktop CLI by
+reading one BIP-39 word per stdin line. This gives lab and adapter harnesses a
+closer simulation of future Pi word entry while keeping real camera, display,
+GPIO, and production memory-hardening work pending.
+
 Status: the file-backed QR flow adapters now live in
 `nostrseal_vault.adapters` instead of private CLI classes. The CLI remains a
 thin file/argument wrapper around package-owned scan, review, display-frame

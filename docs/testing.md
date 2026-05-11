@@ -99,6 +99,10 @@ default are left unchanged.
   mnemonic inputs on both `sign` and button-driven `flow`, keeping development
   harnesses closer to the stateless RAM-only target than shell-argument or
   seed-file-only paths.
+- Desktop CLI smoke tests for word-by-word BIP-39 stdin input on both `sign`
+  and button-driven `flow`, proving the package-owned seed-entry validator is
+  reachable through the CLI without introducing seed files or persistent
+  storage.
 - Shared NostrSeal v0 implementation-limit conformance test against the
   `NostrSeal/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,

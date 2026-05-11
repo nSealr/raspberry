@@ -22,6 +22,7 @@ from .qr import (
     encode_qr_envelope,
 )
 from .review import review_event_template
+from .seed_entry import MnemonicSessionSecretProvider
 from .signer import sign_request, validate_signing_request
 
 
@@ -52,6 +53,14 @@ def _qr_response_encoder(fmt: str):
     raise argparse.ArgumentTypeError("flow output format must be qr or qr-animated")
 
 
+class _StdinMnemonicWordInput:
+    def read_mnemonic_word(self, word_index: int, word_count: int) -> str:
+        line = sys.stdin.readline()
+        if line == "":
+            raise ValueError(f"mnemonic word {word_index} of {word_count} is missing")
+        return line
+
+
 def _secret_key_from_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> str:
     if args.secret_key:
         return args.secret_key
@@ -67,6 +76,16 @@ def _secret_key_from_args(args: argparse.Namespace, parser: argparse.ArgumentPar
         try:
             return derive_nip06_secret(mnemonic, passphrase=args.passphrase, account=args.account)
         except ValueError as exc:
+            parser.error(str(exc))
+    if getattr(args, "mnemonic_words_stdin", False):
+        try:
+            return MnemonicSessionSecretProvider(
+                _StdinMnemonicWordInput(),
+                word_count=args.mnemonic_word_count,
+                passphrase=args.passphrase,
+                account=args.account,
+            )()
+        except (RuntimeError, ValueError) as exc:
             parser.error(str(exc))
     mnemonic = args.mnemonic_file.read_text(encoding="utf-8")
     try:
@@ -103,6 +122,8 @@ def build_parser() -> argparse.ArgumentParser:
     key_source.add_argument("--secret-key-stdin", action="store_true", help="Read one lowercase-hex secret key from stdin")
     key_source.add_argument("--mnemonic-file", type=Path, help="NIP-06 mnemonic seed phrase file")
     key_source.add_argument("--mnemonic-stdin", action="store_true", help="Read one NIP-06 mnemonic seed phrase from stdin")
+    key_source.add_argument("--mnemonic-words-stdin", action="store_true", help="Read one BIP-39 word per stdin line")
+    sign.add_argument("--mnemonic-word-count", type=int, default=12, help="Expected BIP-39 word count for --mnemonic-words-stdin")
     sign.add_argument("--account", type=int, default=0, help="NIP-06 account index for mnemonic derivation")
     sign.add_argument("--passphrase", default="", help="Optional BIP-39 passphrase for mnemonic derivation")
     sign.add_argument("--request", required=True, type=Path, help="Input request path")
@@ -145,6 +166,8 @@ def build_parser() -> argparse.ArgumentParser:
     flow_key_source.add_argument("--secret-key-stdin", action="store_true", help="Read one lowercase-hex secret key from stdin")
     flow_key_source.add_argument("--mnemonic-file", type=Path, help="NIP-06 mnemonic seed phrase file")
     flow_key_source.add_argument("--mnemonic-stdin", action="store_true", help="Read one NIP-06 mnemonic seed phrase from stdin")
+    flow_key_source.add_argument("--mnemonic-words-stdin", action="store_true", help="Read one BIP-39 word per stdin line")
+    flow.add_argument("--mnemonic-word-count", type=int, default=12, help="Expected BIP-39 word count for --mnemonic-words-stdin")
     flow.add_argument("--account", type=int, default=0, help="NIP-06 account index for mnemonic derivation")
     flow.add_argument("--passphrase", default="", help="Optional BIP-39 passphrase for mnemonic derivation")
     flow.add_argument("--request", required=True, type=Path, help="Input QR request path")

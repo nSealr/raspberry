@@ -71,13 +71,14 @@ desktop experiments preserve the same approval boundary expected on real
 hardware.
 
 The `sign` and `flow` commands can use explicit development `--secret-key`,
-stdin-fed `--secret-key-stdin`, NIP-06 `--mnemonic-file`, or stdin-fed
-`--mnemonic-stdin` plus account index. The file and argument paths are desktop
-simulation compatibility paths. The stdin paths better match the stateless
-target because session key material can be supplied without a seed file or a
-process-list-visible secret argument, but they are still development harness
-inputs rather than a final Pi seed-entry UX. Real Pi adapters must keep seed
-material RAM-only for the current signing session.
+stdin-fed `--secret-key-stdin`, NIP-06 `--mnemonic-file`, stdin-fed
+`--mnemonic-stdin`, or word-by-word stdin `--mnemonic-words-stdin` plus account
+index. The file and argument paths are desktop simulation compatibility paths.
+The stdin paths better match the stateless target because session key material
+can be supplied without a seed file or a process-list-visible secret argument,
+but they are still development harness inputs rather than a final Pi
+seed-entry UX. Real Pi adapters must keep seed material RAM-only for the
+current signing session.
 
 `MnemonicSessionSecretProvider` is the first package-owned boundary for that
 future seed-entry UX. A display/button adapter supplies one BIP-39 word at a
@@ -86,6 +87,12 @@ checks the English BIP-39 wordlist and checksum, derives the NIP-06 account key,
 and refuses reuse after one session. This still does not make Python strings
 securely erasable memory, so it is an acceptance boundary for stateless flow
 ordering rather than a production memory-hardening claim.
+
+`--mnemonic-words-stdin` is the CLI harness for that same boundary. It reads
+exactly the selected BIP-39 word count from stdin, one word per line, then
+derives the same NIP-06 session key before review. It exists so desktop and lab
+smokes can exercise the future display/button seed-entry contract without
+introducing a seed file, persistent secret storage, or Pi-specific UI code.
 
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it
