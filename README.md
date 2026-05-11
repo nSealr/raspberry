@@ -65,8 +65,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   hardening vectors before trusted review or signing.
 - QR envelope encoding now enforces the same static decoded-JSON byte limit as
   decoding, so the Raspberry flow does not emit response QR payloads that v0
-  readers would immediately reject. Larger responses remain future animated or
-  chunked QR work.
+  readers would immediately reject. It also supports the shared `nseal1a:`
+  animated QR frame set for larger valid responses, with digest, checksum,
+  ordering, and frame-count checks before JSON parsing.
 - `nseal-vault flow --button-sequence ...` file-backed physical-button harness
   that refuses approval until every trusted review page has been traversed and
   bounds non-terminal button streams before future GPIO adapters exist.
@@ -125,7 +126,9 @@ python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --display-frame-log display-frames.json
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --review-transcript-log review-transcript.json
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qr --button-sequence next,next,scroll,next,approve --review-mode detail
+python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qra --button-sequence next,next,scroll,next,approve --review-mode detail --output-format qr-animated
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
+python3 -m nostrseal_vault sign --secret-key <hex> --request request.qra --response response.qra --input-format qr-animated --output-format qr-animated --approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve --approval-digest <hex>
 python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
 ```

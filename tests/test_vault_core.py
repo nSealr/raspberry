@@ -25,7 +25,13 @@ from nostrseal_vault.hardware_flow import (
     run_qr_vault_flow,
 )
 from nostrseal_vault.nip06 import derive_nip06_secret
-from nostrseal_vault.qr import decode_qr_envelope, encode_qr_envelope
+from nostrseal_vault.qr import (
+    ANIMATED_QR_ENVELOPE_PREFIX,
+    decode_animated_qr_envelope_frames,
+    decode_qr_envelope,
+    encode_animated_qr_envelope_frames,
+    encode_qr_envelope,
+)
 from nostrseal_vault.review import review_event_template
 from nostrseal_vault.signer import sign_request
 
@@ -46,6 +52,7 @@ NIP06_KEY = json.loads((SPECS / "vectors/keys/nip06-account-0-leader.json").read
 BASIC_VECTOR = json.loads((SPECS / "vectors/events/kind-1-basic.json").read_text(encoding="utf-8"))
 BASIC_REQUEST = json.loads((SPECS / "examples/request-kind-1-basic.json").read_text(encoding="utf-8"))
 TAGGED_REQUEST = json.loads((SPECS / "examples/request-kind-1-tags.json").read_text(encoding="utf-8"))
+ANIMATED_QR_VECTOR = json.loads((SPECS / "vectors/transports/qr-animated-response-kind-1-basic.json").read_text(encoding="utf-8"))
 SCROLL_DETAIL_REQUEST = {
     "version": 1,
     "request_id": "req-scroll-detail",
@@ -219,6 +226,27 @@ class VaultCoreTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "QR decoded JSON exceeds max_static_qr_decoded_json_bytes"):
             encode_qr_envelope(oversized)
+
+    def test_animated_qr_envelope_matches_shared_vector(self) -> None:
+        frames = encode_animated_qr_envelope_frames(
+            ANIMATED_QR_VECTOR["decoded"],
+            chunk_size_chars=ANIMATED_QR_VECTOR["chunk_size_chars"],
+        )
+
+        self.assertEqual(frames, ANIMATED_QR_VECTOR["frames"])
+        self.assertTrue(all(frame.startswith(ANIMATED_QR_ENVELOPE_PREFIX) for frame in frames))
+        self.assertEqual(decode_animated_qr_envelope_frames(frames), ANIMATED_QR_VECTOR["decoded"])
+        self.assertEqual(decode_animated_qr_envelope_frames(list(reversed(frames))), ANIMATED_QR_VECTOR["decoded"])
+
+    def test_animated_qr_envelope_rejects_malformed_frame_sets(self) -> None:
+        with self.assertRaisesRegex(ValueError, "animated QR requires at least one frame"):
+            decode_animated_qr_envelope_frames([])
+        with self.assertRaisesRegex(ValueError, "animated QR frames must be unique and contiguous"):
+            decode_animated_qr_envelope_frames(ANIMATED_QR_VECTOR["frames"][1:])
+        tampered = list(ANIMATED_QR_VECTOR["frames"])
+        tampered[0] = tampered[0][:-1] + "0"
+        with self.assertRaisesRegex(ValueError, "animated QR frame checksum mismatch"):
+            decode_animated_qr_envelope_frames(tampered)
 
     def test_limits_match_shared_v0_profile(self) -> None:
         from nostrseal_vault.limits import NOSTRSEAL_V0_LIMITS
@@ -750,6 +778,39 @@ class VaultCoreTests(unittest.TestCase):
             response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
             self.assert_valid_signed_event(response["result"]["event"])
 
+    def test_cli_signs_animated_qr_request_and_outputs_animated_qr_response(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qra"
+            response_path = Path(temp_root) / "response.qra"
+            request_path.write_text("\n".join(encode_animated_qr_envelope_frames(BASIC_REQUEST)) + "\n", encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "sign",
+                    "--secret-key",
+                    KEY["secret_key"],
+                    "--request",
+                    str(request_path),
+                    "--response",
+                    str(response_path),
+                    "--input-format",
+                    "qr-animated",
+                    "--output-format",
+                    "qr-animated",
+                    "--approve",
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            response_frames = response_path.read_text(encoding="utf-8").strip().splitlines()
+            self.assertGreater(len(response_frames), 1)
+            response = decode_animated_qr_envelope_frames(response_frames)
+            self.assert_valid_signed_event(response["result"]["event"])
+
     def test_cli_signs_qr_request_from_nip06_mnemonic_file(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             mnemonic_path = Path(temp_root) / "mnemonic.txt"
@@ -977,6 +1038,40 @@ class VaultCoreTests(unittest.TestCase):
 
             self.assertEqual(json.loads(review_path.read_text(encoding="utf-8")), screen_review_for_request(BASIC_REQUEST))
             response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event(response["result"]["event"])
+
+    def test_cli_flow_can_emit_animated_qr_response_frames(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-screen.json"
+            response_path = Path(temp_root) / "response.qra"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nostrseal_vault",
+                    "flow",
+                    "--secret-key",
+                    KEY["secret_key"],
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--response",
+                    str(response_path),
+                    "--output-format",
+                    "qr-animated",
+                    "--approve",
+                ],
+                cwd=ROOT,
+                check=True,
+            )
+
+            response_frames = response_path.read_text(encoding="utf-8").strip().splitlines()
+            self.assertGreater(len(response_frames), 1)
+            response = decode_animated_qr_envelope_frames(response_frames)
             self.assert_valid_signed_event(response["result"]["event"])
 
     def test_cli_flow_accepts_button_sequence_for_physical_review(self) -> None:

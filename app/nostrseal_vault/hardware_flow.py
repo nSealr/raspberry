@@ -52,7 +52,11 @@ class QrVaultFlowResult:
     review_transcript: list[dict[str, Any]] | None = None
 
 
-def run_qr_vault_flow(io: QrVaultIO, secret_key_hex: str) -> QrVaultFlowResult:
+def run_qr_vault_flow(
+    io: QrVaultIO,
+    secret_key_hex: str,
+    response_encoder: Callable[[dict[str, Any]], str] = encode_qr_envelope,
+) -> QrVaultFlowResult:
     request = decode_qr_envelope(io.scan_request_qr())
     if not isinstance(request, dict):
         raise ValueError("QR vault flow requires a JSON object request")
@@ -67,7 +71,7 @@ def run_qr_vault_flow(io: QrVaultIO, secret_key_hex: str) -> QrVaultFlowResult:
         approved=approved,
         approval_digest=approval_digest,
     )
-    io.emit_response_qr(encode_qr_envelope(response))
+    io.emit_response_qr(response_encoder(response))
     return QrVaultFlowResult(
         request_id=str(request["request_id"]),
         approved=approved,
@@ -81,12 +85,14 @@ def run_button_qr_vault_flow(
     secret_key_hex: str,
     display_limits: DisplayFrameLimits = DisplayFrameLimits(),
     max_button_steps: int = 32,
+    response_encoder: Callable[[dict[str, Any]], str] = encode_qr_envelope,
 ) -> QrVaultFlowResult:
     return run_button_qr_vault_flow_with_secret_provider(
         io,
         lambda: secret_key_hex,
         display_limits=display_limits,
         max_button_steps=max_button_steps,
+        response_encoder=response_encoder,
     )
 
 
@@ -95,6 +101,7 @@ def run_button_qr_vault_flow_with_secret_provider(
     secret_key_provider: Callable[[], str],
     display_limits: DisplayFrameLimits = DisplayFrameLimits(),
     max_button_steps: int = 32,
+    response_encoder: Callable[[dict[str, Any]], str] = encode_qr_envelope,
 ) -> QrVaultFlowResult:
     if max_button_steps <= 0:
         raise ValueError("button review flow max steps must be positive")
@@ -136,7 +143,7 @@ def run_button_qr_vault_flow_with_secret_provider(
         approved=approved,
         approval_digest=approval_digest,
     )
-    io.emit_response_qr(encode_qr_envelope(response))
+    io.emit_response_qr(response_encoder(response))
     return QrVaultFlowResult(
         request_id=str(request["request_id"]),
         approved=approved,
@@ -151,12 +158,14 @@ def run_detail_button_qr_vault_flow(
     secret_key_hex: str,
     detail_limits: ReviewDetailPageLimits = ReviewDetailPageLimits(),
     max_button_steps: int = 32,
+    response_encoder: Callable[[dict[str, Any]], str] = encode_qr_envelope,
 ) -> QrVaultFlowResult:
     return run_detail_button_qr_vault_flow_with_secret_provider(
         io,
         lambda: secret_key_hex,
         detail_limits=detail_limits,
         max_button_steps=max_button_steps,
+        response_encoder=response_encoder,
     )
 
 
@@ -165,6 +174,7 @@ def run_detail_button_qr_vault_flow_with_secret_provider(
     secret_key_provider: Callable[[], str],
     detail_limits: ReviewDetailPageLimits = ReviewDetailPageLimits(),
     max_button_steps: int = 32,
+    response_encoder: Callable[[dict[str, Any]], str] = encode_qr_envelope,
 ) -> QrVaultFlowResult:
     if max_button_steps <= 0:
         raise ValueError("button review flow max steps must be positive")
@@ -221,7 +231,7 @@ def run_detail_button_qr_vault_flow_with_secret_provider(
         approved=approved,
         approval_digest=approval_digest,
     )
-    io.emit_response_qr(encode_qr_envelope(response))
+    io.emit_response_qr(response_encoder(response))
     return QrVaultFlowResult(
         request_id=str(request["request_id"]),
         approved=approved,

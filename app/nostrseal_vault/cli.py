@@ -14,7 +14,12 @@ from .display import (
 )
 from .hardware_flow import run_button_qr_vault_flow, run_detail_button_qr_vault_flow, run_qr_vault_flow
 from .nip06 import derive_nip06_secret
-from .qr import decode_qr_envelope, encode_qr_envelope
+from .qr import (
+    decode_animated_qr_envelope_frames,
+    decode_qr_envelope,
+    encode_animated_qr_envelope_frames,
+    encode_qr_envelope,
+)
 from .review import review_event_template
 from .signer import sign_request, validate_signing_request
 
@@ -23,6 +28,8 @@ def _read_value(path: Path, fmt: str) -> object:
     text = path.read_text(encoding="utf-8").strip()
     if fmt == "qr":
         return decode_qr_envelope(text)
+    if fmt == "qr-animated":
+        return decode_animated_qr_envelope_frames([line for line in text.splitlines() if line])
     return json.loads(text)
 
 
@@ -30,7 +37,18 @@ def _write_value(path: Path, fmt: str, value: object) -> None:
     if fmt == "qr":
         path.write_text(f"{encode_qr_envelope(value)}\n", encoding="utf-8")
         return
+    if fmt == "qr-animated":
+        path.write_text("\n".join(encode_animated_qr_envelope_frames(value)) + "\n", encoding="utf-8")
+        return
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _qr_response_encoder(fmt: str):
+    if fmt == "qr":
+        return encode_qr_envelope
+    if fmt == "qr-animated":
+        return lambda value: "\n".join(encode_animated_qr_envelope_frames(value))
+    raise argparse.ArgumentTypeError("flow output format must be qr or qr-animated")
 
 
 def _secret_key_from_args(args: argparse.Namespace) -> str:
@@ -70,15 +88,15 @@ def build_parser() -> argparse.ArgumentParser:
     sign.add_argument("--passphrase", default="", help="Optional BIP-39 passphrase for mnemonic derivation")
     sign.add_argument("--request", required=True, type=Path, help="Input request path")
     sign.add_argument("--response", required=True, type=Path, help="Output response path")
-    sign.add_argument("--input-format", choices=["json", "qr"], default="json")
-    sign.add_argument("--output-format", choices=["json", "qr"], default="json")
+    sign.add_argument("--input-format", choices=["json", "qr", "qr-animated"], default="json")
+    sign.add_argument("--output-format", choices=["json", "qr", "qr-animated"], default="json")
     sign.add_argument("--approval-digest", help="Optional digest binding approval to reviewed request pages")
     sign.add_argument("--approve", action="store_true", help="Explicitly approve signing for this CLI invocation")
 
     review = subparsers.add_parser("review", help="Render deterministic review data for one signing request")
     review.add_argument("--request", required=True, type=Path, help="Input request path")
     review.add_argument("--review", required=True, type=Path, help="Output review JSON path")
-    review.add_argument("--input-format", choices=["json", "qr"], default="json")
+    review.add_argument("--input-format", choices=["json", "qr", "qr-animated"], default="json")
     review.add_argument(
         "--output-format",
         choices=["json", "screen-json", "display-frame-json", "detail-pages-json"],
@@ -111,6 +129,7 @@ def build_parser() -> argparse.ArgumentParser:
     flow.add_argument("--request", required=True, type=Path, help="Input QR request path")
     flow.add_argument("--review", required=True, type=Path, help="Output trusted screen review JSON path")
     flow.add_argument("--response", required=True, type=Path, help="Output QR response path")
+    flow.add_argument("--output-format", choices=["qr", "qr-animated"], default="qr")
     flow.add_argument("--approve", action="store_true", help="Explicitly approve signing for this CLI invocation")
     flow.add_argument(
         "--button-sequence",
@@ -211,6 +230,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("flow --review-mode detail requires --button-sequence")
         if args.review_mode == "screen" and args.button_sequence and "scroll" in args.button_sequence:
             parser.error("flow scroll button requires --review-mode detail")
+        response_encoder = _qr_response_encoder(args.output_format)
         if args.button_sequence:
             adapter = FileButtonQrVaultIO(
                 args.request,
@@ -230,6 +250,7 @@ def main(argv: list[str] | None = None) -> int:
                         max_compact_body_lines=args.max_compact_body_lines,
                         max_compact_line_chars=args.max_compact_line_chars,
                     ),
+                    response_encoder=response_encoder,
                 )
             else:
                 result = run_button_qr_vault_flow(
@@ -240,6 +261,7 @@ def main(argv: list[str] | None = None) -> int:
                         max_body_lines=args.max_body_lines,
                         max_line_chars=args.max_line_chars,
                     ),
+                    response_encoder=response_encoder,
                 )
             if args.review_transcript_log is not None:
                 args.review_transcript_log.write_text(
@@ -250,6 +272,7 @@ def main(argv: list[str] | None = None) -> int:
         run_qr_vault_flow(
             FileQrVaultIO(args.request, args.review, args.response, args.approve),
             _secret_key_from_args(args),
+            response_encoder=response_encoder,
         )
         return 0
 

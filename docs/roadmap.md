@@ -34,6 +34,12 @@ in `nostrseal_vault.hardware_flow`. Real camera, display, and GPIO adapters are
 still pending. A file-backed `nseal-vault flow` harness now exercises the same
 boundary from the CLI.
 
+Status note, 2026-05-10: Raspberry QR tooling now supports the shared
+`nseal1a:` animated QR frame set for larger valid request/response files.
+`nseal-vault sign` can read and write `qr-animated` frame files, and
+`nseal-vault flow --output-format qr-animated` can emit a multi-frame response
+while preserving the existing review and approval digest semantics.
+
 Status: the physical-button approval state machine is implemented in
 `nostrseal_vault.controls`. It is still hardware-neutral, but it pins the rule
 that approval can only happen after every trusted-review page has been reached,
