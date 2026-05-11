@@ -562,6 +562,7 @@ class VaultCoreTests(unittest.TestCase):
         self.assertCountEqual(
             [vector["name"] for vector in REVIEW_DETAIL_PAGE_VECTORS],
             [
+                "kind-1-control-escapes-t-display-s3",
                 "kind-1-long-events-many-tags-t-display-s3",
                 "kind-1-tags-t-display-s3",
                 "kind-1-unicode-boundary-t-display-s3",

@@ -51,8 +51,9 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - The core display package can also render complete constrained-display
   detail pages for Event/Content/Tags/Decision, including scroll-window
   indicators, compact line styles, long-value continuation indentation, and
-  explicit `U+XXXX` fallback for unsupported glyphs. These are checked against
-  shared `NostrSeal/specs` review-detail-page vectors and exposed by
+  visible JSON-style escapes for decoded control characters. Unsupported
+  glyphs still use explicit `U+XXXX` fallback. These are checked against shared
+  `NostrSeal/specs` review-detail-page vectors and exposed by
   `nseal-vault review --output-format detail-pages-json` without changing the
   `approval_digest` contract.
 - `nseal-vault sign --approval-digest <hex>` can require the signing request to

@@ -153,7 +153,17 @@ def _display_safe_text(text: str) -> str:
     out: list[str] = []
     for char in text:
         codepoint = ord(char)
-        if codepoint <= 0x7F and char in _DISPLAY_SAFE_ASCII:
+        if char == "\n":
+            out.append("\\n")
+        elif char == "\t":
+            out.append("\\t")
+        elif char == "\r":
+            out.append("\\r")
+        elif char == "\b":
+            out.append("\\b")
+        elif char == "\f":
+            out.append("\\f")
+        elif codepoint <= 0x7F and char in _DISPLAY_SAFE_ASCII:
             out.append(char)
         else:
             out.append(f"U+{codepoint:04X}")

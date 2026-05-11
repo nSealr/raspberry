@@ -46,8 +46,8 @@ default are left unchanged.
 - Trusted-display detail-page conformance tests against shared
   `NostrSeal/specs` review-detail-page vectors, covering complete physical
   Event/Content/Tags/Decision pages, scroll-window indicators, compact line
-  styles, continuation indentation, explicit codepoint fallback, and unchanged
-  approval digests.
+  styles, continuation indentation, visible JSON-style control escapes,
+  explicit codepoint fallback, and unchanged approval digests.
 - Physical-button approval session tests that require all trusted-review pages
   to be traversed before approval while allowing early rejection.
 - Review transcript tests against shared `NostrSeal/specs` vectors, covering
