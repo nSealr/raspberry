@@ -20,6 +20,19 @@ SeedSigner is a conceptual reference for QR flow, stateless operation, display
 review, and minimal OS philosophy. Bitcoin/PSBT assumptions must not leak into
 Nostr event signing.
 
+Hardware compatibility should follow the same practical SeedSigner kit shape
+before Nostr-specific additions are considered: Raspberry Pi Zero as the first
+physical target, Pi/ZeroCam OV5647 camera input, Waveshare-compatible ST7789
+240x240 SPI display HAT, HAT joystick/buttons over GPIO, removable microSD
+boot media, and a SeedSigner-OS-style minimal runtime. Pi Zero 1.3 is the
+high-assurance preference because it has no Wi-Fi/Bluetooth hardware; Pi Zero W
+or Zero 2 W can be development targets only with wireless disabled or otherwise
+mitigated before signing.
+
+The current local hardware starting point is a Raspberry Pi Zero. That is
+sufficient for board/runtime smoke planning, but complete QR vault acceptance
+also requires the camera, display HAT, GPIO controls, and OS-profile evidence.
+
 `os/stateless-qr-vault-profile.md` is the implementation-side operating profile
 for future Raspberry image work. It mirrors the checked `NostrSeal/hardware`
 OS profile: removable microSD boot media, disabled or absent wireless,
@@ -226,3 +239,11 @@ flow. It delegates request scanning, frame display, button reads, and response
 QR output to four small interfaces, so a future Pi camera, display library,
 GPIO button module, and QR response renderer can be swapped independently while
 the review/signing state machine stays unchanged.
+
+The first real adapter pass should map that boundary to SeedSigner-compatible
+hardware rather than inventing a separate Raspberry kit: camera scanning from
+the Pi CSI camera path, review rendering onto the ST7789 240x240 display,
+navigation/approve/reject through the Waveshare HAT GPIO button layout, and
+response QR rendering on the same display. SeedSigner code remains a reference
+for hardware behavior and OS shape; NostrSeal owns the Nostr event parser,
+review contract, signing contract, and stateless session flow.

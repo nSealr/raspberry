@@ -7,6 +7,13 @@ the SeedSigner-style QR vault flow for Nostr: scan an unsigned event request,
 review on a trusted display, approve with physical controls, sign BIP-340, and
 return a signed-event QR.
 
+The primary hardware compatibility target is the SeedSigner-style Raspberry Pi
+Zero kit: Pi Zero-class board, Pi/ZeroCam OV5647 camera, Waveshare-compatible
+ST7789 240x240 LCD HAT, GPIO joystick/buttons, removable microSD boot media,
+and a SeedSigner-OS-inspired minimal runtime. Pi 3/4/5 variants can be
+development or accessibility targets later only if they preserve the same
+offline QR, local review, physical approval, and RAM-only custody boundary.
+
 The QR vault pattern is shared across signer families. Its common contracts live
 in `NostrSeal/specs`: QR envelope, review model, review-screen vectors,
 `approval_digest`, and signing vectors. This repository implements the
@@ -103,6 +110,10 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   acceptance boundary aligned with `NostrSeal/hardware`: removable microSD,
   wireless disabled or absent, RAM-only custody, no swap during signing, no
   remote access during signing, and no persistent signing-secret storage.
+- The hardware target is now explicitly SeedSigner-compatible. The first
+  physical target is the available Raspberry Pi Zero; full hardware acceptance
+  still requires the SeedSigner-style camera, ST7789 240x240 display HAT, GPIO
+  controls, and OS profile smoke evidence.
 
 ## Planned Capabilities
 
@@ -110,6 +121,7 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
 - Stateless key/session mode.
 - Display review for raw event kind, signer author, full content, full tags,
   and final approve/reject decision.
+- SeedSigner-compatible Pi Zero camera/display/GPIO adapters.
 - Verifiable minimal OS image path.
 
 ## Initial Layout

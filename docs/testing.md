@@ -120,8 +120,12 @@ default are left unchanged.
 
 ## Next Tests
 
-- Camera frame input, real display rendering, and GPIO approval tests before
-  Raspberry Pi hardware acceptance testing.
+- SeedSigner-compatible Pi Zero board/runtime smoke planning against the
+  available Raspberry Pi Zero.
+- Camera frame input through a Pi Zero-compatible OV5647/ZeroCam path, real
+  display rendering on a Waveshare-compatible ST7789 240x240 display HAT, and
+  GPIO approval/navigation tests before Raspberry Pi hardware acceptance
+  testing.
 - Real hardware adapter tests against the existing transcript oracle once
   camera, display, and GPIO drivers are selected.
 

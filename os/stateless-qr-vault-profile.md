@@ -9,6 +9,12 @@ Raspberry implementation note that future image work must follow.
 This is not a downloadable OS image. It is a pre-image acceptance profile for
 future Buildroot, Raspberry Pi OS Lite, or SeedSigner-OS-inspired work.
 
+The first physical target is the SeedSigner-style Raspberry Pi Zero kit. Future
+image work should start from the Pi Zero/SeedSigner OS shape: camera enabled
+for the Pi/OV5647 camera path, SPI enabled for the ST7789 240x240 display HAT,
+GPIO available for the HAT joystick/buttons, removable microSD boot media, and
+no network or remote-login surface during signing.
+
 ## Required Boundary
 
 - Boot from removable microSD media.
@@ -44,6 +50,7 @@ Future Raspberry hardware reports must record:
 ## Non-Goals
 
 - This profile does not add camera, display, or GPIO drivers.
+- This profile does not claim a completed SeedSigner-compatible hardware smoke.
 - This profile does not add persistent key storage.
 - This profile does not add or require TROPIC01.
 - This profile does not make a production security claim.

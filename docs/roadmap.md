@@ -17,13 +17,21 @@ Status: implemented as the first executable Raspberry QR vault foundation.
 ## M5: Raspberry Architecture
 
 - Signing service.
-- Raspberry Pi Zero build plan.
-- Camera, display, and GPIO approval interface selection.
+- Raspberry Pi Zero build plan centered on SeedSigner-compatible hardware.
+- Camera, display, and GPIO approval interface selection mapped to the Pi
+  CSI/OV5647 camera path, Waveshare-compatible ST7789 240x240 display HAT, and
+  SeedSigner-style HAT joystick/buttons.
+
+Status: the hardware direction is now fixed to SeedSigner-style compatibility,
+with the available Raspberry Pi Zero as the first physical target. This does
+not add a new solution family, persistent secret storage, or TROPIC01; it makes
+the future Raspberry adapters target the same practical kit shape as
+SeedSigner.
 
 ## M6: Raspberry Prototype
 
-- Camera/display abstraction.
-- Physical-button approval flow.
+- SeedSigner-compatible camera/display abstraction.
+- SeedSigner-compatible physical-button approval flow.
 - Signed QR output.
 - Companion verification loop.
 - Pre-signing hardening-vector rejection for unsafe signing requests and
