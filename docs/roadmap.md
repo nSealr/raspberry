@@ -109,6 +109,12 @@ or NIP-06 mnemonic from stdin through `--secret-key-stdin` and
 RAM-only target by avoiding required seed files or secret command-line
 arguments, while real Pi seed-entry UX and hardware drivers remain pending.
 
+Status: `nostrseal_vault.seed_entry.MnemonicSessionSecretProvider` now gives
+future Pi seed-entry adapters a package-owned word-by-word BIP-39 controller.
+It validates English wordlist membership and checksum, derives the NIP-06
+session key once, and plugs into the existing RAM-only secret-provider flow.
+Real Pi keypad/display UX and production memory-hardening remain pending.
+
 Status: the file-backed QR flow adapters now live in
 `nostrseal_vault.adapters` instead of private CLI classes. The CLI remains a
 thin file/argument wrapper around package-owned scan, review, display-frame

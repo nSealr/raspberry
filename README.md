@@ -65,6 +65,10 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   arguments and seed files when a caller can provide session key material over
   stdin. These are still development harness inputs, not production seed-entry
   UX.
+- Hardware-neutral mnemonic seed-entry controller for future Pi display/button
+  adapters. It reads BIP-39 words one by one, normalizes and validates the
+  English wordlist/checksum, derives the NIP-06 session key as a one-shot
+  secret provider, and does not persist the mnemonic.
 - Shared NostrSeal v0 implementation limits for constrained signers, with
   deterministic rejection of applicable invalid signing-request and QR-envelope
   hardening vectors before trusted review or signing.

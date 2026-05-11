@@ -36,6 +36,9 @@ image or a production security claim.
   computation, x-only public key derivation, and BIP-340 signing.
 - `nostrseal_vault.nip06`: BIP-39 seed and BIP-32 path derivation for
   `m/44'/1237'/<account>'/0/0` NIP-06 keys.
+- `nostrseal_vault.seed_entry`: hardware-neutral BIP-39 word-entry controller
+  for future Pi display/button adapters. It validates English mnemonic words
+  and checksum before deriving a one-shot NIP-06 session secret provider.
 - `nostrseal_vault.review`: deterministic event review model checked against
   shared `NostrSeal/specs` review vectors.
 - `nostrseal_vault.display`: deterministic trusted-display page model for raw
@@ -75,6 +78,14 @@ target because session key material can be supplied without a seed file or a
 process-list-visible secret argument, but they are still development harness
 inputs rather than a final Pi seed-entry UX. Real Pi adapters must keep seed
 material RAM-only for the current signing session.
+
+`MnemonicSessionSecretProvider` is the first package-owned boundary for that
+future seed-entry UX. A display/button adapter supplies one BIP-39 word at a
+time through `MnemonicWordInput`; package code normalizes case/whitespace,
+checks the English BIP-39 wordlist and checksum, derives the NIP-06 account key,
+and refuses reuse after one session. This still does not make Python strings
+securely erasable memory, so it is an acceptance boundary for stateless flow
+ordering rather than a production memory-hardening claim.
 
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it

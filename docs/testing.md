@@ -68,6 +68,9 @@ default are left unchanged.
   session key material before review to derive the displayed author pubkey,
   while still refusing to sign unless complete review traversal and physical
   approval succeed.
+- BIP-39 seed-entry boundary tests proving word-by-word mnemonic input is
+  normalized, checked against the English wordlist/checksum, consumed once, and
+  usable as the NIP-06 session secret provider for the button-driven flow.
 - Button-driven display-frame log tests proving future display adapters receive
   bounded frames before physical-style input is consumed.
 - Button-driven flow transcript tests proving the displayed frame/button/

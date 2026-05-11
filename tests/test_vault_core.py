@@ -33,6 +33,7 @@ from nostrseal_vault.qr import (
     encode_qr_envelope,
 )
 from nostrseal_vault.review import review_event_template
+from nostrseal_vault.seed_entry import MnemonicSessionSecretProvider, normalize_mnemonic_words
 from nostrseal_vault.signer import sign_request
 
 
@@ -153,6 +154,18 @@ class NextOnlyButtonQrVaultIO:
 
     def emit_response_qr(self, response_qr: str) -> None:
         self.response_qr = response_qr
+
+
+class FakeMnemonicWordInput:
+    def __init__(self, words: list[str]) -> None:
+        self.words = list(words)
+        self.prompts: list[tuple[int, int]] = []
+
+    def read_mnemonic_word(self, word_index: int, word_count: int) -> str:
+        self.prompts.append((word_index, word_count))
+        if not self.words:
+            raise RuntimeError("no more mnemonic words")
+        return self.words.pop(0)
 
 
 class FakeQrScanner:
@@ -288,6 +301,51 @@ class VaultCoreTests(unittest.TestCase):
         )
 
         self.assertEqual(derived, NIP06_KEY["secret_key"])
+
+    def test_seed_entry_normalizes_and_validates_bip39_mnemonic_words(self) -> None:
+        words = ["  Leader ", "MONKEY", *NIP06_KEY["mnemonic"].split()[2:]]
+
+        self.assertEqual(normalize_mnemonic_words(words), NIP06_KEY["mnemonic"])
+
+        bad_words = NIP06_KEY["mnemonic"].split()
+        bad_words[-1] = "about"
+        with self.assertRaisesRegex(ValueError, "BIP-39 checksum"):
+            normalize_mnemonic_words(bad_words)
+
+    def test_mnemonic_session_secret_provider_reads_words_once_and_derives_nip06_secret(self) -> None:
+        word_input = FakeMnemonicWordInput(NIP06_KEY["mnemonic"].split())
+        provider = MnemonicSessionSecretProvider(
+            word_input,
+            word_count=12,
+            account=NIP06_KEY["account"],
+            passphrase=NIP06_KEY["passphrase"],
+        )
+
+        self.assertEqual(provider(), NIP06_KEY["secret_key"])
+        self.assertEqual(word_input.prompts, [(index, 12) for index in range(1, 13)])
+        self.assertFalse(hasattr(provider, "mnemonic"))
+
+        with self.assertRaisesRegex(RuntimeError, "session mnemonic has already been consumed"):
+            provider()
+
+    def test_button_flow_can_use_word_by_word_mnemonic_session_secret_provider(self) -> None:
+        word_input = FakeMnemonicWordInput(NIP06_KEY["mnemonic"].split())
+        secret_provider = MnemonicSessionSecretProvider(
+            word_input,
+            word_count=12,
+            account=NIP06_KEY["account"],
+            passphrase=NIP06_KEY["passphrase"],
+        )
+        hardware = MemoryButtonQrVaultIO(encode_qr_envelope(BASIC_REQUEST), ["next", "next", "next", "approve"])
+
+        result = run_button_qr_vault_flow_with_secret_provider(hardware, secret_provider)
+
+        self.assertTrue(result.approved)
+        self.assertEqual(result.response["result"]["event"]["pubkey"], NIP06_KEY["public_key"])
+        self.assertEqual(
+            result.approval_digest,
+            screen_review_for_request(BASIC_REQUEST, author_pubkey=NIP06_KEY["public_key"])["approval_digest"],
+        )
 
     def test_review_model_preserves_raw_event_fields_and_author(self) -> None:
         review = review_event_template(TAGGED_REQUEST["params"]["event_template"])
