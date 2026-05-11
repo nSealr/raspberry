@@ -176,6 +176,13 @@ existing injected scanner boundary. These dependencies remain optional so CI
 and desktop tests do not require Pi libraries. Physical OV5647/ZeroCam scan
 quality on the available Pi Zero remains pending.
 
+Status: the ST7789 review-display path now has an optional PIL framebuffer
+draw target that maps bounded layout commands to rectangles/text and presents
+the resulting image through an injected display presenter. This bridges the
+tested layout contract toward Waveshare/SeedSigner-style display drivers
+without making Pillow or Pi display libraries mandatory outside the Pi image.
+Physical ST7789 display acceptance remains pending.
+
 Status: `nseal-vault flow --st7789-layout-log` now exports the ST7789 layout
 commands generated from each button-driven review frame, so future display
 driver tests can compare the physical adapter against a committed harness

@@ -95,7 +95,10 @@ route.
   behavior before physical Pi acceptance. The camera side now includes optional
   `picamera` JPEG capture and `pyzbar`/zbar decoding adapters that follow the
   SeedSigner Pi Zero software shape without making those libraries mandatory
-  outside the Pi image.
+  outside the Pi image. The display side now includes an optional PIL
+  framebuffer draw target that can present rendered review frames to a
+  Waveshare/SeedSigner-style display driver object without importing that
+  driver in CI.
 - `nostrseal_vault.st7789_layout`: SeedSigner-compatible 240x240 ST7789 layout
   planner for trusted-review frames. It turns renderer-neutral frame data into
   bounded draw commands before a Pi display library or SPI driver is selected.
@@ -304,6 +307,13 @@ camera pieces for that path. On a Pi image they compose into
 `create_seed_signer_camera_qr_scanner()` using `picamera`, PIL, and
 `pyzbar`/zbar; in CI they are tested through fakes and remain absent unless the
 Pi runtime installs them.
+
+`PillowSt7789DrawTarget` is the matching optional framebuffer bridge for the
+trusted-review display path. It consumes the already bounded ST7789 layout
+commands, draws rectangles and text into a 240x240 PIL image, and hands that
+image to an injected presenter. A later Pi-specific presenter can wrap a
+Waveshare or SeedSigner ST7789 driver, while tests keep the framebuffer path
+independent from physical SPI/display libraries.
 
 `nseal-vault hardware-probe` is the first command intended for a later physical
 Pi Zero session. It is deliberately read-only and conservative: missing files,

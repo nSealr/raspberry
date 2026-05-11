@@ -7,6 +7,7 @@ from nostrseal_vault.seed_signer_hardware import (
     GPIO_LOW,
     GPIO_PUD_UP,
     PiCameraJpegFrameSource,
+    PillowSt7789DrawTarget,
     PyzbarQrDecoder,
     SEEDSIGNER_40_PIN_BUTTON_PROFILE,
     SeedSignerCameraQrScanner,
@@ -72,6 +73,35 @@ class FakeDrawTarget:
 
     def present(self) -> None:
         self.operations.append(("present",))
+
+
+class FakePillowImage:
+    def __init__(self, mode: str, size: tuple[int, int], color: object) -> None:
+        self.mode = mode
+        self.size = size
+        self.color = color
+        self.operations: list[tuple[object, ...]] = []
+
+
+class FakePillowImageModule:
+    def new(self, mode: str, size: tuple[int, int], color: object) -> FakePillowImage:
+        return FakePillowImage(mode, size, color)
+
+
+class FakePillowDraw:
+    def __init__(self, image: FakePillowImage) -> None:
+        self.image = image
+
+    def rectangle(self, box: tuple[int, int, int, int], fill: object) -> None:
+        self.image.operations.append(("rectangle", box, fill))
+
+    def text(self, position: tuple[int, int], text: str, fill: object, font: object) -> None:
+        self.image.operations.append(("text", position, text, fill, font))
+
+
+class FakePillowImageDrawModule:
+    def Draw(self, image: FakePillowImage) -> FakePillowDraw:
+        return FakePillowDraw(image)
 
 
 class FakeQrMatrixRenderer:
@@ -205,6 +235,43 @@ class SeedSignerHardwareTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "QR payload is not UTF-8"):
             decoder.decode_qr("pil-image")
+
+    def test_pillow_st7789_draw_target_renders_to_presenter(self) -> None:
+        presented: list[FakePillowImage] = []
+        target = PillowSt7789DrawTarget(
+            present_image=presented.append,
+            image_module=FakePillowImageModule(),
+            image_draw_module=FakePillowImageDrawModule(),
+            font_factory=lambda scale: f"font-{scale}",
+        )
+
+        target.fill_rect(1, 2, 3, 4, "green")
+        target.draw_text("Ready", 5, 6, 2, "white", max_width=100)
+        target.present()
+
+        self.assertEqual(len(presented), 1)
+        self.assertEqual(presented[0].size, (240, 240))
+        self.assertEqual(
+            presented[0].operations,
+            [
+                ("rectangle", (1, 2, 3, 5), (0, 255, 0)),
+                ("text", (5, 6), "Ready", (255, 255, 255), "font-2"),
+            ],
+        )
+
+    def test_pillow_st7789_draw_target_clips_text_to_max_width(self) -> None:
+        presented: list[FakePillowImage] = []
+        target = PillowSt7789DrawTarget(
+            present_image=presented.append,
+            image_module=FakePillowImageModule(),
+            image_draw_module=FakePillowImageDrawModule(),
+            font_factory=lambda scale: f"font-{scale}",
+        )
+
+        target.draw_text("abcdef", 0, 0, 1, "yellow", max_width=12)
+        target.present()
+
+        self.assertEqual(presented[0].operations, [("text", (0, 0), "ab", (255, 255, 0), "font-1")])
 
     def test_st7789_review_display_renders_layout_commands_to_target(self) -> None:
         target = FakeDrawTarget()

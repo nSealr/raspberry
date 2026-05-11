@@ -17,6 +17,13 @@ GPIO_INPUT = "IN"
 GPIO_LOW = 0
 GPIO_PUD_UP = "PUD_UP"
 REVIEW_ACTIONS = ("reject", "approve", "next", "scroll")
+ST7789_GLYPH_WIDTH = 6
+PIL_COLOR_MAP = {
+    "black": (0, 0, 0),
+    "white": (255, 255, 255),
+    "green": (0, 255, 0),
+    "yellow": (255, 255, 0),
+}
 
 
 class GpioLike(Protocol):
@@ -237,6 +244,58 @@ class PyzbarQrDecoder:
         raise ValueError("QR decoder returned unsupported payload type")
 
 
+class PillowSt7789DrawTarget:
+    """PIL framebuffer draw target for SeedSigner-compatible ST7789 adapters."""
+
+    def __init__(
+        self,
+        *,
+        present_image: Callable[[object], None],
+        image_module: object | None = None,
+        image_draw_module: object | None = None,
+        font_factory: Callable[[int], object] | None = None,
+        width: int = SEEDSIGNER_ST7789_WIDTH,
+        height: int = SEEDSIGNER_ST7789_HEIGHT,
+        background_color: str = "black",
+    ) -> None:
+        if width <= 0 or height <= 0:
+            raise ValueError("display dimensions must be positive")
+        if image_module is None:
+            try:
+                image_module = importlib.import_module("PIL.Image")
+            except ModuleNotFoundError as exc:
+                raise RuntimeError("Pillow is required for the ST7789 framebuffer draw target") from exc
+        if image_draw_module is None:
+            try:
+                image_draw_module = importlib.import_module("PIL.ImageDraw")
+            except ModuleNotFoundError as exc:
+                raise RuntimeError("Pillow is required for the ST7789 framebuffer draw target") from exc
+        self.present_image = present_image
+        self.font_factory = font_factory or _default_pil_font
+        self.width = width
+        self.height = height
+        self.image = image_module.new("RGB", (width, height), _pil_color(background_color))
+        self.draw = image_draw_module.Draw(self.image)
+
+    def fill_rect(self, x: int, y: int, width: int, height: int, color: str) -> None:
+        if width <= 0 or height <= 0:
+            return
+        self.draw.rectangle((x, y, x + width - 1, y + height - 1), fill=_pil_color(color))
+
+    def draw_text(self, text: str, x: int, y: int, scale: int, color: str, max_width: int | None = None) -> None:
+        if max_width is not None and max_width <= 0:
+            return
+        self.draw.text(
+            (x, y),
+            _clip_text_for_width(text, scale, max_width),
+            fill=_pil_color(color),
+            font=self.font_factory(scale),
+        )
+
+    def present(self) -> None:
+        self.present_image(self.image)
+
+
 class SeedSignerSt7789ReviewDisplay:
     """Review-display adapter that applies bounded ST7789 layout commands."""
 
@@ -355,12 +414,42 @@ def create_seed_signer_camera_qr_scanner() -> SeedSignerCameraQrScanner:
     )
 
 
+def create_seed_signer_st7789_review_display(*, present_image: Callable[[object], None]) -> SeedSignerSt7789ReviewDisplay:
+    return SeedSignerSt7789ReviewDisplay(target=PillowSt7789DrawTarget(present_image=present_image))
+
+
 def _load_image_from_jpeg_bytes(value: bytes) -> object:
     try:
         pil_image = importlib.import_module("PIL.Image")
     except ModuleNotFoundError as exc:
         raise RuntimeError("Pillow is required to decode picamera JPEG frames") from exc
     return pil_image.open(io.BytesIO(value))
+
+
+def _default_pil_font(scale: int) -> object:
+    try:
+        image_font = importlib.import_module("PIL.ImageFont")
+    except ModuleNotFoundError as exc:
+        raise RuntimeError("Pillow is required for ST7789 text rendering") from exc
+    try:
+        return image_font.load_default(size=max(8, 8 * max(1, scale)))
+    except TypeError:
+        return image_font.load_default()
+
+
+def _pil_color(color: str) -> tuple[int, int, int]:
+    try:
+        return PIL_COLOR_MAP[color]
+    except KeyError as exc:
+        raise ValueError(f"unsupported ST7789 color: {color}") from exc
+
+
+def _clip_text_for_width(text: str, scale: int, max_width: int | None) -> str:
+    if max_width is None:
+        return text
+    char_width = ST7789_GLYPH_WIDTH * max(1, scale)
+    max_chars = max_width // char_width
+    return text[:max_chars]
 
 
 def _default_sleep(seconds: float) -> None:

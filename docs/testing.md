@@ -110,6 +110,9 @@ default are left unchanged.
   JPEG bytes through a `picamera`-style object and `PyzbarQrDecoder` returns the
   first UTF-8 QR payload, returns `None` when no QR is present, and rejects
   non-UTF-8 QR payloads.
+- Optional ST7789 framebuffer tests proving `PillowSt7789DrawTarget` maps
+  bounded layout rectangles/text to a PIL-style image and calls an injected
+  presenter without requiring a physical display driver.
 - CLI ST7789 layout-log test proving the button-driven flow can export bounded
   SeedSigner-compatible draw commands for every displayed review frame.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
@@ -154,7 +157,7 @@ default are left unchanged.
   output, companion `verify-response`, request id and `approval_digest`
   binding, no USB data transport, and RAM-only custody.
 - Physical OV5647/ZeroCam camera scan testing with the optional
-  `picamera`/`pyzbar` adapters, concrete ST7789 draw-target integration on a
+  `picamera`/`pyzbar` adapters, physical ST7789 presenter integration on a
   Waveshare-compatible 240x240 display HAT, and GPIO approval/navigation tests
   before Raspberry Pi hardware acceptance testing.
 - Real hardware adapter tests against the existing transcript oracle once
