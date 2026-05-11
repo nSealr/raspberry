@@ -6,6 +6,8 @@ from nostrseal_vault.seed_signer_hardware import (
     BOARD_MODE,
     GPIO_LOW,
     GPIO_PUD_UP,
+    PiCameraJpegFrameSource,
+    PyzbarQrDecoder,
     SEEDSIGNER_40_PIN_BUTTON_PROFILE,
     SeedSignerCameraQrScanner,
     SeedSignerGpioButtonInput,
@@ -82,6 +84,34 @@ class FakeQrMatrixRenderer:
         return self.matrix
 
 
+class FakePiCamera:
+    def __init__(self) -> None:
+        self.captures: list[str] = []
+        self.closed = False
+
+    def capture(self, stream: object, format: str) -> None:
+        self.captures.append(format)
+        stream.write(b"jpeg-frame")
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class FakeBarcode:
+    def __init__(self, data: bytes | str) -> None:
+        self.data = data
+
+
+class FakePyzbarModule:
+    def __init__(self, barcodes: list[FakeBarcode]) -> None:
+        self.barcodes = barcodes
+        self.calls: list[tuple[object, object]] = []
+
+    def decode(self, image: object, symbols: object) -> list[FakeBarcode]:
+        self.calls.append((image, symbols))
+        return self.barcodes
+
+
 class SeedSignerHardwareTests(unittest.TestCase):
     def test_profile_matches_seedsigner_40_pin_hat_pins(self) -> None:
         profile = SEEDSIGNER_40_PIN_BUTTON_PROFILE
@@ -147,6 +177,34 @@ class SeedSignerHardwareTests(unittest.TestCase):
 
         with self.assertRaisesRegex(TimeoutError, "no NostrSeal request QR decoded"):
             scanner.scan_request_qr(max_frames=2)
+
+    def test_picamera_frame_source_captures_jpeg_bytes(self) -> None:
+        camera = FakePiCamera()
+        source = PiCameraJpegFrameSource(camera=camera)
+
+        self.assertEqual(source.capture_frame(), b"jpeg-frame")
+        self.assertEqual(camera.captures, ["jpeg"])
+
+        source.close()
+        self.assertTrue(camera.closed)
+
+    def test_pyzbar_decoder_returns_first_utf8_qr_payload(self) -> None:
+        pyzbar = FakePyzbarModule([FakeBarcode(b"nseal1:request")])
+        decoder = PyzbarQrDecoder(pyzbar=pyzbar, qrcode_symbol="QRCODE")
+
+        self.assertEqual(decoder.decode_qr("pil-image"), "nseal1:request")
+        self.assertEqual(pyzbar.calls, [("pil-image", ["QRCODE"])])
+
+    def test_pyzbar_decoder_returns_none_when_no_qr_is_found(self) -> None:
+        decoder = PyzbarQrDecoder(pyzbar=FakePyzbarModule([]), qrcode_symbol="QRCODE")
+
+        self.assertIsNone(decoder.decode_qr("pil-image"))
+
+    def test_pyzbar_decoder_rejects_non_utf8_payload(self) -> None:
+        decoder = PyzbarQrDecoder(pyzbar=FakePyzbarModule([FakeBarcode(b"\xff")]), qrcode_symbol="QRCODE")
+
+        with self.assertRaisesRegex(ValueError, "QR payload is not UTF-8"):
+            decoder.decode_qr("pil-image")
 
     def test_st7789_review_display_renders_layout_commands_to_target(self) -> None:
         target = FakeDrawTarget()

@@ -92,7 +92,10 @@ route.
   for camera QR scanning, ST7789 trusted-review rendering, and ST7789
   response-QR display. The adapters depend on injected frame sources, QR
   decoders, draw targets, and QR matrix renderers, so package tests can pin
-  behavior before choosing concrete Pi camera/display libraries.
+  behavior before physical Pi acceptance. The camera side now includes optional
+  `picamera` JPEG capture and `pyzbar`/zbar decoding adapters that follow the
+  SeedSigner Pi Zero software shape without making those libraries mandatory
+  outside the Pi image.
 - `nostrseal_vault.st7789_layout`: SeedSigner-compatible 240x240 ST7789 layout
   planner for trusted-review frames. It turns renderer-neutral frame data into
   bounded draw commands before a Pi display library or SPI driver is selected.
@@ -295,6 +298,12 @@ navigation/approve/reject through the Waveshare HAT GPIO button layout, and
 response QR rendering on the same display. SeedSigner code remains a reference
 for hardware behavior and OS shape; NostrSeal owns the Nostr event parser,
 review contract, signing contract, and stateless session flow.
+
+`PiCameraJpegFrameSource` and `PyzbarQrDecoder` are the first concrete optional
+camera pieces for that path. On a Pi image they compose into
+`create_seed_signer_camera_qr_scanner()` using `picamera`, PIL, and
+`pyzbar`/zbar; in CI they are tested through fakes and remain absent unless the
+Pi runtime installs them.
 
 `nseal-vault hardware-probe` is the first command intended for a later physical
 Pi Zero session. It is deliberately read-only and conservative: missing files,

@@ -170,6 +170,12 @@ response-QR display boundary. These adapters are testable without Pi hardware
 and do not claim physical camera/display acceptance until connected to real
 frame sources, draw targets, QR rendering, and the available Pi Zero kit.
 
+Status: the SeedSigner-compatible camera path now has optional concrete
+`picamera` JPEG frame capture and `pyzbar`/zbar QR decoding adapters behind the
+existing injected scanner boundary. These dependencies remain optional so CI
+and desktop tests do not require Pi libraries. Physical OV5647/ZeroCam scan
+quality on the available Pi Zero remains pending.
+
 Status: `nseal-vault flow --st7789-layout-log` now exports the ST7789 layout
 commands generated from each button-driven review frame, so future display
 driver tests can compare the physical adapter against a committed harness

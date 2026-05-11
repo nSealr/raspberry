@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import io
 from dataclasses import dataclass
 from typing import Callable, Protocol, Sequence
 
@@ -167,6 +168,75 @@ class SeedSignerCameraQrScanner:
         raise TimeoutError("no NostrSeal request QR decoded")
 
 
+class PiCameraJpegFrameSource:
+    """Legacy Pi Zero camera source matching SeedSigner-style picamera usage."""
+
+    def __init__(
+        self,
+        *,
+        camera: object | None = None,
+        resolution: tuple[int, int] = (480, 480),
+        framerate: int = 24,
+        start_preview: bool = False,
+    ) -> None:
+        if camera is None:
+            try:
+                picamera = importlib.import_module("picamera")
+            except ModuleNotFoundError as exc:
+                raise RuntimeError("picamera is required for the SeedSigner-compatible Pi camera source") from exc
+            camera = picamera.PiCamera(resolution=resolution, framerate=framerate)
+            if start_preview:
+                camera.start_preview()
+        self.camera = camera
+
+    def capture_frame(self) -> bytes:
+        stream = io.BytesIO()
+        self.camera.capture(stream, format="jpeg")
+        return stream.getvalue()
+
+    def close(self) -> None:
+        close = getattr(self.camera, "close", None)
+        if callable(close):
+            close()
+
+
+class PyzbarQrDecoder:
+    """QR decoder boundary using pyzbar/zbar without making it a CI dependency."""
+
+    def __init__(
+        self,
+        *,
+        pyzbar: object | None = None,
+        qrcode_symbol: object | None = None,
+        image_loader: Callable[[bytes], object] | None = None,
+    ) -> None:
+        if pyzbar is None or qrcode_symbol is None:
+            try:
+                pyzbar_module = importlib.import_module("pyzbar.pyzbar")
+            except ModuleNotFoundError as exc:
+                raise RuntimeError("pyzbar and zbar are required for SeedSigner-compatible QR decoding") from exc
+            pyzbar = pyzbar or pyzbar_module
+            qrcode_symbol = qrcode_symbol or pyzbar_module.ZBarSymbol.QRCODE
+        self.pyzbar = pyzbar
+        self.qrcode_symbol = qrcode_symbol
+        self.image_loader = image_loader or _load_image_from_jpeg_bytes
+
+    def decode_qr(self, frame: object) -> str | None:
+        image = self.image_loader(frame) if isinstance(frame, bytes) else frame
+        barcodes = self.pyzbar.decode(image, symbols=[self.qrcode_symbol])
+        if not barcodes:
+            return None
+        data = getattr(barcodes[0], "data", barcodes[0])
+        if isinstance(data, str):
+            return data.strip()
+        if isinstance(data, bytes):
+            try:
+                return data.decode("utf-8").strip()
+            except UnicodeDecodeError as exc:
+                raise ValueError("QR payload is not UTF-8") from exc
+        raise ValueError("QR decoder returned unsupported payload type")
+
+
 class SeedSignerSt7789ReviewDisplay:
     """Review-display adapter that applies bounded ST7789 layout commands."""
 
@@ -276,6 +346,21 @@ def create_seed_signer_gpio_button_input() -> SeedSignerGpioButtonInput:
     except ModuleNotFoundError as exc:
         raise RuntimeError("RPi.GPIO is required for SeedSigner-compatible GPIO input") from exc
     return SeedSignerGpioButtonInput(gpio=gpio)
+
+
+def create_seed_signer_camera_qr_scanner() -> SeedSignerCameraQrScanner:
+    return SeedSignerCameraQrScanner(
+        frame_source=PiCameraJpegFrameSource(),
+        qr_decoder=PyzbarQrDecoder(),
+    )
+
+
+def _load_image_from_jpeg_bytes(value: bytes) -> object:
+    try:
+        pil_image = importlib.import_module("PIL.Image")
+    except ModuleNotFoundError as exc:
+        raise RuntimeError("Pillow is required to decode picamera JPEG frames") from exc
+    return pil_image.open(io.BytesIO(value))
 
 
 def _default_sleep(seconds: float) -> None:

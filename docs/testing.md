@@ -106,6 +106,10 @@ default are left unchanged.
   polls injected frames until a payload is decoded, ST7789 review rendering
   applies bounded layout commands to an injected draw target, and ST7789
   response-QR rendering draws a validated centered matrix with a quiet zone.
+- Optional Pi camera adapter tests proving `PiCameraJpegFrameSource` captures
+  JPEG bytes through a `picamera`-style object and `PyzbarQrDecoder` returns the
+  first UTF-8 QR payload, returns `None` when no QR is present, and rejects
+  non-UTF-8 QR payloads.
 - CLI ST7789 layout-log test proving the button-driven flow can export bounded
   SeedSigner-compatible draw commands for every displayed review frame.
 - File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
@@ -149,8 +153,8 @@ default are left unchanged.
   trusted display review, GPIO `next`/`scroll`/`approve`/`reject`, response QR
   output, companion `verify-response`, request id and `approval_digest`
   binding, no USB data transport, and RAM-only custody.
-- Concrete Pi camera frame-source and QR decoder integration through an
-  OV5647/ZeroCam path, concrete ST7789 draw-target integration on a
+- Physical OV5647/ZeroCam camera scan testing with the optional
+  `picamera`/`pyzbar` adapters, concrete ST7789 draw-target integration on a
   Waveshare-compatible 240x240 display HAT, and GPIO approval/navigation tests
   before Raspberry Pi hardware acceptance testing.
 - Real hardware adapter tests against the existing transcript oracle once
