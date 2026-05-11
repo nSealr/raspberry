@@ -67,10 +67,14 @@ The current CLI is a development harness. It intentionally requires an explicit
 desktop experiments preserve the same approval boundary expected on real
 hardware.
 
-The sign command can use either an explicit development `--secret-key` or a
-NIP-06 `--mnemonic-file` plus account index. The mnemonic-file path is still a
-desktop simulation path; the Pi hardware flow should keep seed material in RAM
-and avoid shell arguments for production use.
+The `sign` and `flow` commands can use explicit development `--secret-key`,
+stdin-fed `--secret-key-stdin`, NIP-06 `--mnemonic-file`, or stdin-fed
+`--mnemonic-stdin` plus account index. The file and argument paths are desktop
+simulation compatibility paths. The stdin paths better match the stateless
+target because session key material can be supplied without a seed file or a
+process-list-visible secret argument, but they are still development harness
+inputs rather than a final Pi seed-entry UX. Real Pi adapters must keep seed
+material RAM-only for the current signing session.
 
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it

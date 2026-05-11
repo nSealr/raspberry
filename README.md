@@ -60,6 +60,11 @@ Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs in
   loaded for the signing session before review so the trusted screen can bind
   the displayed author pubkey into the `approval_digest`; signing still only
   occurs after complete review traversal and physical approval.
+- CLI `--secret-key-stdin` and `--mnemonic-stdin` inputs for `sign` and `flow`
+  keep desktop simulations closer to the stateless model by avoiding shell
+  arguments and seed files when a caller can provide session key material over
+  stdin. These are still development harness inputs, not production seed-entry
+  UX.
 - Shared NostrSeal v0 implementation limits for constrained signers, with
   deterministic rejection of applicable invalid signing-request and QR-envelope
   hardening vectors before trusted review or signing.
@@ -127,10 +132,14 @@ python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --review-transcript-log review-transcript.json
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qr --button-sequence next,next,scroll,next,approve --review-mode detail
 python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qra --button-sequence next,next,scroll,next,approve --review-mode detail --output-format qr-animated
+printf '%s\n' '<hex>' | python3 -m nostrseal_vault flow --secret-key-stdin --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
+printf '%s\n' '<mnemonic words>' | python3 -m nostrseal_vault flow --mnemonic-stdin --account 0 --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
+printf '%s\n' '<hex>' | python3 -m nostrseal_vault sign --secret-key-stdin --request request.qr --response response.qr --input-format qr --output-format qr --approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qra --response response.qra --input-format qr-animated --output-format qr-animated --approve
 python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve --approval-digest <hex>
 python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
+printf '%s\n' '<mnemonic words>' | python3 -m nostrseal_vault sign --mnemonic-stdin --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
 ```
 
 ## License

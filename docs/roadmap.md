@@ -103,6 +103,12 @@ still refuses to sign, and approval still requires complete review traversal
 plus terminal physical approval. The existing CLI-compatible helper remains a
 wrapper around this path.
 
+Status: `nseal-vault sign` and `nseal-vault flow` can now read a session secret
+or NIP-06 mnemonic from stdin through `--secret-key-stdin` and
+`--mnemonic-stdin`. This keeps the desktop harness closer to the stateless
+RAM-only target by avoiding required seed files or secret command-line
+arguments, while real Pi seed-entry UX and hardware drivers remain pending.
+
 Status: the file-backed QR flow adapters now live in
 `nostrseal_vault.adapters` instead of private CLI classes. The CLI remains a
 thin file/argument wrapper around package-owned scan, review, display-frame

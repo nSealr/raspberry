@@ -92,6 +92,10 @@ default are left unchanged.
   can be checked by the host-side companion contract.
 - Desktop CLI smoke test for QR request input and QR response output.
 - Desktop CLI smoke test for QR request signing from a NIP-06 mnemonic file.
+- Desktop CLI smoke tests for stdin-fed secret key and stdin-fed NIP-06
+  mnemonic inputs on both `sign` and button-driven `flow`, keeping development
+  harnesses closer to the stateless RAM-only target than shell-argument or
+  seed-file-only paths.
 - Shared NostrSeal v0 implementation-limit conformance test against the
   `NostrSeal/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from .adapters import FileButtonQrVaultIO, FileQrVaultIO
@@ -51,11 +52,27 @@ def _qr_response_encoder(fmt: str):
     raise argparse.ArgumentTypeError("flow output format must be qr or qr-animated")
 
 
-def _secret_key_from_args(args: argparse.Namespace) -> str:
+def _secret_key_from_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> str:
     if args.secret_key:
         return args.secret_key
+    if getattr(args, "secret_key_stdin", False):
+        secret_key = sys.stdin.read().strip()
+        if not secret_key:
+            parser.error("secret key stdin input must not be empty")
+        return secret_key
+    if getattr(args, "mnemonic_stdin", False):
+        mnemonic = sys.stdin.read()
+        if not mnemonic.strip():
+            parser.error("mnemonic stdin input must not be empty")
+        try:
+            return derive_nip06_secret(mnemonic, passphrase=args.passphrase, account=args.account)
+        except ValueError as exc:
+            parser.error(str(exc))
     mnemonic = args.mnemonic_file.read_text(encoding="utf-8")
-    return derive_nip06_secret(mnemonic, passphrase=args.passphrase, account=args.account)
+    try:
+        return derive_nip06_secret(mnemonic, passphrase=args.passphrase, account=args.account)
+    except ValueError as exc:
+        parser.error(str(exc))
 
 
 def _author_pubkey(value: str | None) -> str | None:
@@ -83,7 +100,9 @@ def build_parser() -> argparse.ArgumentParser:
     sign = subparsers.add_parser("sign", help="Process one NostrSeal signing request")
     key_source = sign.add_mutually_exclusive_group(required=True)
     key_source.add_argument("--secret-key", help="Test/development secret key as lowercase hex")
+    key_source.add_argument("--secret-key-stdin", action="store_true", help="Read one lowercase-hex secret key from stdin")
     key_source.add_argument("--mnemonic-file", type=Path, help="NIP-06 mnemonic seed phrase file")
+    key_source.add_argument("--mnemonic-stdin", action="store_true", help="Read one NIP-06 mnemonic seed phrase from stdin")
     sign.add_argument("--account", type=int, default=0, help="NIP-06 account index for mnemonic derivation")
     sign.add_argument("--passphrase", default="", help="Optional BIP-39 passphrase for mnemonic derivation")
     sign.add_argument("--request", required=True, type=Path, help="Input request path")
@@ -123,7 +142,9 @@ def build_parser() -> argparse.ArgumentParser:
     flow = subparsers.add_parser("flow", help="Run one hardware-style QR review/sign flow")
     flow_key_source = flow.add_mutually_exclusive_group(required=True)
     flow_key_source.add_argument("--secret-key", help="Test/development secret key as lowercase hex")
+    flow_key_source.add_argument("--secret-key-stdin", action="store_true", help="Read one lowercase-hex secret key from stdin")
     flow_key_source.add_argument("--mnemonic-file", type=Path, help="NIP-06 mnemonic seed phrase file")
+    flow_key_source.add_argument("--mnemonic-stdin", action="store_true", help="Read one NIP-06 mnemonic seed phrase from stdin")
     flow.add_argument("--account", type=int, default=0, help="NIP-06 account index for mnemonic derivation")
     flow.add_argument("--passphrase", default="", help="Optional BIP-39 passphrase for mnemonic derivation")
     flow.add_argument("--request", required=True, type=Path, help="Input QR request path")
@@ -175,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
         request = _read_value(args.request, args.input_format)
         response = sign_request(
             request,
-            _secret_key_from_args(args),
+            _secret_key_from_args(args, parser),
             approved=args.approve,
             approval_digest=args.approval_digest,
         )
@@ -242,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.review_mode == "detail":
                 result = run_detail_button_qr_vault_flow(
                     adapter,
-                    _secret_key_from_args(args),
+                    _secret_key_from_args(args, parser),
                     detail_limits=ReviewDetailPageLimits(
                         max_title_chars=args.max_title_chars,
                         max_body_lines=args.max_body_lines,
@@ -255,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 result = run_button_qr_vault_flow(
                     adapter,
-                    _secret_key_from_args(args),
+                    _secret_key_from_args(args, parser),
                     display_limits=DisplayFrameLimits(
                         max_title_chars=args.max_title_chars,
                         max_body_lines=args.max_body_lines,
@@ -271,7 +292,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         run_qr_vault_flow(
             FileQrVaultIO(args.request, args.review, args.response, args.approve),
-            _secret_key_from_args(args),
+            _secret_key_from_args(args, parser),
             response_encoder=response_encoder,
         )
         return 0
