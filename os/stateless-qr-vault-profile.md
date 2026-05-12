@@ -2,7 +2,7 @@
 
 This directory records the Raspberry/Pi operating-profile requirements for the
 stateless QR vault line. The machine-checkable source of truth lives in
-`NostrSeal/hardware` at
+`nSealr/hardware` at
 `kits/reference-raspberry-qr-vault/os-profile.json`; this file is the
 Raspberry implementation note that future image work must follow.
 

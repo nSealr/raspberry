@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from nostrseal_vault.seed_signer_hardware import (
+from nsealr_vault.seed_signer_hardware import (
     BOARD_MODE,
     GPIO_LOW,
     GPIO_PUD_UP,
@@ -219,10 +219,10 @@ class SeedSignerHardwareTests(unittest.TestCase):
 
     def test_camera_qr_scanner_polls_until_payload_is_decoded(self) -> None:
         frames = FakeFrameSource(["frame-a", "frame-b"])
-        decoder = FakeQrDecoder([None, "  nseal1:test-request  "])
+        decoder = FakeQrDecoder([None, "  nsealr1:test-request  "])
         scanner = SeedSignerCameraQrScanner(frame_source=frames, qr_decoder=decoder, sleep=lambda _seconds: None)
 
-        self.assertEqual(scanner.scan_request_qr(max_frames=2), "nseal1:test-request")
+        self.assertEqual(scanner.scan_request_qr(max_frames=2), "nsealr1:test-request")
         self.assertEqual(decoder.frames, ["frame-a", "frame-b"])
 
     def test_camera_qr_scanner_times_out_without_payload(self) -> None:
@@ -232,7 +232,7 @@ class SeedSignerHardwareTests(unittest.TestCase):
             sleep=lambda _seconds: None,
         )
 
-        with self.assertRaisesRegex(TimeoutError, "no NostrSeal request QR decoded"):
+        with self.assertRaisesRegex(TimeoutError, "no nSealr request QR decoded"):
             scanner.scan_request_qr(max_frames=2)
 
     def test_picamera_frame_source_captures_jpeg_bytes(self) -> None:
@@ -246,10 +246,10 @@ class SeedSignerHardwareTests(unittest.TestCase):
         self.assertTrue(camera.closed)
 
     def test_pyzbar_decoder_returns_first_utf8_qr_payload(self) -> None:
-        pyzbar = FakePyzbarModule([FakeBarcode(b"nseal1:request")])
+        pyzbar = FakePyzbarModule([FakeBarcode(b"nsealr1:request")])
         decoder = PyzbarQrDecoder(pyzbar=pyzbar, qrcode_symbol="QRCODE")
 
-        self.assertEqual(decoder.decode_qr("pil-image"), "nseal1:request")
+        self.assertEqual(decoder.decode_qr("pil-image"), "nsealr1:request")
         self.assertEqual(pyzbar.calls, [("pil-image", ["QRCODE"])])
 
     def test_pyzbar_decoder_returns_none_when_no_qr_is_found(self) -> None:
@@ -305,8 +305,8 @@ class SeedSignerHardwareTests(unittest.TestCase):
         qrcode_module = FakeQrcodeModule(qr)
         renderer = PythonQrcodeMatrixRenderer(qrcode_module=qrcode_module)
 
-        self.assertEqual(renderer.render_qr_matrix("nseal1:response"), [[True, False], [False, True]])
-        self.assertEqual(qr.data, ["nseal1:response"])
+        self.assertEqual(renderer.render_qr_matrix("nsealr1:response"), [[True, False], [False, True]])
+        self.assertEqual(qr.data, ["nsealr1:response"])
         self.assertTrue(qr.made_fit)
         self.assertEqual(qrcode_module.kwargs, {"border": 0})
 
@@ -315,7 +315,7 @@ class SeedSignerHardwareTests(unittest.TestCase):
         renderer = PythonQrcodeMatrixRenderer(qrcode_module=FakeQrcodeModule(qr))
 
         with self.assertRaisesRegex(ValueError, "QR matrix values must be booleans"):
-            renderer.render_qr_matrix("nseal1:response")
+            renderer.render_qr_matrix("nsealr1:response")
 
     def test_st7789_review_display_renders_layout_commands_to_target(self) -> None:
         target = FakeDrawTarget()
@@ -343,9 +343,9 @@ class SeedSignerHardwareTests(unittest.TestCase):
         renderer = FakeQrMatrixRenderer([[True, False], [False, True]])
         display = SeedSignerSt7789ResponseQrDisplay(target=target, qr_renderer=renderer, quiet_zone_modules=1)
 
-        display.emit_response_qr("nseal1:response")
+        display.emit_response_qr("nsealr1:response")
 
-        self.assertEqual(renderer.payloads, ["nseal1:response"])
+        self.assertEqual(renderer.payloads, ["nsealr1:response"])
         self.assertEqual(target.operations[0], ("fill_rect", 0, 0, 240, 240, "black"))
         self.assertEqual(target.operations[1], ("fill_rect", 0, 0, 240, 240, "white"))
         self.assertIn(("fill_rect", 60, 60, 60, 60, "black"), target.operations)
@@ -358,7 +358,7 @@ class SeedSignerHardwareTests(unittest.TestCase):
         display = SeedSignerSt7789ResponseQrDisplay(target=target, qr_renderer=renderer)
 
         with self.assertRaisesRegex(ValueError, "QR matrix must be rectangular"):
-            display.emit_response_qr("nseal1:response")
+            display.emit_response_qr("nsealr1:response")
 
     def test_st7789_response_qr_display_requires_square_qr_matrix(self) -> None:
         target = FakeDrawTarget()
@@ -366,7 +366,7 @@ class SeedSignerHardwareTests(unittest.TestCase):
         display = SeedSignerSt7789ResponseQrDisplay(target=target, qr_renderer=renderer)
 
         with self.assertRaisesRegex(ValueError, "QR matrix must be square"):
-            display.emit_response_qr("nseal1:response")
+            display.emit_response_qr("nsealr1:response")
 
 
 if __name__ == "__main__":

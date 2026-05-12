@@ -1,6 +1,6 @@
 # Architecture
 
-`NostrSeal/raspberry` is the Raspberry/Pi signer implementation family. Its
+`nSealr/raspberry` is the Raspberry/Pi signer implementation family. Its
 first line is the Pi Zero / SeedSigner-style QR vault flow.
 
 ## Responsibilities
@@ -34,7 +34,7 @@ sufficient for board/runtime smoke planning, but complete QR vault acceptance
 also requires the camera, display HAT, GPIO controls, and OS-profile evidence.
 
 `os/stateless-qr-vault-profile.md` is the implementation-side operating profile
-for future Raspberry image work. It mirrors the checked `NostrSeal/hardware`
+for future Raspberry image work. It mirrors the checked `nSealr/hardware`
 OS profile: removable microSD boot media, disabled or absent wireless,
 RAM-only session custody, no swap during signing, no remote access during
 signing, and no persistent signing-secret storage. It is not a downloadable OS
@@ -43,7 +43,7 @@ image or a production security claim.
 ## Identity And Policy Boundary
 
 The Raspberry route is pinned by the shared
-`NostrSeal/specs` `nseal-account-descriptor-v0` vector
+`nSealr/specs` `nsealr-account-descriptor-v0` vector
 `raspberry-qr-nip06-account-0`: route type `raspberry_qr_vault`, transport
 `qr`, custody `stateless_session`, trusted review `device_display`, and policy
 support `manual_only`.
@@ -69,7 +69,7 @@ acceptance model. The Raspberry microSD remains boot media. Secret export, if
 later implemented, must be a danger-zone recovery flow with local review and
 physical confirmation, not part of ordinary signing.
 
-Feature target and current status are tracked in `NostrSeal/specs`
+Feature target and current status are tracked in `nSealr/specs`
 `vectors/features/signer-feature-matrix-v0.json`. The Raspberry QR vault is in
 the stateless QR vault parity group with the ESP32 QR vault: features can be at
 different implementation stages, but shared features must keep the same
@@ -77,33 +77,33 @@ behavior through the common `contract_id` and vectors.
 
 ## Implemented Foundation
 
-- `nostrseal_vault.qr`: v0 `nseal1:` QR envelope helpers.
-- `nostrseal_vault.limits`: NostrSeal v0 constrained-signer implementation
-  limits mirrored from `NostrSeal/specs`.
-- `nostrseal_vault.crypto`: NIP-01 canonical event serialization, event id
+- `nsealr_vault.qr`: v0 `nsealr1:` QR envelope helpers.
+- `nsealr_vault.limits`: nSealr v0 constrained-signer implementation
+  limits mirrored from `nSealr/specs`.
+- `nsealr_vault.crypto`: NIP-01 canonical event serialization, event id
   computation, x-only public key derivation, and BIP-340 signing.
-- `nostrseal_vault.nip06`: BIP-39 seed and BIP-32 path derivation for
+- `nsealr_vault.nip06`: BIP-39 seed and BIP-32 path derivation for
   `m/44'/1237'/<account>'/0/0` NIP-06 keys.
-- `nostrseal_vault.seed_entry`: hardware-neutral BIP-39 word-entry controller
+- `nsealr_vault.seed_entry`: hardware-neutral BIP-39 word-entry controller
   for future Pi display/button adapters. It validates English mnemonic words
   and checksum before deriving a one-shot NIP-06 session secret provider.
-- `nostrseal_vault.review`: deterministic event review model checked against
-  shared `NostrSeal/specs` review vectors.
-- `nostrseal_vault.display`: deterministic trusted-display page model for raw
+- `nsealr_vault.review`: deterministic event review model checked against
+  shared `nSealr/specs` review vectors.
+- `nsealr_vault.display`: deterministic trusted-display page model for raw
   event kind, signer author pubkey, complete content, complete tags, and final
   approval decisions.
-- `nostrseal_vault.controls`: physical-button approval session model for
+- `nsealr_vault.controls`: physical-button approval session model for
   future GPIO adapters. It requires every trusted-review page to be traversed
   before approval can succeed and keeps rejection available before the final
   page.
-- `nostrseal_vault.hardware_flow`: hardware-agnostic QR signer orchestration
+- `nsealr_vault.hardware_flow`: hardware-agnostic QR signer orchestration
   with injected scan, display, button, and response-QR boundaries.
-- `nostrseal_vault.adapters`: file-backed QR flow adapters used by the CLI and
+- `nsealr_vault.adapters`: file-backed QR flow adapters used by the CLI and
   integration smoke tests, plus a composed button-flow adapter boundary that
   keeps scanner, trusted display, physical button input, and response QR output
   independently replaceable before real camera/display/GPIO drivers exist.
   These are development and driver-facing adapters, not production Pi drivers.
-- `nostrseal_vault.seed_signer_hardware`: SeedSigner-compatible 40-pin
+- `nsealr_vault.seed_signer_hardware`: SeedSigner-compatible 40-pin
   Waveshare-style HAT button profile and optional GPIO input adapter. It pins
   the review actions to BOARD pins from the SeedSigner hardware reference while
   keeping GPIO access injectable for tests; it is not a completed hardware
@@ -119,23 +119,23 @@ behavior through the common `contract_id` and vectors.
   Waveshare/SeedSigner-style display driver object without importing that
   driver in CI, plus an optional `python-qrcode` response matrix renderer for
   signed-event QR output.
-- `nostrseal_vault.st7789_layout`: SeedSigner-compatible 240x240 ST7789 layout
+- `nsealr_vault.st7789_layout`: SeedSigner-compatible 240x240 ST7789 layout
   planner for trusted-review frames. It turns renderer-neutral frame data into
   bounded draw commands before a Pi display library or SPI driver is selected.
-- `nostrseal_vault.hardware_probe`: non-destructive SeedSigner-compatible
+- `nsealr_vault.hardware_probe`: non-destructive SeedSigner-compatible
   Raspberry probe reporting for future Pi Zero hardware smoke runs. It checks
   board model, expected GPIO/SPI/camera Python modules, camera/SPI boot config
   markers, swap state, and wireless absence/blocking evidence without
   producing signatures or claiming hardware acceptance.
-- `nostrseal_vault.signer`: request handling and explicit approval gate.
-- `nostrseal_vault.cli`: desktop simulation CLI for JSON and QR file input and
+- `nsealr_vault.signer`: request handling and explicit approval gate.
+- `nsealr_vault.cli`: desktop simulation CLI for JSON and QR file input and
   output.
 
 QR decoding and signing-request validation apply the shared v0 hardening limits
 before trusted review or signing. The Raspberry implementation rejects
 malformed, padded, invalid UTF-8, or oversized QR envelopes and rejects unsafe
 event templates, unknown signing-request fields, and resource-limit violations
-using the shared invalid-vector expectations from `NostrSeal/specs`.
+using the shared invalid-vector expectations from `nSealr/specs`.
 
 The current CLI is a development harness. It intentionally requires an explicit
 `--approve` flag before producing a `sign_event` response so automated tests and
@@ -198,10 +198,10 @@ approval page. It pins scroll-window indicators, compact body styles, long tag
 continuation indentation, visible JSON-style escapes for decoded control
 characters, and explicit codepoint fallback while preserving the existing
 `screen-pages` approval digest. The CLI exposes it through
-`nseal-vault review --output-format detail-pages-json` for adapter harnesses
+`nsealr-vault review --output-format detail-pages-json` for adapter harnesses
 and manual review experiments.
 
-`nostrseal_vault.controls` is the first renderer-neutral model for that button
+`nsealr_vault.controls` is the first renderer-neutral model for that button
 loop. A session starts on the first page, records which pages have been shown,
 maps `next`, `approve`, and `reject` button actions, and refuses approval until
 the final `approve_or_reject` page has been reached after all pages were seen.
@@ -214,7 +214,7 @@ record the displayed frames with `--display-frame-log`, giving display adapters
 a deterministic acceptance trace before real Pi display drivers are wired in.
 The in-process flow result also carries the exact frame/button/decision
 transcript produced during the review loop, which lets tests compare future
-adapter harnesses with shared `NostrSeal/specs` review-transcript vectors.
+adapter harnesses with shared `nSealr/specs` review-transcript vectors.
 The file-backed CLI can write this trace with `--review-transcript-log`, giving
 cross-repo smoke tests the same oracle without importing Raspberry internals.
 
@@ -229,11 +229,11 @@ draw pixels yet; it produces bounded commands for a 240x240 screen so the later
 PIL/Waveshare/spidev adapter can be tested against positions, styles, and body
 area limits before physical display acceptance.
 The file-backed button harness can write that same layout trace through
-`nseal-vault flow --st7789-layout-log`, keeping display adapter acceptance tied
+`nsealr-vault flow --st7789-layout-log`, keeping display adapter acceptance tied
 to the exact frames shown during review.
 
 For future Raspberry display adapters that need the complete no-ellipsis review
-body, `run_detail_button_qr_vault_flow` and `nseal-vault flow --review-mode
+body, `run_detail_button_qr_vault_flow` and `nsealr-vault flow --review-mode
 detail` use the `review-detail-pages-v0` page model. `next` advances between
 Event, Content, Tags, and Decision; `scroll` moves through additional windows
 inside the current logical page. This mirrors the ESP32 T-Display S3 review UX
@@ -249,13 +249,13 @@ machine a deterministic way to reject an approved signing step if it is no
 longer bound to the request that was reviewed.
 
 The screen page model and digest calculation are checked against shared
-`NostrSeal/specs` review-screen vectors so Raspberry and ESP32 QR vault targets
+`nSealr/specs` review-screen vectors so Raspberry and ESP32 QR vault targets
 can implement the same review-to-approval contract without copying platform
 code.
 
 `review_transcript_for_screen_review` records the renderer-neutral frame shown
 before each physical-style button input, the terminal decision, and the
-approval state. It is checked against shared `NostrSeal/specs`
+approval state. It is checked against shared `nSealr/specs`
 review-transcript vectors so Raspberry display/GPIO adapters and ESP32 firmware
 adapter tests can use the same frame/button/decision oracle.
 The stricter `run_detail_button_qr_vault_flow` path also consumes detail-mode
@@ -265,7 +265,7 @@ ESP32 without forcing every scroll window before the Decision page.
 
 ## Hardware Flow Boundary
 
-`nostrseal_vault.hardware_flow` defines the first Raspberry QR vault flow
+`nsealr_vault.hardware_flow` defines the first Raspberry QR vault flow
 orchestrator. It is intentionally pure Python and hardware-agnostic:
 
 - camera drivers provide `scan_request_qr`;
@@ -277,7 +277,7 @@ approval through the injected I/O boundary, signs with the displayed
 `approval_digest`, and emits one response QR. Real camera, display, and GPIO
 drivers must attach to this boundary rather than bypassing the review model.
 
-The `nseal-vault flow` command is the current file-backed harness for this
+The `nsealr-vault flow` command is the current file-backed harness for this
 boundary. It reads a QR request from a file, writes the exact screen-review JSON
 that a trusted display must render, requires explicit `--approve`, and writes a
 QR response. It is for desktop integration and hardware-adapter development,
@@ -319,7 +319,7 @@ hardware rather than inventing a separate Raspberry kit: camera scanning from
 the Pi CSI camera path, review rendering onto the ST7789 240x240 display,
 navigation/approve/reject through the Waveshare HAT GPIO button layout, and
 response QR rendering on the same display. SeedSigner code remains a reference
-for hardware behavior and OS shape; NostrSeal owns the Nostr event parser,
+for hardware behavior and OS shape; nSealr owns the Nostr event parser,
 review contract, signing contract, and stateless session flow.
 
 `PiCameraJpegFrameSource` and `PyzbarQrDecoder` are the first concrete optional
@@ -340,7 +340,7 @@ response QR output. It uses `python-qrcode` when available in the Pi image,
 validates the resulting matrix, and feeds the same centered ST7789 response
 display adapter that tests already exercise with injected matrices.
 
-`nseal-vault hardware-probe` is the first command intended for a later physical
+`nsealr-vault hardware-probe` is the first command intended for a later physical
 Pi Zero session. It is deliberately read-only and conservative: missing files,
 missing modules, or unverifiable wireless evidence produce `blocked` checks
 rather than implicit success. A passing probe is only setup evidence; camera QR
@@ -349,7 +349,7 @@ acceptance, and production security still need separate reports.
 
 The hardware repo now carries the matching full-flow report template for that
 later Pi Zero session. A completed Raspberry QR-flow report must prove the
-camera scanned `nseal1` request QR frames, the trusted display rendered the
+camera scanned `nsealr1` request QR frames, the trusted display rendered the
 Event/Content/Tags/Decision review, GPIO buttons drove
 `next`/`scroll`/`approve`/`reject`, the device emitted the signed-event
 response QR only after approval, the companion verified the response against

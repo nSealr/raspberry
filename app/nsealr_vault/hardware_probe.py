@@ -138,7 +138,7 @@ def run_seed_signer_compatibility_probe(
 
     ready = all(check["status"] == "pass" for check in checks)
     return {
-        "format": "nseal-raspberry-seedsigner-compatibility-probe-v0",
+        "format": "nsealr-raspberry-seedsigner-compatibility-probe-v0",
         "target": "raspberry-pi-zero-seedsigner-compatible-qr-vault",
         "ready_for_hardware_acceptance": ready,
         "production_signing_enabled": False,

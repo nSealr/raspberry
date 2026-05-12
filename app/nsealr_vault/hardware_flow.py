@@ -20,7 +20,7 @@ from .signer import sign_request
 
 class QrVaultIO(Protocol):
     def scan_request_qr(self) -> str:
-        """Return one scanned NostrSeal QR envelope."""
+        """Return one scanned nSealr QR envelope."""
 
     def show_review(self, screen_review: dict[str, Any]) -> bool:
         """Display trusted review pages and return the physical approval result."""
@@ -31,7 +31,7 @@ class QrVaultIO(Protocol):
 
 class ButtonQrVaultIO(Protocol):
     def scan_request_qr(self) -> str:
-        """Return one scanned NostrSeal QR envelope."""
+        """Return one scanned nSealr QR envelope."""
 
     def display_review_frame(self, screen_review: dict[str, Any], page_index: int, frame: dict[str, Any]) -> None:
         """Render one bounded trusted review frame before reading the next physical button."""

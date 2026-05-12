@@ -1,5 +1,5 @@
 {
-  "format": "nseal-policy-profile-v0",
+  "format": "nsealr-policy-profile-v0",
   "policy_id": "policy-manual-only-qr-vault",
   "label": "Manual-only QR vault policy",
   "route_types": ["raspberry_qr_vault", "esp32_qr_vault"],

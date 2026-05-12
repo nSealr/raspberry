@@ -23,13 +23,13 @@ default are left unchanged.
   an envelope.
 - Animated QR frame-set tests against the shared specs vector, including
   reversed input order, missing-frame rejection, checksum rejection, and
-  `nseal-vault` CLI `qr-animated` request/response output.
+  `nsealr-vault` CLI `qr-animated` request/response output.
 - NIP-06 derivation tests against the canonical account `0` shared vector.
 - Shared identity/policy boundary tests proving the Raspberry account
-  descriptor uses `nseal-account-descriptor-v0`, route `raspberry_qr_vault`,
+  descriptor uses `nsealr-account-descriptor-v0`, route `raspberry_qr_vault`,
   `policy-manual-only-qr-vault`, stateless custody, manual-only policy support,
   and `persistent_grants: false`.
-- Signing tests against `NostrSeal/specs` fixtures.
+- Signing tests against `nSealr/specs` fixtures.
 - Review model tests against every shared review vector for raw event kind,
   created_at, signer author pubkey, complete content, and complete structured
   tags.
@@ -37,22 +37,22 @@ default are left unchanged.
 - Trusted-display page tests for event, content, tag, and final
   approval-decision pages.
 - Trusted-display screen review tests against every shared
-  `NostrSeal/specs` review-screen vector.
+  `nSealr/specs` review-screen vector.
 - Bounded trusted-display frame tests for deterministic title truncation,
   body-line wrapping, page indicators, and action hints before real display
   drivers exist.
-- Trusted-display frame conformance tests against shared `NostrSeal/specs`
+- Trusted-display frame conformance tests against shared `nSealr/specs`
   review-display-frame vectors.
 - Trusted-display detail-page conformance tests against shared
-  `NostrSeal/specs` review-detail-page vectors, covering complete physical
+  `nSealr/specs` review-detail-page vectors, covering complete physical
   Event/Content/Tags/Decision pages, scroll-window indicators, compact line
   styles, continuation indentation, visible JSON-style control escapes,
   explicit codepoint fallback, and unchanged approval digests.
 - Physical-button approval session tests that require all trusted-review pages
   to be traversed before approval while allowing early rejection.
-- Review transcript tests against shared `NostrSeal/specs` vectors, covering
+- Review transcript tests against shared `nSealr/specs` vectors, covering
   displayed frame, button sequence, terminal decision, and approval state.
-- Detail-mode review transcript tests against shared `NostrSeal/specs` vectors,
+- Detail-mode review transcript tests against shared `nSealr/specs` vectors,
   covering `Next/Scroll` traversal across long tag windows without changing the
   `screen-pages` approval digest.
 - Approval-digest tests proving an approved signing request is rejected when
@@ -81,7 +81,7 @@ default are left unchanged.
 - Button-driven display-frame log tests proving future display adapters receive
   bounded frames before physical-style input is consumed.
 - Button-driven flow transcript tests proving the displayed frame/button/
-  decision trace can match shared `NostrSeal/specs` review-transcript vectors
+  decision trace can match shared `nSealr/specs` review-transcript vectors
   under transcript-compatible display limits.
 - CLI transcript-log tests proving the file-backed button harness can export
   that trace for cross-repo integration and future adapter acceptance tests.
@@ -118,10 +118,10 @@ default are left unchanged.
   rejects non-boolean matrix values before the display adapter draws them.
 - CLI ST7789 layout-log test proving the button-driven flow can export bounded
   SeedSigner-compatible draw commands for every displayed review frame.
-- File-backed `nseal-vault flow` CLI test proving the hardware-style path writes
+- File-backed `nsealr-vault flow` CLI test proving the hardware-style path writes
   screen-review JSON and a signed response QR.
 - Cross-repo lab integration verifies the file-backed QR flow output through
-  `NostrSeal/companion` `nseal verify-response`, proving the signed response QR
+  `nSealr/companion` `nsealr verify-response`, proving the signed response QR
   can be checked by the host-side companion contract.
 - Desktop CLI smoke test for QR request input and QR response output.
 - Desktop CLI smoke test for QR request signing from a NIP-06 mnemonic file.
@@ -133,8 +133,8 @@ default are left unchanged.
   and button-driven `flow`, proving the package-owned seed-entry validator is
   reachable through the CLI without introducing seed files or persistent
   storage.
-- Shared NostrSeal v0 implementation-limit conformance test against the
-  `NostrSeal/specs` limits profile.
+- Shared nSealr v0 implementation-limit conformance test against the
+  `nSealr/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,
   resource-limit violations, and malformed QR requests where the Raspberry
   parser owns the boundary.
@@ -146,16 +146,16 @@ default are left unchanged.
   TROPIC01 requirement.
 - SeedSigner-compatible hardware probe tests proving a complete fake Pi Zero
   profile reports ready, a non-Pi environment reports blocked, and the
-  `nseal-vault hardware-probe --out` CLI writes a safe report without requiring
+  `nsealr-vault hardware-probe --out` CLI writes a safe report without requiring
   hardware.
 
 ## Next Tests
 
 - SeedSigner-compatible Pi Zero board/runtime smoke planning against the
-  available Raspberry Pi Zero using `nseal-vault hardware-probe`.
+  available Raspberry Pi Zero using `nsealr-vault hardware-probe`.
 - Fill the validated
-  `NostrSeal/hardware/templates/raspberry-qr-vault-full-flow-smoke.json`
-  template only after a real Pi Zero run proves camera `nseal1` QR scanning,
+  `nSealr/hardware/templates/raspberry-qr-vault-full-flow-smoke.json`
+  template only after a real Pi Zero run proves camera `nsealr1` QR scanning,
   trusted display review, GPIO `next`/`scroll`/`approve`/`reject`, response QR
   output, companion `verify-response`, request id and `approval_digest`
   binding, no USB data transport, and RAM-only custody.
@@ -178,11 +178,11 @@ procedure.
 
 ## Single-Repository CI
 
-Unit tests prefer the sibling `NostrSeal/specs` repository when the full local
-workspace is present. GitHub Actions checks out `NostrSeal/raspberry` by itself,
+Unit tests prefer the sibling `nSealr/specs` repository when the full local
+workspace is present. GitHub Actions checks out `nSealr/raspberry` by itself,
 so tests fall back to fixture snapshots under `tests/fixtures/specs` in
 single-repository CI. Cross-repository drift remains guarded by
-`NostrSeal/lab` integration, which runs against the live sibling repositories.
+`nSealr/lab` integration, which runs against the live sibling repositories.
 
 The Raspberry QR vault must remain stateless and RAM-only while consuming those
 hardening vectors. Rejection conformance must not introduce persistent secret

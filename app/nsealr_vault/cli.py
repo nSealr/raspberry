@@ -114,10 +114,10 @@ def _button_sequence(value: str) -> list[str]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="nseal-vault")
+    parser = argparse.ArgumentParser(prog="nsealr-vault")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    sign = subparsers.add_parser("sign", help="Process one NostrSeal signing request")
+    sign = subparsers.add_parser("sign", help="Process one nSealr signing request")
     key_source = sign.add_mutually_exclusive_group(required=True)
     key_source.add_argument("--secret-key", help="Test/development secret key as lowercase hex")
     key_source.add_argument("--secret-key-stdin", action="store_true", help="Read one lowercase-hex secret key from stdin")

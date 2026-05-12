@@ -2,11 +2,11 @@ import json
 import hashlib
 from typing import Optional
 
-from .limits import NOSTRSEAL_V0_LIMITS
+from .limits import NSEALR_V0_LIMITS
 
 
-QR_ENVELOPE_PREFIX = "nseal1:"
-ANIMATED_QR_ENVELOPE_PREFIX = "nseal1a:"
+QR_ENVELOPE_PREFIX = "nsealr1:"
+ANIMATED_QR_ENVELOPE_PREFIX = "nsealr1a:"
 
 
 def _assert_base64url(value: str) -> None:
@@ -22,7 +22,7 @@ def encode_qr_envelope(value: object) -> str:
     import base64
 
     payload = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    if len(payload) > NOSTRSEAL_V0_LIMITS["max_static_qr_decoded_json_bytes"]:
+    if len(payload) > NSEALR_V0_LIMITS["max_static_qr_decoded_json_bytes"]:
         raise ValueError("QR decoded JSON exceeds max_static_qr_decoded_json_bytes")
     encoded = base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
     return f"{QR_ENVELOPE_PREFIX}{encoded}"
@@ -39,20 +39,20 @@ def _animated_frame_checksum(digest: str, index: int, total: int, chunk: str) ->
 def encode_animated_qr_envelope_frames(value: object, *, chunk_size_chars: Optional[int] = None) -> list[str]:
     import base64
 
-    chunk_size = chunk_size_chars or NOSTRSEAL_V0_LIMITS["max_animated_qr_frame_payload_chars"]
+    chunk_size = chunk_size_chars or NSEALR_V0_LIMITS["max_animated_qr_frame_payload_chars"]
     if chunk_size <= 0:
         raise ValueError("animated QR chunk size must be a positive integer")
-    if chunk_size > NOSTRSEAL_V0_LIMITS["max_animated_qr_frame_payload_chars"]:
+    if chunk_size > NSEALR_V0_LIMITS["max_animated_qr_frame_payload_chars"]:
         raise ValueError("animated QR chunk exceeds max_animated_qr_frame_payload_chars")
     payload = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    if len(payload) > NOSTRSEAL_V0_LIMITS["max_animated_qr_decoded_json_bytes"]:
+    if len(payload) > NSEALR_V0_LIMITS["max_animated_qr_decoded_json_bytes"]:
         raise ValueError("animated QR decoded JSON exceeds max_animated_qr_decoded_json_bytes")
     digest = _sha256_hex(payload)
     encoded = base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
     chunks = [encoded[index : index + chunk_size] for index in range(0, len(encoded), chunk_size)]
     if not chunks:
         raise ValueError("animated QR payload is empty")
-    if len(chunks) > NOSTRSEAL_V0_LIMITS["max_animated_qr_frame_count"]:
+    if len(chunks) > NSEALR_V0_LIMITS["max_animated_qr_frame_count"]:
         raise ValueError("animated QR frame count exceeds max_animated_qr_frame_count")
     total = len(chunks)
     return [
@@ -66,7 +66,7 @@ def decode_qr_envelope(envelope: str) -> object:
     import binascii
 
     if not envelope.startswith(QR_ENVELOPE_PREFIX):
-        raise ValueError("QR envelope requires nseal1 prefix")
+        raise ValueError("QR envelope requires nsealr1 prefix")
     payload = envelope[len(QR_ENVELOPE_PREFIX) :]
     _assert_base64url(payload)
     padding = "=" * (-len(payload) % 4)
@@ -74,7 +74,7 @@ def decode_qr_envelope(envelope: str) -> object:
         decoded_bytes = base64.b64decode(f"{payload}{padding}".encode("ascii"), altchars=b"-_", validate=True)
     except binascii.Error as exc:
         raise ValueError("QR envelope payload must decode as base64url") from exc
-    if len(decoded_bytes) > NOSTRSEAL_V0_LIMITS["max_static_qr_decoded_json_bytes"]:
+    if len(decoded_bytes) > NSEALR_V0_LIMITS["max_static_qr_decoded_json_bytes"]:
         raise ValueError("QR decoded JSON exceeds max_static_qr_decoded_json_bytes")
     try:
         decoded = decoded_bytes.decode("utf-8")
@@ -88,9 +88,9 @@ def decode_qr_envelope(envelope: str) -> object:
 
 def _parse_animated_frame(frame: str) -> tuple[str, int, int, str]:
     if not frame.startswith(ANIMATED_QR_ENVELOPE_PREFIX):
-        raise ValueError("animated QR frame requires nseal1a prefix")
+        raise ValueError("animated QR frame requires nsealr1a prefix")
     parts = frame.split(":")
-    if len(parts) != 5 or parts[0] != "nseal1a":
+    if len(parts) != 5 or parts[0] != "nsealr1a":
         raise ValueError("animated QR frame is malformed")
     digest, index_total, chunk, checksum = parts[1], parts[2], parts[3], parts[4]
     if len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest):
@@ -106,10 +106,10 @@ def _parse_animated_frame(frame: str) -> tuple[str, int, int, str]:
     total = int(total_text)
     if index < 1 or total < 1 or index > total:
         raise ValueError("animated QR frame index is out of range")
-    if total > NOSTRSEAL_V0_LIMITS["max_animated_qr_frame_count"]:
+    if total > NSEALR_V0_LIMITS["max_animated_qr_frame_count"]:
         raise ValueError("animated QR frame count exceeds max_animated_qr_frame_count")
     _assert_base64url(chunk)
-    if len(chunk) > NOSTRSEAL_V0_LIMITS["max_animated_qr_frame_payload_chars"]:
+    if len(chunk) > NSEALR_V0_LIMITS["max_animated_qr_frame_payload_chars"]:
         raise ValueError("animated QR chunk exceeds max_animated_qr_frame_payload_chars")
     if checksum != _animated_frame_checksum(digest, index, total, chunk):
         raise ValueError("animated QR frame checksum mismatch")
@@ -143,7 +143,7 @@ def decode_animated_qr_envelope_frames(frames: list[str]) -> object:
         decoded_bytes = base64.b64decode(f"{encoded}{padding}".encode("ascii"), altchars=b"-_", validate=True)
     except binascii.Error as exc:
         raise ValueError("animated QR payload must decode as base64url") from exc
-    if len(decoded_bytes) > NOSTRSEAL_V0_LIMITS["max_animated_qr_decoded_json_bytes"]:
+    if len(decoded_bytes) > NSEALR_V0_LIMITS["max_animated_qr_decoded_json_bytes"]:
         raise ValueError("animated QR decoded JSON exceeds max_animated_qr_decoded_json_bytes")
     if _sha256_hex(decoded_bytes) != digest:
         raise ValueError("animated QR decoded digest mismatch")

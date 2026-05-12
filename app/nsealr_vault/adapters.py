@@ -9,7 +9,7 @@ from .st7789_layout import layout_seed_signer_st7789_review_frame
 
 class QrScanner(Protocol):
     def scan_request_qr(self) -> str:
-        """Return one scanned NostrSeal request QR envelope."""
+        """Return one scanned nSealr request QR envelope."""
 
 
 class ReviewDisplay(Protocol):
@@ -24,7 +24,7 @@ class ReviewButtonInput(Protocol):
 
 class ResponseQrDisplay(Protocol):
     def emit_response_qr(self, response_qr: str) -> None:
-        """Display or export one NostrSeal response QR envelope."""
+        """Display or export one nSealr response QR envelope."""
 
 
 class ComposedButtonQrVaultIO:

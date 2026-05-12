@@ -4,7 +4,7 @@ from typing import Any
 
 from .crypto import sign_event, xonly_pubkey_from_secret
 from .display import approval_digest_for_request
-from .limits import NOSTRSEAL_V0_LIMITS, compact_json_utf8_size
+from .limits import NSEALR_V0_LIMITS, compact_json_utf8_size
 from .review import review_event_template
 
 
@@ -28,7 +28,7 @@ def _request_id(request: object) -> str:
 
 
 def validate_signing_request(request: dict[str, Any]) -> dict[str, Any] | None:
-    if compact_json_utf8_size(request) > NOSTRSEAL_V0_LIMITS["max_decoded_request_json_bytes"]:
+    if compact_json_utf8_size(request) > NSEALR_V0_LIMITS["max_decoded_request_json_bytes"]:
         return _error_response(
             _request_id(request),
             "invalid_request",
@@ -41,7 +41,7 @@ def validate_signing_request(request: dict[str, Any]) -> dict[str, Any] | None:
     if (
         not isinstance(request_id, str)
         or not request_id
-        or len(request_id) > NOSTRSEAL_V0_LIMITS["max_request_id_length"]
+        or len(request_id) > NSEALR_V0_LIMITS["max_request_id_length"]
         or any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._:-" for char in request_id)
     ):
         return _error_response("unknown", "invalid_request", "Missing request_id.", False)

@@ -1,6 +1,6 @@
-# NostrSeal Raspberry
+# nSealr Raspberry
 
-Raspberry/Pi software for NostrSeal signing devices.
+Raspberry/Pi software for nSealr signing devices.
 
 This repository owns the Raspberry/Pi implementation family. The first line is
 the SeedSigner-style QR vault flow for Nostr: scan an unsigned event request,
@@ -15,30 +15,30 @@ development or accessibility targets later only if they preserve the same
 offline QR, local review, physical approval, and RAM-only custody boundary.
 
 The QR vault pattern is shared across signer families. Its common contracts live
-in `NostrSeal/specs`: QR envelope, review model, review-screen vectors,
+in `nSealr/specs`: QR envelope, review model, review-screen vectors,
 `approval_digest`, identity/policy descriptors, signing vectors, and the
 feature conformance matrix at
 `vectors/features/signer-feature-matrix-v0.json`. This repository implements
 the Raspberry/Pi side of that pattern; future ESP32 QR vault firmware belongs
-in `NostrSeal/esp32`. When the Raspberry QR vault and ESP32 QR vault both
+in `nSealr/esp32`. When the Raspberry QR vault and ESP32 QR vault both
 support a feature, their final behavior must match the shared `contract_id`
 even if current hardware readiness differs.
 
 ## Current Capabilities
 
 - Python package and CLI foundation for one-request signing flows.
-- v0 `nseal1:` QR envelope encode/decode.
+- v0 `nsealr1:` QR envelope encode/decode.
 - NIP-01 event id computation and BIP-340 signing against shared
-  `NostrSeal/specs` fixtures.
+  `nSealr/specs` fixtures.
 - NIP-06 mnemonic derivation for account `0` and account-indexed key recovery,
-  checked against the canonical NIP-06 test vector in `NostrSeal/specs`.
+  checked against the canonical NIP-06 test vector in `nSealr/specs`.
 - Final product key-source goals for the RAM-only session keyring: manual
   BIP-39 word entry, SeedSigner Standard SeedQR, SeedSigner CompactSeedQR,
   plain BIP-39 mnemonic QR, Nostr `nsec` QR, local mnemonic generation, and
   local standalone-key generation. SeedSigner-compatible import is BIP-39 seed
   import for NIP-06 Nostr derivation; it does not import Bitcoin descriptors,
   xpubs, PSBTs, or wallet policy.
-- The shared `nseal-account-descriptor-v0` route
+- The shared `nsealr-account-descriptor-v0` route
   `raspberry_qr_vault` is treated as a stateless-session, manual-only route
   bound to `policy-manual-only-qr-vault` with `persistent_grants: false`.
   This repository must not add policy automation, persistent grants, or
@@ -47,33 +47,33 @@ even if current hardware readiness differs.
   approval is provided to the CLI or signer API.
 - Deterministic event review model for raw kind, created_at, signer author
   pubkey, complete content, and complete structured tags before approval,
-  checked against every shared `NostrSeal/specs` review vector.
-- `nseal-vault review` renders deterministic review JSON from a request without
+  checked against every shared `nSealr/specs` review vector.
+- `nsealr-vault review` renders deterministic review JSON from a request without
   requiring a secret key or producing a signature. It uses the same request
   validation as the signing path for host-supplied event fields.
-- `nseal-vault review --output-format screen-json` renders deterministic
+- `nsealr-vault review --output-format screen-json` renders deterministic
   trusted-display page data plus an `approval_digest` for desktop and future
   Pi display simulations.
-- `nseal-vault review --output-format display-frame-json` renders one bounded
+- `nsealr-vault review --output-format display-frame-json` renders one bounded
   display frame with deterministic line wrapping/truncation for future LCD
-  adapter tests, checked against shared `NostrSeal/specs`
+  adapter tests, checked against shared `nSealr/specs`
   review-display-frame vectors.
 - The core display package can also render complete constrained-display
   detail pages for Event/Content/Tags/Decision, including scroll-window
   indicators, compact line styles, long-value continuation indentation, and
   visible JSON-style escapes for decoded control characters. Unsupported
   glyphs still use explicit `U+XXXX` fallback. These are checked against shared
-  `NostrSeal/specs` review-detail-page vectors and exposed by
-  `nseal-vault review --output-format detail-pages-json` without changing the
+  `nSealr/specs` review-detail-page vectors and exposed by
+  `nsealr-vault review --output-format detail-pages-json` without changing the
   `approval_digest` contract.
-- `nseal-vault sign --approval-digest <hex>` can require the signing request to
+- `nsealr-vault sign --approval-digest <hex>` can require the signing request to
   match the previously rendered review-page digest before an approved signature
   is produced.
 - Pure-Python physical approval controller for future GPIO adapters. Approval
   is only accepted after the trusted review pages have been traversed to the
   final approve/reject page; rejection remains available before the final page.
 - Deterministic review transcript generation for future display/GPIO adapter
-  tests, checked against shared `NostrSeal/specs` review-transcript vectors,
+  tests, checked against shared `nSealr/specs` review-transcript vectors,
   including detail-mode `Next/Scroll` traversal for long tag windows.
 - Hardware-neutral button-driven QR flow boundary for future camera, display,
   and GPIO adapters.
@@ -109,30 +109,30 @@ even if current hardware readiness differs.
   adapters. It reads BIP-39 words one by one, normalizes and validates the
   English wordlist/checksum, derives the NIP-06 session key as a one-shot
   secret provider, and does not persist the mnemonic.
-- Shared NostrSeal v0 implementation limits for constrained signers, with
+- Shared nSealr v0 implementation limits for constrained signers, with
   deterministic rejection of applicable invalid signing-request and QR-envelope
   hardening vectors before trusted review or signing.
 - QR envelope encoding now enforces the same static decoded-JSON byte limit as
   decoding, so the Raspberry flow does not emit response QR payloads that v0
-  readers would immediately reject. It also supports the shared `nseal1a:`
+  readers would immediately reject. It also supports the shared `nsealr1a:`
   animated QR frame set for larger valid responses, with digest, checksum,
   ordering, and frame-count checks before JSON parsing.
-- `nseal-vault flow --button-sequence ...` file-backed physical-button harness
+- `nsealr-vault flow --button-sequence ...` file-backed physical-button harness
   that refuses approval until every trusted review page has been traversed and
   bounds non-terminal button streams before future GPIO adapters exist.
-- `nseal-vault flow --display-frame-log ...` records the bounded trusted
+- `nsealr-vault flow --display-frame-log ...` records the bounded trusted
   display frames shown during a button-driven flow for future display adapter
   acceptance tests.
-- `nseal-vault flow --st7789-layout-log ...` records the SeedSigner-compatible
+- `nsealr-vault flow --st7789-layout-log ...` records the SeedSigner-compatible
   240x240 draw commands derived from each displayed frame for future
   Waveshare/ST7789 driver acceptance.
 - The button-driven flow result carries the displayed frame/button/decision
   transcript, so adapter harnesses can compare a whole review loop with shared
-  `NostrSeal/specs` review-transcript vectors before real GPIO/display drivers.
-- `nseal-vault flow --review-transcript-log ...` writes that same transcript
+  `nSealr/specs` review-transcript vectors before real GPIO/display drivers.
+- `nsealr-vault flow --review-transcript-log ...` writes that same transcript
   from the file-backed button harness for cross-repo and adapter acceptance
   tests.
-- `nseal-vault flow --review-mode detail` lets the button-driven harness use
+- `nsealr-vault flow --review-mode detail` lets the button-driven harness use
   complete Event/Content/Tags/Decision detail pages. `next` advances between
   top-level logical pages, `scroll` moves within long Content or Tags windows,
   and approval is accepted only on the Decision page. The signing
@@ -140,14 +140,14 @@ even if current hardware readiness differs.
 - JSON and QR file input/output for desktop simulation before camera/display
   integration.
 - `os/stateless-qr-vault-profile.md` records the future Raspberry image
-  acceptance boundary aligned with `NostrSeal/hardware`: removable microSD,
+  acceptance boundary aligned with `nSealr/hardware`: removable microSD,
   wireless disabled or absent, RAM-only custody, no swap during signing, no
   remote access during signing, and no persistent signing-secret storage.
 - The hardware target is now explicitly SeedSigner-compatible. The first
   physical target is the available Raspberry Pi Zero; full hardware acceptance
   still requires the SeedSigner-style camera, ST7789 240x240 display HAT, GPIO
   controls, and OS profile smoke evidence.
-- `nseal-vault hardware-probe --out <report.json>` writes a non-destructive
+- `nsealr-vault hardware-probe --out <report.json>` writes a non-destructive
   SeedSigner-compatible Pi Zero probe report for future hardware smoke runs.
   It checks board model, GPIO/SPI/camera Python modules, camera/SPI boot config
   markers, swap state, and wireless absence/blocking evidence without claiming
@@ -180,28 +180,28 @@ make ci
 Run the desktop CLI simulation with:
 
 ```sh
-python3 -m nostrseal_vault review --request request.qr --review review.json --input-format qr
-python3 -m nostrseal_vault review --request request.qr --review review-screen.json --input-format qr --output-format screen-json
-python3 -m nostrseal_vault review --request request.qr --review display-frame.json --input-format qr --output-format display-frame-json --display-page 0
-python3 -m nostrseal_vault review --request request.qr --review review-detail-pages.json --input-format qr --output-format detail-pages-json
-python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --approve
-python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
-python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --display-frame-log display-frames.json
-python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --st7789-layout-log display-layout.json
-python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --review-transcript-log review-transcript.json
-python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qr --button-sequence next,next,scroll,next,approve --review-mode detail
-python3 -m nostrseal_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qra --button-sequence next,next,scroll,next,approve --review-mode detail --output-format qr-animated
-printf '%s\n' '<hex>' | python3 -m nostrseal_vault flow --secret-key-stdin --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
-printf '%s\n' '<mnemonic words>' | python3 -m nostrseal_vault flow --mnemonic-stdin --account 0 --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
-printf '%s\n' word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 | python3 -m nostrseal_vault flow --mnemonic-words-stdin --mnemonic-word-count 12 --account 0 --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
-python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
-printf '%s\n' '<hex>' | python3 -m nostrseal_vault sign --secret-key-stdin --request request.qr --response response.qr --input-format qr --output-format qr --approve
-python3 -m nostrseal_vault sign --secret-key <hex> --request request.qra --response response.qra --input-format qr-animated --output-format qr-animated --approve
-python3 -m nostrseal_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve --approval-digest <hex>
-python3 -m nostrseal_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
-printf '%s\n' '<mnemonic words>' | python3 -m nostrseal_vault sign --mnemonic-stdin --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
-printf '%s\n' word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 | python3 -m nostrseal_vault sign --mnemonic-words-stdin --mnemonic-word-count 12 --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
-python3 -m nostrseal_vault hardware-probe --out hardware-probe.json
+python3 -m nsealr_vault review --request request.qr --review review.json --input-format qr
+python3 -m nsealr_vault review --request request.qr --review review-screen.json --input-format qr --output-format screen-json
+python3 -m nsealr_vault review --request request.qr --review display-frame.json --input-format qr --output-format display-frame-json --display-page 0
+python3 -m nsealr_vault review --request request.qr --review review-detail-pages.json --input-format qr --output-format detail-pages-json
+python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --approve
+python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
+python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --display-frame-log display-frames.json
+python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --st7789-layout-log display-layout.json
+python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --review-transcript-log review-transcript.json
+python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qr --button-sequence next,next,scroll,next,approve --review-mode detail
+python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-detail.json --response response.qra --button-sequence next,next,scroll,next,approve --review-mode detail --output-format qr-animated
+printf '%s\n' '<hex>' | python3 -m nsealr_vault flow --secret-key-stdin --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
+printf '%s\n' '<mnemonic words>' | python3 -m nsealr_vault flow --mnemonic-stdin --account 0 --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
+printf '%s\n' word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 | python3 -m nsealr_vault flow --mnemonic-words-stdin --mnemonic-word-count 12 --account 0 --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
+python3 -m nsealr_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
+printf '%s\n' '<hex>' | python3 -m nsealr_vault sign --secret-key-stdin --request request.qr --response response.qr --input-format qr --output-format qr --approve
+python3 -m nsealr_vault sign --secret-key <hex> --request request.qra --response response.qra --input-format qr-animated --output-format qr-animated --approve
+python3 -m nsealr_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve --approval-digest <hex>
+python3 -m nsealr_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
+printf '%s\n' '<mnemonic words>' | python3 -m nsealr_vault sign --mnemonic-stdin --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
+printf '%s\n' word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 | python3 -m nsealr_vault sign --mnemonic-words-stdin --mnemonic-word-count 12 --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
+python3 -m nsealr_vault hardware-probe --out hardware-probe.json
 ```
 
 ## License

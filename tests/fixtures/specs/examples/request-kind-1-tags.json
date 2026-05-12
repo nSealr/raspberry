@@ -15,10 +15,10 @@
         ],
         [
           "t",
-          "nostrseal"
+          "nsealr"
         ]
       ],
-      "content": "NostrSeal fixture: tagged kind 1 event."
+      "content": "nSealr fixture: tagged kind 1 event."
     }
   }
 }

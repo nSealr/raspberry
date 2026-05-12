@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from nostrseal_vault.st7789_layout import (
+from nsealr_vault.st7789_layout import (
     SEEDSIGNER_ST7789_HEIGHT,
     SEEDSIGNER_ST7789_WIDTH,
     layout_seed_signer_st7789_review_frame,

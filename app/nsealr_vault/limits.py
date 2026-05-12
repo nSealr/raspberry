@@ -4,7 +4,7 @@ import json
 from typing import Any
 
 
-NOSTRSEAL_V0_LIMITS: dict[str, int] = {
+NSEALR_V0_LIMITS: dict[str, int] = {
     "max_request_id_length": 128,
     "max_decoded_request_json_bytes": 704,
     "max_static_qr_decoded_json_bytes": 704,

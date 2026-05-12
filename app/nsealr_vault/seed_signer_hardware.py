@@ -172,7 +172,7 @@ class SeedSignerCameraQrScanner:
                 return decoded.strip()
             frames += 1
             self.sleep(self.poll_delay_s)
-        raise TimeoutError("no NostrSeal request QR decoded")
+        raise TimeoutError("no nSealr request QR decoded")
 
 
 class PiCameraJpegFrameSource:

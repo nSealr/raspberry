@@ -5,10 +5,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from nostrseal_vault.crypto import sign_event, verify_schnorr_signature
-from nostrseal_vault.adapters import ComposedButtonQrVaultIO, FileButtonQrVaultIO, FileQrVaultIO
-from nostrseal_vault.controls import ReviewControlSession, review_transcript_for_screen_review
-from nostrseal_vault.display import (
+from nsealr_vault.crypto import sign_event, verify_schnorr_signature
+from nsealr_vault.adapters import ComposedButtonQrVaultIO, FileButtonQrVaultIO, FileQrVaultIO
+from nsealr_vault.controls import ReviewControlSession, review_transcript_for_screen_review
+from nsealr_vault.display import (
     DisplayFrameLimits,
     ReviewDetailPageLimits,
     approval_digest_for_request,
@@ -18,25 +18,25 @@ from nostrseal_vault.display import (
     render_review_pages,
     screen_review_for_request,
 )
-from nostrseal_vault.hardware_flow import (
+from nsealr_vault.hardware_flow import (
     run_detail_button_qr_vault_flow,
     run_button_qr_vault_flow,
     run_button_qr_vault_flow_with_secret_provider,
     run_qr_vault_flow,
 )
-from nostrseal_vault.hardware_probe import run_seed_signer_compatibility_probe
-from nostrseal_vault.cli import main as vault_cli_main
-from nostrseal_vault.nip06 import derive_nip06_secret
-from nostrseal_vault.qr import (
+from nsealr_vault.hardware_probe import run_seed_signer_compatibility_probe
+from nsealr_vault.cli import main as vault_cli_main
+from nsealr_vault.nip06 import derive_nip06_secret
+from nsealr_vault.qr import (
     ANIMATED_QR_ENVELOPE_PREFIX,
     decode_animated_qr_envelope_frames,
     decode_qr_envelope,
     encode_animated_qr_envelope_frames,
     encode_qr_envelope,
 )
-from nostrseal_vault.review import review_event_template
-from nostrseal_vault.seed_entry import MnemonicSessionSecretProvider, normalize_mnemonic_words
-from nostrseal_vault.signer import sign_request
+from nsealr_vault.review import review_event_template
+from nsealr_vault.seed_entry import MnemonicSessionSecretProvider, normalize_mnemonic_words
+from nsealr_vault.signer import sign_request
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -90,7 +90,7 @@ REVIEW_DETAIL_PAGE_VECTORS = [
     for path in sorted((SPECS / "vectors/review-detail-pages").glob("*.json"))
 ]
 TAGGED_REVIEW_VECTOR = json.loads((SPECS / "vectors/review/kind-1-tags.json").read_text(encoding="utf-8"))
-LIMIT_PROFILE = json.loads((SPECS / "vectors/limits/nseal-v0.json").read_text(encoding="utf-8"))
+LIMIT_PROFILE = json.loads((SPECS / "vectors/limits/nsealr-v0.json").read_text(encoding="utf-8"))
 INVALID_VECTORS = [
     json.loads(path.read_text(encoding="utf-8"))
     for path in sorted((SPECS / "vectors/invalid").glob("*.json"))
@@ -269,7 +269,7 @@ class HardwareProbeTests(unittest.TestCase):
 
             self.assertEqual(exit_code, 0)
             report = json.loads(output.read_text(encoding="utf-8"))
-            self.assertEqual(report["format"], "nseal-raspberry-seedsigner-compatibility-probe-v0")
+            self.assertEqual(report["format"], "nsealr-raspberry-seedsigner-compatibility-probe-v0")
             self.assertFalse(report["production_signing_enabled"])
 
 
@@ -290,7 +290,7 @@ class VaultCoreTests(unittest.TestCase):
     def test_qr_envelope_round_trip_uses_shared_prefix(self) -> None:
         envelope = encode_qr_envelope(BASIC_REQUEST)
 
-        self.assertTrue(envelope.startswith("nseal1:"))
+        self.assertTrue(envelope.startswith("nsealr1:"))
         self.assertNotIn("=", envelope)
         self.assertEqual(decode_qr_envelope(envelope), BASIC_REQUEST)
 
@@ -322,10 +322,10 @@ class VaultCoreTests(unittest.TestCase):
             decode_animated_qr_envelope_frames(tampered)
 
     def test_limits_match_shared_v0_profile(self) -> None:
-        from nostrseal_vault.limits import NOSTRSEAL_V0_LIMITS
+        from nsealr_vault.limits import NSEALR_V0_LIMITS
 
-        self.assertEqual(LIMIT_PROFILE["name"], "nostrseal-v0")
-        self.assertEqual(NOSTRSEAL_V0_LIMITS, LIMIT_PROFILE["limits"])
+        self.assertEqual(LIMIT_PROFILE["name"], "nsealr-v0")
+        self.assertEqual(NSEALR_V0_LIMITS, LIMIT_PROFILE["limits"])
 
     def test_qr_decoder_rejects_shared_invalid_qr_vectors(self) -> None:
         vectors = [vector for vector in INVALID_VECTORS if vector["category"] == "qr-envelope"]
@@ -421,8 +421,8 @@ class VaultCoreTests(unittest.TestCase):
         self.assertEqual(review["kind"], 1)
         self.assertEqual(review["created_at"], 1710000060)
         self.assertEqual(review["author_pubkey"], KEY["public_key"])
-        self.assertEqual(review["content"], "NostrSeal fixture: tagged kind 1 event.")
-        self.assertEqual(review["content_utf8_bytes"], 39)
+        self.assertEqual(review["content"], "nSealr fixture: tagged kind 1 event.")
+        self.assertEqual(review["content_utf8_bytes"], len(review["content"].encode("utf-8")))
         self.assertEqual(review["tag_count"], 2)
         self.assertEqual(review["tags"], TAGGED_REQUEST["params"]["event_template"]["tags"])
 
@@ -448,7 +448,7 @@ class VaultCoreTests(unittest.TestCase):
                 },
                 {
                     "title": "Content",
-                    "lines": ["NostrSeal fixture: tagged kind 1 event."],
+                    "lines": ["nSealr fixture: tagged kind 1 event."],
                     "action": "next",
                 },
                 {
@@ -461,7 +461,7 @@ class VaultCoreTests(unittest.TestCase):
                         "mention",
                         "Tag 2/2",
                         "t",
-                        "nostrseal",
+                        "nsealr",
                     ],
                     "action": "next",
                 },
@@ -895,7 +895,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "sign",
                     "--secret-key",
                     KEY["secret_key"],
@@ -926,7 +926,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "sign",
                     "--secret-key",
                     KEY["secret_key"],
@@ -961,7 +961,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "sign",
                     "--mnemonic-file",
                     str(mnemonic_path),
@@ -994,7 +994,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "sign",
                     "--secret-key-stdin",
                     "--request",
@@ -1026,7 +1026,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "sign",
                     "--mnemonic-stdin",
                     "--account",
@@ -1060,7 +1060,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "sign",
                     "--mnemonic-words-stdin",
                     "--mnemonic-word-count",
@@ -1096,7 +1096,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "review",
                     "--request",
                     str(request_path),
@@ -1121,7 +1121,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "review",
                     "--request",
                     str(request_path),
@@ -1152,7 +1152,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "review",
                     "--request",
                     str(request_path),
@@ -1183,7 +1183,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "review",
                     "--request",
                     str(request_path),
@@ -1222,7 +1222,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "review",
                     "--request",
                     str(request_path),
@@ -1260,7 +1260,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--secret-key",
                     KEY["secret_key"],
@@ -1291,7 +1291,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--secret-key",
                     KEY["secret_key"],
@@ -1325,7 +1325,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--secret-key",
                     KEY["secret_key"],
@@ -1357,7 +1357,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--secret-key-stdin",
                     "--request",
@@ -1390,7 +1390,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--mnemonic-stdin",
                     "--account",
@@ -1424,7 +1424,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--mnemonic-words-stdin",
                     "--mnemonic-word-count",
@@ -1460,7 +1460,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--secret-key",
                     KEY["secret_key"],
@@ -1495,7 +1495,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--secret-key",
                     KEY["secret_key"],
@@ -1536,7 +1536,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--secret-key",
                     KEY["secret_key"],
@@ -1577,7 +1577,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--secret-key",
                     KEY["secret_key"],
@@ -1611,7 +1611,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "flow",
                     "--secret-key",
                     KEY["secret_key"],
@@ -1648,7 +1648,7 @@ class VaultCoreTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "nostrseal_vault",
+                    "nsealr_vault",
                     "review",
                     "--request",
                     str(request_path),
@@ -1667,7 +1667,7 @@ class VaultCoreTests(unittest.TestCase):
     def test_os_profile_notes_pin_stateless_qr_vault_constraints(self) -> None:
         text = (ROOT / "os/stateless-qr-vault-profile.md").read_text(encoding="utf-8")
 
-        self.assertIn("NostrSeal/hardware", text)
+        self.assertIn("nSealr/hardware", text)
         self.assertIn("removable microSD", text)
         self.assertIn("no swap", text)
         self.assertIn("no remote access", text)
@@ -1693,11 +1693,11 @@ class VaultCoreTests(unittest.TestCase):
                 (ROOT / "docs/testing.md").read_text(encoding="utf-8"),
             ]
         )
-        self.assertIn("nseal-account-descriptor-v0", docs)
+        self.assertIn("nsealr-account-descriptor-v0", docs)
         self.assertIn("raspberry_qr_vault", docs)
         self.assertIn("policy-manual-only-qr-vault", docs)
         self.assertIn("persistent_grants: false", docs)
-        self.assertNotIn("legacy screen pages", (ROOT / "app/nostrseal_vault/cli.py").read_text(encoding="utf-8"))
+        self.assertNotIn("legacy screen pages", (ROOT / "app/nsealr_vault/cli.py").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

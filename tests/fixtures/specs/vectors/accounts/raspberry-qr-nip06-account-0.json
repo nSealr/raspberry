@@ -1,5 +1,5 @@
 {
-  "format": "nseal-account-descriptor-v0",
+  "format": "nsealr-account-descriptor-v0",
   "account_id": "acct-raspberry-qr-nip06-account-0",
   "label": "Raspberry QR account 0",
   "public_key": "17162c921dc4d2518f9a101db33695df1afb56ab82f5ff3e5da6eec3ca5cd917",
