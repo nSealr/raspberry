@@ -205,12 +205,19 @@ the `nsealr-account-descriptor-v0` route `raspberry_qr_vault` and
 `manual_only`, and `persistent_grants: false`; this does not add policy
 automation, persistent storage, or TROPIC01 to the Raspberry QR vault.
 
-Status note, 2026-05-11: the Raspberry product target now explicitly includes
+Status note, 2026-05-11: the Raspberry product target explicitly includes
 SeedSigner Standard SeedQR and CompactSeedQR import, plain BIP-39 mnemonic QR,
 `nsec` QR, local mnemonic generation, and local standalone-key generation as
 RAM-only session sources. The feature is BIP-39/NIP-06 Nostr account import,
 not Bitcoin descriptor, xpub, PSBT, or wallet-policy import. MicroSD/file
 secret transfer stays outside QR vault acceptance.
+
+Status: `nsealr_vault.seed_entry` now implements SeedSigner-compatible
+Standard SeedQR digit-stream parsing and CompactSeedQR entropy-byte parsing for
+12- and 24-word English BIP-39 mnemonics. `nsealr-vault sign` and
+`nsealr-vault flow` expose desktop stdin harnesses through `--seedqr-stdin` and
+`--compact-seedqr-hex-stdin`, while real Pi camera adapters remain responsible
+for delivering decoded QR text or bytes directly without seed files.
 
 Status: `os/stateless-qr-vault-profile.md` now records the future Raspberry
 image acceptance boundary aligned with `nSealr/hardware`: removable microSD

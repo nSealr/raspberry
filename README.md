@@ -32,12 +32,13 @@ even if current hardware readiness differs.
   `nSealr/specs` fixtures.
 - NIP-06 mnemonic derivation for account `0` and account-indexed key recovery,
   checked against the canonical NIP-06 test vector in `nSealr/specs`.
-- Final product key-source goals for the RAM-only session keyring: manual
-  BIP-39 word entry, SeedSigner Standard SeedQR, SeedSigner CompactSeedQR,
-  plain BIP-39 mnemonic QR, Nostr `nsec` QR, local mnemonic generation, and
-  local standalone-key generation. SeedSigner-compatible import is BIP-39 seed
-  import for NIP-06 Nostr derivation; it does not import Bitcoin descriptors,
-  xpubs, PSBTs, or wallet policy.
+- RAM-only session keyring inputs for the current foundation include manual
+  BIP-39 word entry, SeedSigner Standard SeedQR digit streams, SeedSigner
+  CompactSeedQR entropy bytes, and plain BIP-39 mnemonic text. Nostr `nsec` QR,
+  local mnemonic generation, and local standalone-key generation remain product
+  goals. SeedSigner-compatible import is BIP-39 seed import for NIP-06 Nostr
+  derivation; it does not import Bitcoin descriptors, xpubs, PSBTs, or wallet
+  policy.
 - The shared `nsealr-account-descriptor-v0` route
   `raspberry_qr_vault` is treated as a stateless-session, manual-only route
   bound to `policy-manual-only-qr-vault` with `persistent_grants: false`.
@@ -98,13 +99,13 @@ even if current hardware readiness differs.
   loaded for the signing session before review so the trusted screen can bind
   the displayed author pubkey into the `approval_digest`; signing still only
   occurs after complete review traversal and physical approval.
-- CLI `--secret-key-stdin`, `--mnemonic-stdin`, and
-  `--mnemonic-words-stdin` inputs for `sign` and `flow` keep desktop
-  simulations closer to the stateless model by avoiding shell arguments and
-  seed files when a caller can provide session key material over stdin. The
-  word-by-word path reads one BIP-39 word per line and reuses the same
-  package-owned seed-entry validator as future display/button adapters. These
-  are still development harness inputs, not production seed-entry UX.
+- CLI `--secret-key-stdin`, `--mnemonic-stdin`, `--mnemonic-words-stdin`,
+  `--seedqr-stdin`, and `--compact-seedqr-hex-stdin` inputs for `sign` and
+  `flow` keep desktop simulations closer to the stateless model by avoiding
+  shell arguments and seed files when a caller can provide session key material
+  over stdin. The word-by-word and SeedQR paths reuse package-owned seed-entry
+  validators for future camera/display/button adapters. These are still
+  development harness inputs, not production seed-entry UX.
 - Hardware-neutral mnemonic seed-entry controller for future Pi display/button
   adapters. It reads BIP-39 words one by one, normalizes and validates the
   English wordlist/checksum, derives the NIP-06 session key as a one-shot
@@ -194,6 +195,7 @@ python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review re
 printf '%s\n' '<hex>' | python3 -m nsealr_vault flow --secret-key-stdin --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 printf '%s\n' '<mnemonic words>' | python3 -m nsealr_vault flow --mnemonic-stdin --account 0 --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 printf '%s\n' word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 | python3 -m nsealr_vault flow --mnemonic-words-stdin --mnemonic-word-count 12 --account 0 --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
+printf '%s\n' '<standard-seedqr-digits>' | python3 -m nsealr_vault flow --seedqr-stdin --account 0 --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 python3 -m nsealr_vault sign --secret-key <hex> --request request.qr --response response.qr --input-format qr --output-format qr --approve
 printf '%s\n' '<hex>' | python3 -m nsealr_vault sign --secret-key-stdin --request request.qr --response response.qr --input-format qr --output-format qr --approve
 python3 -m nsealr_vault sign --secret-key <hex> --request request.qra --response response.qra --input-format qr-animated --output-format qr-animated --approve
@@ -201,6 +203,8 @@ python3 -m nsealr_vault sign --secret-key <hex> --request request.qr --response 
 python3 -m nsealr_vault sign --mnemonic-file mnemonic.txt --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
 printf '%s\n' '<mnemonic words>' | python3 -m nsealr_vault sign --mnemonic-stdin --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
 printf '%s\n' word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 | python3 -m nsealr_vault sign --mnemonic-words-stdin --mnemonic-word-count 12 --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
+printf '%s\n' '<standard-seedqr-digits>' | python3 -m nsealr_vault sign --seedqr-stdin --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
+printf '%s\n' '<compact-seedqr-hex-bytes>' | python3 -m nsealr_vault sign --compact-seedqr-hex-stdin --account 0 --request request.qr --response response.qr --input-format qr --output-format qr --approve
 python3 -m nsealr_vault hardware-probe --out hardware-probe.json
 ```
 

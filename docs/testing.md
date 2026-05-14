@@ -169,9 +169,11 @@ default are left unchanged.
   the display HAT, and the SeedSigner-compatible GPIO profile is exercised on
   the Pi HAT.
 - SeedSigner Standard SeedQR and CompactSeedQR import tests for RAM-only
-  BIP-39/NIP-06 session loading, including warnings that shared Bitcoin/Nostr
-  mnemonics share compromise risk and excluding Bitcoin descriptors, xpubs,
-  PSBTs, wallet policy, and microSD/file secret transfer.
+  BIP-39/NIP-06 session loading. The tests use SeedSigner-published vector 1
+  for both the Standard digit stream and Compact entropy bytes, cover one-shot
+  session-provider behavior, and exercise `sign`/`flow` stdin harnesses without
+  importing Bitcoin descriptors, xpubs, PSBTs, wallet policy, or microSD/file
+  secret transfer.
 
 Hardware tests must record board, camera, display, OS image, commit, and exact
 procedure.

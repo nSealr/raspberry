@@ -56,13 +56,14 @@ must not turn the Raspberry QR vault into a policy-automated signer, persistent
 grant target, persistent seed store, secure-element unlock path, or TROPIC01
 route.
 
-The final product key-source model is a RAM-only session keyring. It may load
-manual BIP-39 words, SeedSigner Standard SeedQR, SeedSigner CompactSeedQR,
-plain mnemonic QR, `nsec` QR, or locally generated mnemonic/standalone-key
-material for the current session. BIP-39 passphrases create separate seed
-namespaces and are entered separately from public account metadata. Policies
-belong to the resulting public key, but QR vault routes have only the
-manual-only policy and no persistent policy state.
+The final product key-source model is a RAM-only session keyring. The current
+foundation can load manual BIP-39 words, SeedSigner Standard SeedQR digit
+streams, SeedSigner CompactSeedQR entropy bytes, and plain mnemonic text for
+the current session. `nsec` QR, local mnemonic generation, and local
+standalone-key generation remain product goals. BIP-39 passphrases create
+separate seed namespaces and are entered separately from public account
+metadata. Policies belong to the resulting public key, but QR vault routes have
+only the manual-only policy and no persistent policy state.
 
 MicroSD/file transfer of secret material is excluded from the QR vault
 acceptance model. The Raspberry microSD remains boot media. Secret export, if
@@ -144,13 +145,14 @@ hardware.
 
 The `sign` and `flow` commands can use explicit development `--secret-key`,
 stdin-fed `--secret-key-stdin`, NIP-06 `--mnemonic-file`, stdin-fed
-`--mnemonic-stdin`, or word-by-word stdin `--mnemonic-words-stdin` plus account
-index. The file and argument paths are desktop simulation compatibility paths.
-The stdin paths better match the stateless target because session key material
-can be supplied without a seed file or a process-list-visible secret argument,
-but they are still development harness inputs rather than a final Pi
-seed-entry UX. Real Pi adapters must keep seed material RAM-only for the
-current signing session.
+`--mnemonic-stdin`, word-by-word stdin `--mnemonic-words-stdin`, Standard
+SeedQR stdin `--seedqr-stdin`, or hex-encoded CompactSeedQR stdin
+`--compact-seedqr-hex-stdin` plus account index. The file and argument paths
+are desktop simulation compatibility paths. The stdin paths better match the
+stateless target because session key material can be supplied without a seed
+file or a process-list-visible secret argument, but they are still development
+harness inputs rather than a final Pi seed-entry UX. Real Pi adapters must keep
+seed material RAM-only for the current signing session.
 
 `MnemonicSessionSecretProvider` is the first package-owned boundary for that
 future seed-entry UX. A display/button adapter supplies one BIP-39 word at a
@@ -165,6 +167,15 @@ exactly the selected BIP-39 word count from stdin, one word per line, then
 derives the same NIP-06 session key before review. It exists so desktop and lab
 smokes can exercise the future display/button seed-entry contract without
 introducing a seed file, persistent secret storage, or Pi-specific UI code.
+
+`SeedQrSessionSecretProvider` is the package-owned boundary for
+SeedSigner-compatible QR seed import. Standard SeedQR parses one numeric digit
+stream as 12 or 24 BIP-39 English wordlist indexes; CompactSeedQR parses 16 or
+32 entropy bytes and reconstructs the BIP-39 checksum through the `mnemonic`
+library. Both formats are validated as BIP-39 English mnemonics before NIP-06
+derivation, and both providers are one-shot RAM-only session inputs. The CLI
+uses stdin/hex harnesses for tests; a real Pi camera adapter should pass decoded
+QR text or bytes directly without creating seed files.
 
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it

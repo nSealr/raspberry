@@ -23,7 +23,7 @@ from .qr import (
     encode_qr_envelope,
 )
 from .review import review_event_template
-from .seed_entry import MnemonicSessionSecretProvider
+from .seed_entry import MnemonicSessionSecretProvider, SeedQrSessionSecretProvider
 from .signer import sign_request, validate_signing_request
 
 
@@ -88,6 +88,30 @@ def _secret_key_from_args(args: argparse.Namespace, parser: argparse.ArgumentPar
             )()
         except (RuntimeError, ValueError) as exc:
             parser.error(str(exc))
+    if getattr(args, "seedqr_stdin", False):
+        seedqr = sys.stdin.read()
+        try:
+            return SeedQrSessionSecretProvider(
+                seedqr,
+                qr_format="standard",
+                passphrase=args.passphrase,
+                account=args.account,
+            )()
+        except (RuntimeError, ValueError) as exc:
+            parser.error(str(exc))
+    if getattr(args, "compact_seedqr_hex_stdin", False):
+        compact_seedqr_hex = "".join(sys.stdin.read().split())
+        try:
+            return SeedQrSessionSecretProvider(
+                bytes.fromhex(compact_seedqr_hex),
+                qr_format="compact",
+                passphrase=args.passphrase,
+                account=args.account,
+            )()
+        except ValueError as exc:
+            parser.error(str(exc))
+        except RuntimeError as exc:
+            parser.error(str(exc))
     mnemonic = args.mnemonic_file.read_text(encoding="utf-8")
     try:
         return derive_nip06_secret(mnemonic, passphrase=args.passphrase, account=args.account)
@@ -113,17 +137,23 @@ def _button_sequence(value: str) -> list[str]:
     return buttons
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="nsealr-vault")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    sign = subparsers.add_parser("sign", help="Process one nSealr signing request")
-    key_source = sign.add_mutually_exclusive_group(required=True)
+def _add_session_key_source_arguments(command: argparse.ArgumentParser) -> None:
+    key_source = command.add_mutually_exclusive_group(required=True)
     key_source.add_argument("--secret-key", help="Test/development secret key as lowercase hex")
     key_source.add_argument("--secret-key-stdin", action="store_true", help="Read one lowercase-hex secret key from stdin")
     key_source.add_argument("--mnemonic-file", type=Path, help="NIP-06 mnemonic seed phrase file")
     key_source.add_argument("--mnemonic-stdin", action="store_true", help="Read one NIP-06 mnemonic seed phrase from stdin")
     key_source.add_argument("--mnemonic-words-stdin", action="store_true", help="Read one BIP-39 word per stdin line")
+    key_source.add_argument("--seedqr-stdin", action="store_true", help="Read one SeedSigner Standard SeedQR digit stream from stdin")
+    key_source.add_argument("--compact-seedqr-hex-stdin", action="store_true", help="Read one hex-encoded SeedSigner CompactSeedQR byte stream from stdin")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="nsealr-vault")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    sign = subparsers.add_parser("sign", help="Process one nSealr signing request")
+    _add_session_key_source_arguments(sign)
     sign.add_argument("--mnemonic-word-count", type=int, default=12, help="Expected BIP-39 word count for --mnemonic-words-stdin")
     sign.add_argument("--account", type=int, default=0, help="NIP-06 account index for mnemonic derivation")
     sign.add_argument("--passphrase", default="", help="Optional BIP-39 passphrase for mnemonic derivation")
@@ -162,12 +192,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     flow = subparsers.add_parser("flow", help="Run one hardware-style QR review/sign flow")
-    flow_key_source = flow.add_mutually_exclusive_group(required=True)
-    flow_key_source.add_argument("--secret-key", help="Test/development secret key as lowercase hex")
-    flow_key_source.add_argument("--secret-key-stdin", action="store_true", help="Read one lowercase-hex secret key from stdin")
-    flow_key_source.add_argument("--mnemonic-file", type=Path, help="NIP-06 mnemonic seed phrase file")
-    flow_key_source.add_argument("--mnemonic-stdin", action="store_true", help="Read one NIP-06 mnemonic seed phrase from stdin")
-    flow_key_source.add_argument("--mnemonic-words-stdin", action="store_true", help="Read one BIP-39 word per stdin line")
+    _add_session_key_source_arguments(flow)
     flow.add_argument("--mnemonic-word-count", type=int, default=12, help="Expected BIP-39 word count for --mnemonic-words-stdin")
     flow.add_argument("--account", type=int, default=0, help="NIP-06 account index for mnemonic derivation")
     flow.add_argument("--passphrase", default="", help="Optional BIP-39 passphrase for mnemonic derivation")

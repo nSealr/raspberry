@@ -35,7 +35,13 @@ from nsealr_vault.qr import (
     encode_qr_envelope,
 )
 from nsealr_vault.review import review_event_template
-from nsealr_vault.seed_entry import MnemonicSessionSecretProvider, normalize_mnemonic_words
+from nsealr_vault.seed_entry import (
+    MnemonicSessionSecretProvider,
+    SeedQrSessionSecretProvider,
+    mnemonic_from_compact_seedqr,
+    mnemonic_from_standard_seedqr,
+    normalize_mnemonic_words,
+)
 from nsealr_vault.signer import sign_request
 
 
@@ -99,6 +105,12 @@ RASPBERRY_ACCOUNT_DESCRIPTOR = json.loads(
     (SPECS / "vectors/accounts/raspberry-qr-nip06-account-0.json").read_text(encoding="utf-8")
 )
 MANUAL_QR_POLICY = json.loads((SPECS / "vectors/policies/manual-only-qr-vault.json").read_text(encoding="utf-8"))
+SEEDSIGNER_VECTOR_1 = json.loads(
+    (SPECS / "vectors/seedqr/seedsigner-vector-1.json").read_text(encoding="utf-8")
+)
+SEEDSIGNER_VECTOR_1_MNEMONIC = SEEDSIGNER_VECTOR_1["mnemonic"]
+SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR = SEEDSIGNER_VECTOR_1["standard_seedqr_digits"]
+SEEDSIGNER_VECTOR_1_COMPACT_SEEDQR_HEX = SEEDSIGNER_VECTOR_1["compact_seedqr_hex"]
 
 
 class MemoryQrVaultIO:
@@ -395,6 +407,45 @@ class VaultCoreTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "session mnemonic has already been consumed"):
             provider()
+
+    def test_seedsigner_standard_seedqr_decodes_to_bip39_mnemonic(self) -> None:
+        mnemonic = mnemonic_from_standard_seedqr(SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR)
+
+        self.assertEqual(mnemonic, SEEDSIGNER_VECTOR_1_MNEMONIC)
+
+        with self.assertRaisesRegex(ValueError, "only digits"):
+            mnemonic_from_standard_seedqr(SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR + "x")
+        with self.assertRaisesRegex(ValueError, "outside the BIP-39 English wordlist"):
+            mnemonic_from_standard_seedqr("2048" * 12)
+        with self.assertRaisesRegex(ValueError, "word count"):
+            mnemonic_from_standard_seedqr("0000" * 13)
+
+    def test_seedsigner_compact_seedqr_decodes_to_bip39_mnemonic(self) -> None:
+        compact_seedqr = bytes.fromhex(SEEDSIGNER_VECTOR_1_COMPACT_SEEDQR_HEX)
+
+        self.assertEqual(mnemonic_from_compact_seedqr(compact_seedqr), SEEDSIGNER_VECTOR_1_MNEMONIC)
+
+        with self.assertRaisesRegex(ValueError, "byte length"):
+            mnemonic_from_compact_seedqr(compact_seedqr[:-1])
+
+    def test_seedqr_session_secret_provider_reads_seed_once_and_derives_nip06_secret(self) -> None:
+        provider = SeedQrSessionSecretProvider(
+            SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR,
+            qr_format="standard",
+            account=0,
+            passphrase="",
+        )
+        expected_secret = derive_nip06_secret(SEEDSIGNER_VECTOR_1_MNEMONIC)
+
+        self.assertEqual(provider(), expected_secret)
+        with self.assertRaisesRegex(RuntimeError, "session SeedQR has already been consumed"):
+            provider()
+
+        compact_provider = SeedQrSessionSecretProvider(
+            bytes.fromhex(SEEDSIGNER_VECTOR_1_COMPACT_SEEDQR_HEX),
+            qr_format="compact",
+        )
+        self.assertEqual(compact_provider(), expected_secret)
 
     def test_button_flow_can_use_word_by_word_mnemonic_session_secret_provider(self) -> None:
         word_input = FakeMnemonicWordInput(NIP06_KEY["mnemonic"].split())
@@ -1086,6 +1137,111 @@ class VaultCoreTests(unittest.TestCase):
             response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
             self.assert_valid_signed_event_for_pubkey(response["result"]["event"], NIP06_KEY["public_key"])
 
+    def test_cli_signs_qr_request_from_standard_seedqr_stdin(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+            expected_public_key = sign_event(
+                BASIC_REQUEST["params"]["event_template"],
+                derive_nip06_secret(SEEDSIGNER_VECTOR_1_MNEMONIC),
+            )["pubkey"]
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "sign",
+                    "--seedqr-stdin",
+                    "--request",
+                    str(request_path),
+                    "--response",
+                    str(response_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "qr",
+                    "--approve",
+                ],
+                cwd=ROOT,
+                input=SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR + "\n",
+                text=True,
+                check=True,
+            )
+
+            response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event_for_pubkey(response["result"]["event"], expected_public_key)
+
+    def test_cli_signs_qr_request_from_compact_seedqr_hex_stdin(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+            expected_public_key = sign_event(
+                BASIC_REQUEST["params"]["event_template"],
+                derive_nip06_secret(SEEDSIGNER_VECTOR_1_MNEMONIC),
+            )["pubkey"]
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "sign",
+                    "--compact-seedqr-hex-stdin",
+                    "--request",
+                    str(request_path),
+                    "--response",
+                    str(response_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "qr",
+                    "--approve",
+                ],
+                cwd=ROOT,
+                input=SEEDSIGNER_VECTOR_1_COMPACT_SEEDQR_HEX + "\n",
+                text=True,
+                check=True,
+            )
+
+            response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event_for_pubkey(response["result"]["event"], expected_public_key)
+
+    def test_cli_rejects_invalid_seedqr_without_writing_response(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "sign",
+                    "--seedqr-stdin",
+                    "--request",
+                    str(request_path),
+                    "--response",
+                    str(response_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "qr",
+                    "--approve",
+                ],
+                cwd=ROOT,
+                input="not-a-seedqr\n",
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("SeedQR digit stream must contain only digits", result.stderr)
+            self.assertFalse(response_path.exists())
+
     def test_cli_reviews_qr_request_without_secret_key(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             request_path = Path(temp_root) / "request.qr"
@@ -1448,6 +1604,42 @@ class VaultCoreTests(unittest.TestCase):
 
             response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
             self.assert_valid_signed_event_for_pubkey(response["result"]["event"], NIP06_KEY["public_key"])
+
+    def test_cli_flow_can_read_standard_seedqr_from_stdin(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-screen.json"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+            expected_public_key = sign_event(
+                BASIC_REQUEST["params"]["event_template"],
+                derive_nip06_secret(SEEDSIGNER_VECTOR_1_MNEMONIC),
+            )["pubkey"]
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "flow",
+                    "--seedqr-stdin",
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--response",
+                    str(response_path),
+                    "--button-sequence",
+                    "next,next,next,approve",
+                ],
+                cwd=ROOT,
+                input=SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR + "\n",
+                text=True,
+                check=True,
+            )
+
+            response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event_for_pubkey(response["result"]["event"], expected_public_key)
 
     def test_cli_flow_rejects_early_button_approval(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
