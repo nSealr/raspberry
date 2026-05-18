@@ -141,8 +141,9 @@ default are left unchanged.
   secret transfer.
 - NIP-19 `nsec` import tests proving lowercase Bech32 checksum validation,
   `nsec` prefix enforcement, 32-byte payload enforcement, one-shot RAM-only
-  session-provider behavior, and `sign`/`flow` stdin harness coverage without
-  writing output after invalid input.
+  session-provider behavior, consumption of the shared `nSealr/specs` NIP-19
+  vector, and `sign`/`flow` stdin harness coverage without writing output after
+  invalid input.
 - Shared nSealr v0 implementation-limit conformance test against the
   `nSealr/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,

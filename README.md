@@ -35,10 +35,11 @@ even if current hardware readiness differs.
 - RAM-only session keyring inputs for the current foundation include manual
   BIP-39 word entry, SeedSigner Standard SeedQR digit streams, SeedSigner
   CompactSeedQR entropy bytes, plain BIP-39 mnemonic text, and Nostr NIP-19
-  `nsec` private keys. Local mnemonic generation and local standalone-key
-  generation remain product goals. SeedSigner-compatible import is BIP-39 seed
-  import for NIP-06 Nostr derivation; it does not import Bitcoin descriptors,
-  xpubs, PSBTs, or wallet policy.
+  `nsec` private keys checked against shared `nSealr/specs` vectors. Local
+  mnemonic generation and local standalone-key generation remain product goals.
+  SeedSigner-compatible import is BIP-39 seed import for NIP-06 Nostr
+  derivation; it does not import Bitcoin descriptors, xpubs, PSBTs, or wallet
+  policy.
 - The shared `nsealr-account-descriptor-v0` route
   `raspberry_qr_vault` is treated as a stateless-session, manual-only route
   bound to `policy-manual-only-qr-vault` with `persistent_grants: false`.

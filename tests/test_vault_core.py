@@ -113,7 +113,10 @@ SEEDSIGNER_VECTOR_1 = json.loads(
 SEEDSIGNER_VECTOR_1_MNEMONIC = SEEDSIGNER_VECTOR_1["mnemonic"]
 SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR = SEEDSIGNER_VECTOR_1["standard_seedqr_digits"]
 SEEDSIGNER_VECTOR_1_COMPACT_SEEDQR_HEX = SEEDSIGNER_VECTOR_1["compact_seedqr_hex"]
-TEST_KEY_1_NSEC = "nsec1zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygs4rm7hz"
+NIP19_NSEC_VECTOR = json.loads(
+    (SPECS / "vectors/nip19/nsec-test-key-1.json").read_text(encoding="utf-8")
+)
+TEST_KEY_1_NSEC = NIP19_NSEC_VECTOR["nsec"]
 
 
 class MemoryQrVaultIO:
@@ -496,6 +499,8 @@ class VaultCoreTests(unittest.TestCase):
         self.assertEqual(compact_provider(), expected_secret)
 
     def test_nsec_session_secret_provider_decodes_nip19_nsec_once(self) -> None:
+        self.assertEqual(NIP19_NSEC_VECTOR["secret_key"], KEY["secret_key"])
+        self.assertEqual(NIP19_NSEC_VECTOR["public_key"], KEY["public_key"])
         self.assertEqual(secret_key_from_nsec(TEST_KEY_1_NSEC), KEY["secret_key"])
 
         provider = NsecSessionSecretProvider(TEST_KEY_1_NSEC)

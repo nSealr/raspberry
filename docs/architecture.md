@@ -179,11 +179,12 @@ uses stdin/hex harnesses for tests; a real Pi camera adapter should pass decoded
 QR text or bytes directly without creating seed files.
 
 `NsecSessionSecretProvider` is the matching package-owned boundary for NIP-19
-`nsec` imports. It decodes canonical lowercase Bech32, verifies the checksum,
-requires the `nsec` human-readable prefix, requires a 32-byte private-key
-payload, and refuses reuse after one session. The CLI `--nsec-stdin` harness
-models a future decoded Nostr private-key QR path without adding seed files,
-persistent key slots, or account-index derivation.
+`nsec` imports and is checked against the shared `nSealr/specs` NIP-19 vector.
+It decodes canonical lowercase Bech32, verifies the checksum, requires the
+`nsec` human-readable prefix, requires a 32-byte private-key payload, and
+refuses reuse after one session. The CLI `--nsec-stdin` harness models a future
+decoded Nostr private-key QR path without adding seed files, persistent key
+slots, or account-index derivation.
 
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it
