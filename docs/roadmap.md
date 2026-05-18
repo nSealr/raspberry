@@ -222,6 +222,13 @@ Standard SeedQR digit-stream parsing and CompactSeedQR entropy-byte parsing for
 `--compact-seedqr-hex-stdin`, while real Pi camera adapters remain responsible
 for delivering decoded QR text or bytes directly without seed files.
 
+Status: `nsealr_vault.seed_entry` now implements NIP-19 `nsec` Bech32 decoding
+as a one-shot RAM-only session secret provider. `nsealr-vault sign` and
+`nsealr-vault flow` expose the desktop harness through `--nsec-stdin`; real Pi
+camera adapters remain responsible for delivering decoded private-key QR text
+directly without seed files, key slots, persistent storage, or account-index
+derivation.
+
 Status: `os/stateless-qr-vault-profile.md` now records the future Raspberry
 image acceptance boundary aligned with `nSealr/hardware`: removable microSD
 boot media, disabled or absent wireless, RAM-only session custody, no swap

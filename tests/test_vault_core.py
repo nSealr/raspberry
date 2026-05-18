@@ -37,10 +37,12 @@ from nsealr_vault.qr import (
 from nsealr_vault.review import review_event_template
 from nsealr_vault.seed_entry import (
     MnemonicSessionSecretProvider,
+    NsecSessionSecretProvider,
     SeedQrSessionSecretProvider,
     mnemonic_from_compact_seedqr,
     mnemonic_from_standard_seedqr,
     normalize_mnemonic_words,
+    secret_key_from_nsec,
 )
 from nsealr_vault.signer import sign_request
 
@@ -111,6 +113,7 @@ SEEDSIGNER_VECTOR_1 = json.loads(
 SEEDSIGNER_VECTOR_1_MNEMONIC = SEEDSIGNER_VECTOR_1["mnemonic"]
 SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR = SEEDSIGNER_VECTOR_1["standard_seedqr_digits"]
 SEEDSIGNER_VECTOR_1_COMPACT_SEEDQR_HEX = SEEDSIGNER_VECTOR_1["compact_seedqr_hex"]
+TEST_KEY_1_NSEC = "nsec1zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygs4rm7hz"
 
 
 class MemoryQrVaultIO:
@@ -491,6 +494,21 @@ class VaultCoreTests(unittest.TestCase):
             qr_format="compact",
         )
         self.assertEqual(compact_provider(), expected_secret)
+
+    def test_nsec_session_secret_provider_decodes_nip19_nsec_once(self) -> None:
+        self.assertEqual(secret_key_from_nsec(TEST_KEY_1_NSEC), KEY["secret_key"])
+
+        provider = NsecSessionSecretProvider(TEST_KEY_1_NSEC)
+        self.assertEqual(provider(), KEY["secret_key"])
+        with self.assertRaisesRegex(RuntimeError, "session nsec has already been consumed"):
+            provider()
+
+        with self.assertRaisesRegex(ValueError, "checksum"):
+            secret_key_from_nsec(TEST_KEY_1_NSEC[:-1] + "q")
+        with self.assertRaisesRegex(ValueError, "prefix"):
+            secret_key_from_nsec("npub1fu64hh9hes90w2808n8tjc2ajp5yhddjef0ctx4s7zmsgp6cwx4qgy4eg9")
+        with self.assertRaisesRegex(ValueError, "lowercase"):
+            secret_key_from_nsec(TEST_KEY_1_NSEC.upper())
 
     def test_button_flow_can_use_word_by_word_mnemonic_session_secret_provider(self) -> None:
         word_input = FakeMnemonicWordInput(NIP06_KEY["mnemonic"].split())
@@ -1254,6 +1272,38 @@ class VaultCoreTests(unittest.TestCase):
             response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
             self.assert_valid_signed_event_for_pubkey(response["result"]["event"], expected_public_key)
 
+    def test_cli_signs_qr_request_from_nsec_stdin(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "sign",
+                    "--nsec-stdin",
+                    "--request",
+                    str(request_path),
+                    "--response",
+                    str(response_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "qr",
+                    "--approve",
+                ],
+                cwd=ROOT,
+                input=TEST_KEY_1_NSEC + "\n",
+                text=True,
+                check=True,
+            )
+
+            response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event(response["result"]["event"])
+
     def test_cli_rejects_invalid_seedqr_without_writing_response(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             request_path = Path(temp_root) / "request.qr"
@@ -1285,6 +1335,39 @@ class VaultCoreTests(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("SeedQR digit stream must contain only digits", result.stderr)
+            self.assertFalse(response_path.exists())
+
+    def test_cli_rejects_invalid_nsec_without_writing_response(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "sign",
+                    "--nsec-stdin",
+                    "--request",
+                    str(request_path),
+                    "--response",
+                    str(response_path),
+                    "--input-format",
+                    "qr",
+                    "--output-format",
+                    "qr",
+                    "--approve",
+                ],
+                cwd=ROOT,
+                input=TEST_KEY_1_NSEC[:-1] + "q\n",
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("nsec bech32 checksum is invalid", result.stderr)
             self.assertFalse(response_path.exists())
 
     def test_cli_reviews_qr_request_without_secret_key(self) -> None:
@@ -1685,6 +1768,38 @@ class VaultCoreTests(unittest.TestCase):
 
             response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
             self.assert_valid_signed_event_for_pubkey(response["result"]["event"], expected_public_key)
+
+    def test_cli_flow_can_read_nsec_from_stdin(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            request_path = Path(temp_root) / "request.qr"
+            review_path = Path(temp_root) / "review-screen.json"
+            response_path = Path(temp_root) / "response.qr"
+            request_path.write_text(encode_qr_envelope(BASIC_REQUEST), encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "flow",
+                    "--nsec-stdin",
+                    "--request",
+                    str(request_path),
+                    "--review",
+                    str(review_path),
+                    "--response",
+                    str(response_path),
+                    "--button-sequence",
+                    "next,next,next,approve",
+                ],
+                cwd=ROOT,
+                input=TEST_KEY_1_NSEC + "\n",
+                text=True,
+                check=True,
+            )
+
+            response = decode_qr_envelope(response_path.read_text(encoding="utf-8").strip())
+            self.assert_valid_signed_event(response["result"]["event"])
 
     def test_cli_flow_rejects_early_button_approval(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:

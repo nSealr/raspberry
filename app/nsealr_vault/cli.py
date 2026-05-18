@@ -23,7 +23,7 @@ from .qr import (
     encode_qr_envelope,
 )
 from .review import review_event_template
-from .seed_entry import MnemonicSessionSecretProvider, SeedQrSessionSecretProvider
+from .seed_entry import MnemonicSessionSecretProvider, NsecSessionSecretProvider, SeedQrSessionSecretProvider
 from .signer import sign_request, validate_signing_request
 
 
@@ -112,6 +112,14 @@ def _secret_key_from_args(args: argparse.Namespace, parser: argparse.ArgumentPar
             parser.error(str(exc))
         except RuntimeError as exc:
             parser.error(str(exc))
+    if getattr(args, "nsec_stdin", False):
+        nsec = sys.stdin.read().strip()
+        if not nsec:
+            parser.error("nsec stdin input must not be empty")
+        try:
+            return NsecSessionSecretProvider(nsec)()
+        except (RuntimeError, ValueError) as exc:
+            parser.error(str(exc))
     mnemonic = args.mnemonic_file.read_text(encoding="utf-8")
     try:
         return derive_nip06_secret(mnemonic, passphrase=args.passphrase, account=args.account)
@@ -146,6 +154,7 @@ def _add_session_key_source_arguments(command: argparse.ArgumentParser) -> None:
     key_source.add_argument("--mnemonic-words-stdin", action="store_true", help="Read one BIP-39 word per stdin line")
     key_source.add_argument("--seedqr-stdin", action="store_true", help="Read one SeedSigner Standard SeedQR digit stream from stdin")
     key_source.add_argument("--compact-seedqr-hex-stdin", action="store_true", help="Read one hex-encoded SeedSigner CompactSeedQR byte stream from stdin")
+    key_source.add_argument("--nsec-stdin", action="store_true", help="Read one NIP-19 nsec private key from stdin")
 
 
 def build_parser() -> argparse.ArgumentParser:

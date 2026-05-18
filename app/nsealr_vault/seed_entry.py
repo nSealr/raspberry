@@ -17,6 +17,8 @@ COMPACT_SEEDQR_BYTE_LENGTHS = {
     16: 12,
     32: 24,
 }
+BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+BECH32_CHARSET_REV = {char: index for index, char in enumerate(BECH32_CHARSET)}
 
 
 class MnemonicWordInput(Protocol):
@@ -71,6 +73,66 @@ def mnemonic_from_compact_seedqr(value: bytes) -> str:
     return normalize_mnemonic_words(_ENGLISH_MNEMONIC.to_mnemonic(value).split())
 
 
+def _bech32_polymod(values: list[int]) -> int:
+    generators = (0x3B6A57B2, 0x26508E6D, 0x1EA119FA, 0x3D4233DD, 0x2A1462B3)
+    checksum = 1
+    for value in values:
+        top = checksum >> 25
+        checksum = ((checksum & 0x1FFFFFF) << 5) ^ value
+        for index, generator in enumerate(generators):
+            if (top >> index) & 1:
+                checksum ^= generator
+    return checksum
+
+
+def _bech32_hrp_expand(hrp: str) -> list[int]:
+    return [ord(char) >> 5 for char in hrp] + [0] + [ord(char) & 31 for char in hrp]
+
+
+def _bech32_decode(value: str) -> tuple[str, list[int]]:
+    candidate = value.strip()
+    if candidate != candidate.lower():
+        raise ValueError("nsec must be lowercase bech32")
+    separator = candidate.rfind("1")
+    if separator <= 0 or separator + 7 > len(candidate):
+        raise ValueError("nsec bech32 payload is malformed")
+    hrp = candidate[:separator]
+    payload = candidate[separator + 1:]
+    if any(char not in BECH32_CHARSET_REV for char in payload):
+        raise ValueError("nsec bech32 payload contains unsupported characters")
+    data = [BECH32_CHARSET_REV[char] for char in payload]
+    if _bech32_polymod(_bech32_hrp_expand(hrp) + data) != 1:
+        raise ValueError("nsec bech32 checksum is invalid")
+    return hrp, data[:-6]
+
+
+def _convert_5bit_words_to_bytes(words: list[int]) -> bytes:
+    accumulator = 0
+    bit_count = 0
+    out = bytearray()
+    for word in words:
+        if word < 0 or word > 31:
+            raise ValueError("nsec bech32 word is out of range")
+        accumulator = (accumulator << 5) | word
+        bit_count += 5
+        while bit_count >= 8:
+            bit_count -= 8
+            out.append((accumulator >> bit_count) & 0xFF)
+    if bit_count >= 5 or ((accumulator << (8 - bit_count)) & 0xFF) != 0:
+        raise ValueError("nsec bech32 payload has invalid padding")
+    return bytes(out)
+
+
+def secret_key_from_nsec(value: str) -> str:
+    hrp, words = _bech32_decode(value)
+    if hrp != "nsec":
+        raise ValueError("nsec bech32 prefix must be nsec")
+    secret = _convert_5bit_words_to_bytes(words)
+    if len(secret) != 32:
+        raise ValueError("nsec payload must decode to a 32-byte secret key")
+    return secret.hex()
+
+
 def collect_mnemonic_words(word_input: MnemonicWordInput, word_count: int) -> str:
     if word_count not in VALID_MNEMONIC_WORD_COUNTS:
         counts = ", ".join(str(count) for count in VALID_MNEMONIC_WORD_COUNTS)
@@ -119,3 +181,15 @@ class SeedQrSessionSecretProvider:
         else:
             raise ValueError("SeedQR format must be standard or compact")
         return derive_nip06_secret(mnemonic, passphrase=self.passphrase, account=self.account)
+
+
+@dataclass
+class NsecSessionSecretProvider:
+    nsec: str
+    _consumed: bool = False
+
+    def __call__(self) -> str:
+        if self._consumed:
+            raise RuntimeError("session nsec has already been consumed")
+        self._consumed = True
+        return secret_key_from_nsec(self.nsec)

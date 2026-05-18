@@ -133,6 +133,16 @@ default are left unchanged.
   and button-driven `flow`, proving the package-owned seed-entry validator is
   reachable through the CLI without introducing seed files or persistent
   storage.
+- SeedSigner Standard SeedQR and CompactSeedQR import tests for RAM-only
+  BIP-39/NIP-06 session loading. The tests use SeedSigner-published vector 1
+  for both the Standard digit stream and Compact entropy bytes, cover one-shot
+  session-provider behavior, and exercise `sign`/`flow` stdin harnesses without
+  importing Bitcoin descriptors, xpubs, PSBTs, wallet policy, or microSD/file
+  secret transfer.
+- NIP-19 `nsec` import tests proving lowercase Bech32 checksum validation,
+  `nsec` prefix enforcement, 32-byte payload enforcement, one-shot RAM-only
+  session-provider behavior, and `sign`/`flow` stdin harness coverage without
+  writing output after invalid input.
 - Shared nSealr v0 implementation-limit conformance test against the
   `nSealr/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,
@@ -169,13 +179,6 @@ default are left unchanged.
   camera/display drivers are selected, the ST7789 layout plan is rendered on
   the display HAT, and the SeedSigner-compatible GPIO profile is exercised on
   the Pi HAT.
-- SeedSigner Standard SeedQR and CompactSeedQR import tests for RAM-only
-  BIP-39/NIP-06 session loading. The tests use SeedSigner-published vector 1
-  for both the Standard digit stream and Compact entropy bytes, cover one-shot
-  session-provider behavior, and exercise `sign`/`flow` stdin harnesses without
-  importing Bitcoin descriptors, xpubs, PSBTs, wallet policy, or microSD/file
-  secret transfer.
-
 Hardware tests must record board, camera, display, OS image, commit, and exact
 procedure.
 

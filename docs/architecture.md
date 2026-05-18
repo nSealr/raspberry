@@ -58,10 +58,10 @@ route.
 
 The final product key-source model is a RAM-only session keyring. The current
 foundation can load manual BIP-39 words, SeedSigner Standard SeedQR digit
-streams, SeedSigner CompactSeedQR entropy bytes, and plain mnemonic text for
-the current session. `nsec` QR, local mnemonic generation, and local
-standalone-key generation remain product goals. BIP-39 passphrases create
-separate seed namespaces and are entered separately from public account
+streams, SeedSigner CompactSeedQR entropy bytes, plain mnemonic text, and
+NIP-19 `nsec` private keys for the current session. Local mnemonic generation
+and local standalone-key generation remain product goals. BIP-39 passphrases
+create separate seed namespaces and are entered separately from public account
 metadata. Policies belong to the resulting public key, but QR vault routes have
 only the manual-only policy and no persistent policy state.
 
@@ -147,12 +147,13 @@ The `sign` and `flow` commands can use explicit development `--secret-key`,
 stdin-fed `--secret-key-stdin`, NIP-06 `--mnemonic-file`, stdin-fed
 `--mnemonic-stdin`, word-by-word stdin `--mnemonic-words-stdin`, Standard
 SeedQR stdin `--seedqr-stdin`, or hex-encoded CompactSeedQR stdin
-`--compact-seedqr-hex-stdin` plus account index. The file and argument paths
-are desktop simulation compatibility paths. The stdin paths better match the
-stateless target because session key material can be supplied without a seed
-file or a process-list-visible secret argument, but they are still development
-harness inputs rather than a final Pi seed-entry UX. Real Pi adapters must keep
-seed material RAM-only for the current signing session.
+`--compact-seedqr-hex-stdin` plus account index, or NIP-19 `--nsec-stdin`. The
+file and argument paths are desktop simulation compatibility paths. The stdin
+paths better match the stateless target because session key material can be
+supplied without a seed file or a process-list-visible secret argument, but
+they are still development harness inputs rather than a final Pi seed-entry UX.
+Real Pi adapters must keep seed material RAM-only for the current signing
+session.
 
 `MnemonicSessionSecretProvider` is the first package-owned boundary for that
 future seed-entry UX. A display/button adapter supplies one BIP-39 word at a
@@ -176,6 +177,13 @@ library. Both formats are validated as BIP-39 English mnemonics before NIP-06
 derivation, and both providers are one-shot RAM-only session inputs. The CLI
 uses stdin/hex harnesses for tests; a real Pi camera adapter should pass decoded
 QR text or bytes directly without creating seed files.
+
+`NsecSessionSecretProvider` is the matching package-owned boundary for NIP-19
+`nsec` imports. It decodes canonical lowercase Bech32, verifies the checksum,
+requires the `nsec` human-readable prefix, requires a 32-byte private-key
+payload, and refuses reuse after one session. The CLI `--nsec-stdin` harness
+models a future decoded Nostr private-key QR path without adding seed files,
+persistent key slots, or account-index derivation.
 
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it
