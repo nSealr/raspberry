@@ -193,6 +193,12 @@ import approval digest pinned in `nSealr/specs/vectors/session-import-reviews`.
 It does not show mnemonic words, `nsec`, raw private-key bytes, derived NIP-06
 keys, persistent slots, policy state, or signing approval.
 
+The `review-import` command is the desktop harness for that boundary. It accepts
+only session-source inputs over stdin, validates and normalizes them through
+package code, renders the secret-hidden import review, and writes no output
+after validation failure. It deliberately excludes development raw-secret
+arguments and does not share the `sign` command's approval path.
+
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it
 uses the deterministic fixture author pubkey; the hardware flow derives the

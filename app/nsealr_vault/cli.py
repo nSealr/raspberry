@@ -23,7 +23,18 @@ from .qr import (
     encode_qr_envelope,
 )
 from .review import review_event_template
-from .seed_entry import MnemonicSessionSecretProvider, NsecSessionSecretProvider, SeedQrSessionSecretProvider
+from .seed_entry import (
+    MnemonicSessionSecretProvider,
+    NsecSessionSecretProvider,
+    SeedQrSessionSecretProvider,
+    SessionImportSource,
+    bip39_word_indexes_from_mnemonic,
+    collect_mnemonic_words,
+    mnemonic_from_compact_seedqr,
+    mnemonic_from_standard_seedqr,
+    secret_key_from_nsec,
+    session_import_review,
+)
 from .signer import sign_request, validate_signing_request
 
 
@@ -157,6 +168,60 @@ def _add_session_key_source_arguments(command: argparse.ArgumentParser) -> None:
     key_source.add_argument("--nsec-stdin", action="store_true", help="Read one NIP-19 nsec private key from stdin")
 
 
+def _add_session_import_source_arguments(command: argparse.ArgumentParser) -> None:
+    key_source = command.add_mutually_exclusive_group(required=True)
+    key_source.add_argument("--mnemonic-stdin", action="store_true", help="Read one BIP-39 mnemonic seed phrase from stdin")
+    key_source.add_argument("--mnemonic-words-stdin", action="store_true", help="Read one BIP-39 word per stdin line")
+    key_source.add_argument("--seedqr-stdin", action="store_true", help="Read one SeedSigner Standard SeedQR digit stream from stdin")
+    key_source.add_argument("--compact-seedqr-hex-stdin", action="store_true", help="Read one hex-encoded SeedSigner CompactSeedQR byte stream from stdin")
+    key_source.add_argument("--nsec-stdin", action="store_true", help="Read one NIP-19 nsec private key from stdin")
+
+
+def _session_import_source_from_args(
+    args: argparse.Namespace,
+    parser: argparse.ArgumentParser,
+) -> SessionImportSource:
+    try:
+        if args.mnemonic_stdin:
+            mnemonic = sys.stdin.read()
+            if not mnemonic.strip():
+                parser.error("mnemonic stdin input must not be empty")
+            return SessionImportSource.bip39_seed(
+                args.label,
+                bip39_word_indexes_from_mnemonic(mnemonic),
+            )
+        if args.mnemonic_words_stdin:
+            mnemonic = collect_mnemonic_words(
+                _StdinMnemonicWordInput(),
+                word_count=args.mnemonic_word_count,
+            )
+            return SessionImportSource.bip39_seed(
+                args.label,
+                bip39_word_indexes_from_mnemonic(mnemonic),
+            )
+        if args.seedqr_stdin:
+            mnemonic = mnemonic_from_standard_seedqr(sys.stdin.read())
+            return SessionImportSource.bip39_seed(
+                args.label,
+                bip39_word_indexes_from_mnemonic(mnemonic),
+            )
+        if args.compact_seedqr_hex_stdin:
+            compact_seedqr_hex = "".join(sys.stdin.read().split())
+            mnemonic = mnemonic_from_compact_seedqr(bytes.fromhex(compact_seedqr_hex))
+            return SessionImportSource.bip39_seed(
+                args.label,
+                bip39_word_indexes_from_mnemonic(mnemonic),
+            )
+        if args.nsec_stdin:
+            nsec = sys.stdin.read().strip()
+            if not nsec:
+                parser.error("nsec stdin input must not be empty")
+            return SessionImportSource.nsec(args.label, secret_key_from_nsec(nsec))
+    except ValueError as exc:
+        parser.error(str(exc))
+    parser.error("unsupported session import source")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="nsealr-vault")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -198,6 +263,20 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=48,
         help="Maximum compact trusted-display body line characters for detail-pages-json output",
+    )
+
+    review_import = subparsers.add_parser(
+        "review-import",
+        help="Render secret-hidden RAM-only session import review data",
+    )
+    _add_session_import_source_arguments(review_import)
+    review_import.add_argument("--label", required=True, help="Human-readable label shown on the import review")
+    review_import.add_argument("--out", required=True, type=Path, help="Output session import review JSON path")
+    review_import.add_argument(
+        "--mnemonic-word-count",
+        type=int,
+        default=12,
+        help="Expected BIP-39 word count for --mnemonic-words-stdin",
     )
 
     flow = subparsers.add_parser("flow", help="Run one hardware-style QR review/sign flow")
@@ -312,6 +391,14 @@ def main(argv: list[str] | None = None) -> int:
                 ),
             )
         _write_value(args.review, "json", review_output)
+        return 0
+
+    if args.command == "review-import":
+        try:
+            review_output = session_import_review(_session_import_source_from_args(args, parser))
+        except ValueError as exc:
+            parser.error(str(exc))
+        _write_value(args.out, "json", review_output)
         return 0
 
     if args.command == "flow":

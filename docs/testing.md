@@ -149,6 +149,9 @@ default are left unchanged.
   fingerprint, and import approval digest from
   `nSealr/specs/vectors/session-import-reviews` without leaking mnemonic words,
   `nsec`, raw private-key bytes, persistence, derivation, or signing approval.
+- Desktop CLI `review-import` smoke tests proving stdin-fed Standard SeedQR
+  and NIP-19 `nsec` sources write those same secret-hidden RAM-load reviews,
+  and invalid import sources fail before output files are created.
 - Shared nSealr v0 implementation-limit conformance test against the
   `nSealr/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,

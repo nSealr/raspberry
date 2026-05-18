@@ -1430,6 +1430,121 @@ class VaultCoreTests(unittest.TestCase):
             self.assertIn("nsec bech32 checksum is invalid", result.stderr)
             self.assertFalse(response_path.exists())
 
+    def test_cli_review_import_writes_secret_hidden_seedqr_review(self) -> None:
+        vector = session_import_review_vector("seedqr-vector-1")
+        with tempfile.TemporaryDirectory() as temp_root:
+            review_path = Path(temp_root) / "import-review.json"
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "review-import",
+                    "--seedqr-stdin",
+                    "--label",
+                    "SeedQR vector 1",
+                    "--out",
+                    str(review_path),
+                ],
+                cwd=ROOT,
+                input=SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR + "\n",
+                text=True,
+                check=True,
+            )
+
+            review = json.loads(review_path.read_text(encoding="utf-8"))
+            self.assertEqual(review["review_id"], vector["review_id"])
+            self.assertEqual(review["approval_digest"], vector["approval_digest"])
+            self.assertEqual(review["pages"], vector["pages"])
+            rendered = json.dumps(review, ensure_ascii=False)
+            for word in SEEDSIGNER_VECTOR_1_MNEMONIC.split():
+                self.assertNotIn(word, rendered)
+
+    def test_cli_review_import_writes_secret_hidden_nsec_review(self) -> None:
+        vector = session_import_review_vector("nsec-test-key-1")
+        with tempfile.TemporaryDirectory() as temp_root:
+            review_path = Path(temp_root) / "import-review.json"
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "review-import",
+                    "--nsec-stdin",
+                    "--label",
+                    "nsec test vector",
+                    "--out",
+                    str(review_path),
+                ],
+                cwd=ROOT,
+                input=TEST_KEY_1_NSEC + "\n",
+                text=True,
+                check=True,
+            )
+
+            review = json.loads(review_path.read_text(encoding="utf-8"))
+            self.assertEqual(review["review_id"], vector["review_id"])
+            self.assertEqual(review["approval_digest"], vector["approval_digest"])
+            self.assertEqual(review["pages"], vector["pages"])
+            rendered = json.dumps(review, ensure_ascii=False)
+            self.assertNotIn(TEST_KEY_1_NSEC, rendered)
+            self.assertNotIn(NIP19_NSEC_VECTOR["secret_key"], rendered)
+            self.assertIn("Secret: hidden", rendered)
+
+    def test_cli_review_import_rejects_invalid_source_without_writing_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            review_path = Path(temp_root) / "import-review.json"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "review-import",
+                    "--seedqr-stdin",
+                    "--label",
+                    "bad source",
+                    "--out",
+                    str(review_path),
+                ],
+                cwd=ROOT,
+                input="not-a-seedqr\n",
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("SeedQR digit stream must contain only digits", result.stderr)
+            self.assertFalse(review_path.exists())
+
+    def test_cli_review_import_rejects_empty_label_without_writing_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            review_path = Path(temp_root) / "import-review.json"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "review-import",
+                    "--nsec-stdin",
+                    "--label",
+                    "",
+                    "--out",
+                    str(review_path),
+                ],
+                cwd=ROOT,
+                input=TEST_KEY_1_NSEC + "\n",
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("session import label must not be empty", result.stderr)
+            self.assertFalse(review_path.exists())
+
     def test_cli_reviews_qr_request_without_secret_key(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             request_path = Path(temp_root) / "request.qr"

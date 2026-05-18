@@ -236,6 +236,13 @@ contract exposes type, label, word count where applicable, fingerprint,
 private-key bytes. This is a RAM-load review boundary, not NIP-06 derivation,
 persistent storage, or signing approval.
 
+Status: `nsealr-vault review-import` now exposes that RAM-load review boundary
+from the desktop CLI for stdin-fed BIP-39 mnemonic, word-by-word mnemonic,
+Standard SeedQR, CompactSeedQR, and NIP-19 `nsec` sources. It is still a
+hardware-agnostic harness for future Pi seed-entry screens: it writes no output
+after invalid source input and does not sign, derive a NIP-06 account key,
+persist source material, or approve later signing.
+
 Status: `os/stateless-qr-vault-profile.md` now records the future Raspberry
 image acceptance boundary aligned with `nSealr/hardware`: removable microSD
 boot media, disabled or absent wireless, RAM-only session custody, no swap

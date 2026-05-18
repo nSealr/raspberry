@@ -116,6 +116,11 @@ even if current hardware readiness differs.
 - Package-owned session import review helpers pin the same secret-hidden
   review pages, source fingerprint, `review_id`, and import approval digest as
   ESP32 for the shared QR-vault RAM-load ceremony.
+- `nsealr-vault review-import` exposes that RAM-load ceremony as a desktop
+  harness for stdin-fed BIP-39 mnemonic, word-by-word mnemonic, Standard
+  SeedQR, CompactSeedQR, and NIP-19 `nsec` sources. It validates the source
+  and writes the secret-hidden review only after success; it does not sign,
+  derive a NIP-06 key, persist material, or approve later signing.
 - Hardware-neutral mnemonic seed-entry controller for future Pi display/button
   adapters. It reads BIP-39 words one by one, normalizes and validates the
   English wordlist/checksum, derives the NIP-06 session key as a one-shot
@@ -197,6 +202,8 @@ python3 -m nsealr_vault review --request request.qr --review review.json --input
 python3 -m nsealr_vault review --request request.qr --review review-screen.json --input-format qr --output-format screen-json
 python3 -m nsealr_vault review --request request.qr --review display-frame.json --input-format qr --output-format display-frame-json --display-page 0
 python3 -m nsealr_vault review --request request.qr --review review-detail-pages.json --input-format qr --output-format detail-pages-json
+printf '%s\n' '<standard-seedqr-digits>' | python3 -m nsealr_vault review-import --seedqr-stdin --label 'SeedQR session' --out import-review.json
+printf '%s\n' '<nsec1...>' | python3 -m nsealr_vault review-import --nsec-stdin --label 'nsec session' --out import-review.json
 python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --approve
 python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --display-frame-log display-frames.json
