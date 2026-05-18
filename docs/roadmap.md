@@ -229,6 +229,13 @@ expose the desktop harness through `--nsec-stdin`; real Pi camera adapters
 remain responsible for delivering decoded private-key QR text directly without
 seed files, key slots, persistent storage, or account-index derivation.
 
+Status: `nsealr_vault.seed_entry` now also builds shared secret-hidden session
+import reviews for SeedQR/BIP-39 and NIP-19 `nsec` session sources. The review
+contract exposes type, label, word count where applicable, fingerprint,
+`review_id`, and import approval digest while hiding mnemonic words and raw
+private-key bytes. This is a RAM-load review boundary, not NIP-06 derivation,
+persistent storage, or signing approval.
+
 Status: `os/stateless-qr-vault-profile.md` now records the future Raspberry
 image acceptance boundary aligned with `nSealr/hardware`: removable microSD
 boot media, disabled or absent wireless, RAM-only session custody, no swap

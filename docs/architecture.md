@@ -186,6 +186,13 @@ refuses reuse after one session. The CLI `--nsec-stdin` harness models a future
 decoded Nostr private-key QR path without adding seed files, persistent key
 slots, or account-index derivation.
 
+`session_import_review` is the shared RAM-load review boundary for those QR
+vault source inputs. Given a parsed SeedQR/BIP-39 or NIP-19 `nsec` source, it
+renders the same two secret-hidden pages, source fingerprint, `review_id`, and
+import approval digest pinned in `nSealr/specs/vectors/session-import-reviews`.
+It does not show mnemonic words, `nsec`, raw private-key bytes, derived NIP-06
+keys, persistent slots, policy state, or signing approval.
+
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it
 uses the deterministic fixture author pubkey; the hardware flow derives the

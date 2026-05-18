@@ -40,6 +40,11 @@ even if current hardware readiness differs.
   SeedSigner-compatible import is BIP-39 seed import for NIP-06 Nostr
   derivation; it does not import Bitcoin descriptors, xpubs, PSBTs, or wallet
   policy.
+- Secret-hidden session import review for SeedQR/BIP-39 and NIP-19 `nsec`
+  sources, checked against shared `nSealr/specs` session-import-review vectors.
+  It shows type, label, word count where applicable, and a deterministic
+  fingerprint while hiding mnemonic words and raw private-key bytes; it is a
+  RAM-load review only, not signing approval.
 - The shared `nsealr-account-descriptor-v0` route
   `raspberry_qr_vault` is treated as a stateless-session, manual-only route
   bound to `policy-manual-only-qr-vault` with `persistent_grants: false`.
@@ -108,6 +113,9 @@ even if current hardware readiness differs.
   reuse package-owned seed-entry validators for future camera/display/button
   adapters. These are still development harness inputs, not production
   seed-entry UX.
+- Package-owned session import review helpers pin the same secret-hidden
+  review pages, source fingerprint, `review_id`, and import approval digest as
+  ESP32 for the shared QR-vault RAM-load ceremony.
 - Hardware-neutral mnemonic seed-entry controller for future Pi display/button
   adapters. It reads BIP-39 words one by one, normalizes and validates the
   English wordlist/checksum, derives the NIP-06 session key as a one-shot

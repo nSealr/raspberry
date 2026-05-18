@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+import re
 from typing import Protocol
 
 from mnemonic import Mnemonic
@@ -19,6 +21,7 @@ COMPACT_SEEDQR_BYTE_LENGTHS = {
 }
 BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 BECH32_CHARSET_REV = {char: index for index, char in enumerate(BECH32_CHARSET)}
+HEX32_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class MnemonicWordInput(Protocol):
@@ -42,6 +45,11 @@ def normalize_mnemonic_words(words: list[str] | tuple[str, ...]) -> str:
     if not _ENGLISH_MNEMONIC.check(mnemonic):
         raise ValueError("mnemonic failed BIP-39 checksum validation")
     return mnemonic
+
+
+def bip39_word_indexes_from_mnemonic(mnemonic: str) -> tuple[int, ...]:
+    normalized = normalize_mnemonic_words(mnemonic.split())
+    return tuple(_ENGLISH_WORDS.index(word) for word in normalized.split())
 
 
 def mnemonic_from_standard_seedqr(value: str) -> str:
@@ -131,6 +139,103 @@ def secret_key_from_nsec(value: str) -> str:
     if len(secret) != 32:
         raise ValueError("nsec payload must decode to a 32-byte secret key")
     return secret.hex()
+
+
+@dataclass(frozen=True)
+class SessionImportSource:
+    source_type: str
+    label: str
+    bip39_word_indexes: tuple[int, ...] = ()
+    nsec_secret_key: str = ""
+
+    @classmethod
+    def bip39_seed(cls, label: str, word_indexes: list[int] | tuple[int, ...]) -> "SessionImportSource":
+        return cls(source_type="bip39_seed", label=label, bip39_word_indexes=tuple(word_indexes))
+
+    @classmethod
+    def nsec(cls, label: str, secret_key: str) -> "SessionImportSource":
+        return cls(source_type="nsec", label=label, nsec_secret_key=secret_key)
+
+
+def _session_source_kind_label(source_type: str) -> str:
+    if source_type == "bip39_seed":
+        return "BIP-39 seed"
+    if source_type == "nsec":
+        return "NIP-19 nsec"
+    raise ValueError("session import source type must be bip39_seed or nsec")
+
+
+def _validate_session_import_source(source: SessionImportSource) -> None:
+    if not source.label:
+        raise ValueError("session import label must not be empty")
+    if source.source_type == "bip39_seed":
+        count = len(source.bip39_word_indexes)
+        if count not in VALID_MNEMONIC_WORD_COUNTS:
+            counts = ", ".join(str(value) for value in VALID_MNEMONIC_WORD_COUNTS)
+            raise ValueError(f"session import BIP-39 word count must be one of {counts}")
+        for index in source.bip39_word_indexes:
+            if index < 0 or index >= len(_ENGLISH_WORDS):
+                raise ValueError("session import BIP-39 word index is outside the English wordlist")
+        return
+    if source.source_type == "nsec":
+        if not HEX32_RE.fullmatch(source.nsec_secret_key):
+            raise ValueError("session import nsec source requires a 32-byte lowercase hex secret key")
+        return
+    _session_source_kind_label(source.source_type)
+
+
+def session_import_source_fingerprint(source: SessionImportSource) -> str:
+    _validate_session_import_source(source)
+    material = bytearray(f"nsealr.session-key-source.v0\n{_session_source_kind_label(source.source_type)}\n".encode())
+    if source.source_type == "bip39_seed":
+        material.extend(f"{len(source.bip39_word_indexes)}\n".encode())
+        for index in source.bip39_word_indexes:
+            material.extend(index.to_bytes(2, "big"))
+    else:
+        material.extend(bytes.fromhex(source.nsec_secret_key))
+    return hashlib.sha256(bytes(material)).hexdigest()[:16]
+
+
+def session_import_review(source: SessionImportSource) -> dict[str, object]:
+    fingerprint = session_import_source_fingerprint(source)
+    digest_material = (
+        "nsealr.session-import-review.v0\n"
+        f"{_session_source_kind_label(source.source_type)}\n"
+        f"{source.label}\n"
+        f"{fingerprint}"
+    ).encode()
+    lines = [
+        f"Type: {_session_source_kind_label(source.source_type)}",
+        f"Label: {source.label}",
+        f"Fingerprint: {fingerprint}",
+    ]
+    if source.source_type == "bip39_seed":
+        lines.append(f"Words: {len(source.bip39_word_indexes)}")
+    lines.append("Secret: hidden")
+    return {
+        "review_id": f"session-import-{fingerprint}",
+        "approval_digest": hashlib.sha256(digest_material).hexdigest(),
+        "pages": [
+            {
+                "title": "Import source",
+                "lines": lines,
+                "action": "next",
+                "page_indicator": "Page 1/2",
+                "logical_page_id": "session-import-summary",
+            },
+            {
+                "title": "Import?",
+                "lines": [
+                    "Session RAM only",
+                    "No signing enabled",
+                    "Approve to load",
+                ],
+                "action": "approve_or_reject",
+                "page_indicator": "Page 2/2",
+                "logical_page_id": "session-import-decision",
+            },
+        ],
+    }
 
 
 def collect_mnemonic_words(word_input: MnemonicWordInput, word_count: int) -> str:

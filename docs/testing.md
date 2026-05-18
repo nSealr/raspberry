@@ -144,6 +144,11 @@ default are left unchanged.
   session-provider behavior, consumption of the shared `nSealr/specs` NIP-19
   vector, and `sign`/`flow` stdin harness coverage without writing output after
   invalid input.
+- Session import review tests proving SeedQR/BIP-39 and NIP-19 `nsec` session
+  sources produce the shared secret-hidden review pages, `review_id`,
+  fingerprint, and import approval digest from
+  `nSealr/specs/vectors/session-import-reviews` without leaking mnemonic words,
+  `nsec`, raw private-key bytes, persistence, derivation, or signing approval.
 - Shared nSealr v0 implementation-limit conformance test against the
   `nSealr/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,

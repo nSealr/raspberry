@@ -39,10 +39,14 @@ from nsealr_vault.seed_entry import (
     MnemonicSessionSecretProvider,
     NsecSessionSecretProvider,
     SeedQrSessionSecretProvider,
+    SessionImportSource,
+    bip39_word_indexes_from_mnemonic,
     mnemonic_from_compact_seedqr,
     mnemonic_from_standard_seedqr,
     normalize_mnemonic_words,
     secret_key_from_nsec,
+    session_import_review,
+    session_import_source_fingerprint,
 )
 from nsealr_vault.signer import sign_request
 
@@ -117,6 +121,17 @@ NIP19_NSEC_VECTOR = json.loads(
     (SPECS / "vectors/nip19/nsec-test-key-1.json").read_text(encoding="utf-8")
 )
 TEST_KEY_1_NSEC = NIP19_NSEC_VECTOR["nsec"]
+SESSION_IMPORT_REVIEW_VECTORS = [
+    json.loads(path.read_text(encoding="utf-8"))
+    for path in sorted((SPECS / "vectors/session-import-reviews").glob("*.json"))
+]
+
+
+def session_import_review_vector(name: str) -> dict[str, object]:
+    for vector in SESSION_IMPORT_REVIEW_VECTORS:
+        if vector["name"] == name:
+            return vector
+    raise AssertionError(f"missing session import review vector: {name}")
 
 
 class MemoryQrVaultIO:
@@ -514,6 +529,46 @@ class VaultCoreTests(unittest.TestCase):
             secret_key_from_nsec("npub1fu64hh9hes90w2808n8tjc2ajp5yhddjef0ctx4s7zmsgp6cwx4qgy4eg9")
         with self.assertRaisesRegex(ValueError, "lowercase"):
             secret_key_from_nsec(TEST_KEY_1_NSEC.upper())
+
+    def test_session_import_review_matches_shared_secret_hidden_vectors(self) -> None:
+        seed_vector = session_import_review_vector("seedqr-vector-1")
+        nsec_vector = session_import_review_vector("nsec-test-key-1")
+        seed_source = SessionImportSource.bip39_seed(
+            "SeedQR vector 1",
+            SEEDSIGNER_VECTOR_1["standard_word_indexes"],
+        )
+        nsec_source = SessionImportSource.nsec(
+            "nsec test vector",
+            secret_key_from_nsec(TEST_KEY_1_NSEC),
+        )
+
+        seed_review = session_import_review(seed_source)
+        nsec_review = session_import_review(nsec_source)
+
+        self.assertEqual(session_import_source_fingerprint(seed_source), seed_vector["fingerprint"])
+        self.assertEqual(seed_review["review_id"], seed_vector["review_id"])
+        self.assertEqual(seed_review["approval_digest"], seed_vector["approval_digest"])
+        self.assertEqual(seed_review["pages"], seed_vector["pages"])
+        self.assertEqual(session_import_source_fingerprint(nsec_source), nsec_vector["fingerprint"])
+        self.assertEqual(nsec_review["review_id"], nsec_vector["review_id"])
+        self.assertEqual(nsec_review["approval_digest"], nsec_vector["approval_digest"])
+        self.assertEqual(nsec_review["pages"], nsec_vector["pages"])
+
+        rendered = json.dumps([seed_review, nsec_review], ensure_ascii=False)
+        self.assertNotIn("attack", rendered)
+        self.assertNotIn("expire", rendered)
+        self.assertNotIn(TEST_KEY_1_NSEC, rendered)
+        self.assertNotIn(NIP19_NSEC_VECTOR["secret_key"], rendered)
+        self.assertIn("Secret: hidden", rendered)
+
+    def test_session_import_review_accepts_mnemonic_index_sources_without_deriving(self) -> None:
+        indexes = bip39_word_indexes_from_mnemonic(SEEDSIGNER_VECTOR_1_MNEMONIC)
+        source = SessionImportSource.bip39_seed("SeedQR vector 1", indexes)
+
+        review = session_import_review(source)
+
+        self.assertEqual(indexes, tuple(SEEDSIGNER_VECTOR_1["standard_word_indexes"]))
+        self.assertEqual(review["review_id"], session_import_review_vector("seedqr-vector-1")["review_id"])
 
     def test_button_flow_can_use_word_by_word_mnemonic_session_secret_provider(self) -> None:
         word_input = FakeMnemonicWordInput(NIP06_KEY["mnemonic"].split())
