@@ -31,8 +31,11 @@ SeedSigner.
 Status: `nsealr-vault hardware-probe` now produces a non-destructive
 SeedSigner-compatible Pi Zero setup report. It gives the later physical smoke a
 repeatable way to check board model, GPIO/SPI/camera Python modules,
-camera/SPI boot config markers, swap state, and wireless absence/blocking
-evidence before camera/display/GPIO adapters are treated as accepted.
+camera/SPI boot config markers, swap state, wireless absence/blocking evidence,
+and SSH/sshd service state before camera/display/GPIO adapters are treated as
+accepted. The report now also returns deterministic acceptance blockers and
+human-action prompts for anything that still needs physical setup or operator
+verification.
 
 ## M6: Raspberry Prototype
 

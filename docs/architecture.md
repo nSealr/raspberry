@@ -126,8 +126,8 @@ behavior through the common `contract_id` and vectors.
 - `nsealr_vault.hardware_probe`: non-destructive SeedSigner-compatible
   Raspberry probe reporting for future Pi Zero hardware smoke runs. It checks
   board model, expected GPIO/SPI/camera Python modules, camera/SPI boot config
-  markers, swap state, and wireless absence/blocking evidence without
-  producing signatures or claiming hardware acceptance.
+  markers, swap state, wireless absence/blocking evidence, and SSH/sshd service
+  state without producing signatures or claiming hardware acceptance.
 - `nsealr_vault.signer`: request handling and explicit approval gate.
 - `nsealr_vault.cli`: desktop simulation CLI for JSON and QR file input and
   output.
@@ -354,9 +354,12 @@ display adapter that tests already exercise with injected matrices.
 `nsealr-vault hardware-probe` is the first command intended for a later physical
 Pi Zero session. It is deliberately read-only and conservative: missing files,
 missing modules, or unverifiable wireless evidence produce `blocked` checks
-rather than implicit success. A passing probe is only setup evidence; camera QR
-quality, trusted display readability, GPIO approval behavior, OS image
-acceptance, and production security still need separate reports.
+rather than implicit success. It also checks SSH/sshd systemd service state and
+returns deterministic `acceptance_blockers` plus `human_actions_required` for
+anything that still needs operator setup. A passing probe is only setup
+evidence; camera QR quality, trusted display readability, GPIO approval
+behavior, OS image acceptance, and production security still need separate
+reports.
 
 The hardware repo now carries the matching full-flow report template for that
 later Pi Zero session. A completed Raspberry QR-flow report must prove the

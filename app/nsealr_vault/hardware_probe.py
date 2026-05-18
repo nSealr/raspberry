@@ -1,18 +1,32 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 from pathlib import Path
 from typing import Callable
 
 
 ReadText = Callable[[Path], str]
 FindModule = Callable[[str], bool]
+RunCommand = Callable[[tuple[str, ...]], tuple[int, str, str]]
 
 
 BOOT_CONFIG_PATHS = (
     Path("/boot/config.txt"),
     Path("/boot/firmware/config.txt"),
 )
+REMOTE_ACCESS_SERVICES = ("ssh", "sshd")
+CHECK_HUMAN_ACTIONS = {
+    "board_model": "Run the probe on the target Raspberry Pi Zero-class board.",
+    "gpio_python_module": "Install the GPIO Python dependency used by the SeedSigner-compatible button HAT.",
+    "spi_python_module": "Install the SPI Python dependency used by the ST7789 display HAT.",
+    "camera_python_module": "Install the Pi camera Python dependency used by the OV5647/ZeroCam QR scanner.",
+    "boot_camera_enabled": "Enable the Pi camera path in the boot config before hardware acceptance.",
+    "boot_spi_enabled": "Enable SPI in the boot config before hardware acceptance.",
+    "swap_disabled": "Disable swap before signing acceptance so RAM-only secrets cannot page to storage.",
+    "wireless_absent_or_blocked": "Use a non-wireless Pi Zero or record clear Wi-Fi/Bluetooth block evidence.",
+    "remote_access_disabled": "Disable SSH/remote-login services before signing acceptance.",
+}
 
 
 def _default_read_text(path: Path) -> str:
@@ -24,6 +38,22 @@ def _default_find_module(name: str) -> bool:
         return importlib.util.find_spec(name) is not None
     except (ImportError, ModuleNotFoundError, ValueError):
         return False
+
+
+def _default_run_command(args: tuple[str, ...]) -> tuple[int, str, str]:
+    try:
+        result = subprocess.run(
+            list(args),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except FileNotFoundError as exc:
+        return 127, "", str(exc)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return 1, "", str(exc)
+    return result.returncode, result.stdout.strip(), result.stderr.strip()
 
 
 def _check(check_id: str, status: str, expected: str, observed: str) -> dict[str, str | bool]:
@@ -74,10 +104,71 @@ def _boot_config_check(check_id: str, marker_options: tuple[str, ...], read_text
     )
 
 
+def _command_state(returncode: int, stdout: str, stderr: str) -> str:
+    detail = (stdout or stderr).strip()
+    if not detail:
+        detail = f"exit {returncode}"
+    return detail.splitlines()[0]
+
+
+def _remote_access_check(run_command: RunCommand) -> dict[str, str | bool]:
+    observations: list[str] = []
+    unsafe: list[str] = []
+    blocked: list[str] = []
+
+    for service in REMOTE_ACCESS_SERVICES:
+        enabled = _command_state(*run_command(("systemctl", "is-enabled", service)))
+        active = _command_state(*run_command(("systemctl", "is-active", service)))
+        observations.append(f"{service}: enabled={enabled}; active={active}")
+
+        if enabled in {"enabled", "enabled-runtime", "linked", "linked-runtime", "alias"}:
+            unsafe.append(f"{service} is {enabled}")
+        if active == "active":
+            unsafe.append(f"{service} is active")
+        if (
+            "No such file or directory" in enabled
+            or "No such file or directory" in active
+            or "System has not been booted with systemd" in enabled
+            or "System has not been booted with systemd" in active
+        ):
+            blocked.append(f"{service} systemd state unavailable")
+
+    if unsafe:
+        status = "fail"
+        observed = "; ".join(unsafe + observations)
+    elif blocked:
+        status = "blocked"
+        observed = "; ".join(blocked + observations)
+    else:
+        status = "pass"
+        observed = "; ".join(observations)
+
+    return _check(
+        "remote_access_disabled",
+        status,
+        "ssh/sshd systemd services disabled or inactive before signing",
+        observed,
+    )
+
+
+def _acceptance_blockers(checks: list[dict[str, str | bool]]) -> list[str]:
+    return [str(check["id"]) for check in checks if check["status"] != "pass"]
+
+
+def _human_actions_required(checks: list[dict[str, str | bool]]) -> list[str]:
+    actions: list[str] = []
+    for check_id in _acceptance_blockers(checks):
+        action = CHECK_HUMAN_ACTIONS.get(check_id, f"Resolve failed hardware-probe check: {check_id}.")
+        if action not in actions:
+            actions.append(action)
+    return actions
+
+
 def run_seed_signer_compatibility_probe(
     *,
     read_text: ReadText = _default_read_text,
     find_module: FindModule = _default_find_module,
+    run_command: RunCommand = _default_run_command,
 ) -> dict[str, object]:
     """Build a non-destructive SeedSigner-compatible Raspberry probe report."""
 
@@ -135,6 +226,7 @@ def run_seed_signer_compatibility_probe(
             wireless_observed,
         )
     )
+    checks.append(_remote_access_check(run_command))
 
     ready = all(check["status"] == "pass" for check in checks)
     return {
@@ -145,6 +237,8 @@ def run_seed_signer_compatibility_probe(
         "persistent_secret_present": False,
         "tropic01_used": False,
         "checks": checks,
+        "acceptance_blockers": _acceptance_blockers(checks),
+        "human_actions_required": _human_actions_required(checks),
         "limitations": [
             "This is a non-destructive development probe, not a completed hardware acceptance report.",
             "A passing probe does not prove QR scan quality, trusted display readability, GPIO approval UX, or production security.",

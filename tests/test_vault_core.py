@@ -232,6 +232,15 @@ class ProjectToolingTests(unittest.TestCase):
 
 
 class HardwareProbeTests(unittest.TestCase):
+    @staticmethod
+    def _remote_access_disabled(args: tuple[str, ...]) -> tuple[int, str, str]:
+        service = args[-1]
+        if args[:2] == ("systemctl", "is-enabled") and service in {"ssh", "sshd"}:
+            return 1, "disabled", ""
+        if args[:2] == ("systemctl", "is-active") and service in {"ssh", "sshd"}:
+            return 3, "inactive", ""
+        return 127, "", "unexpected command"
+
     def test_seed_signer_probe_passes_with_pi_zero_profile(self) -> None:
         files = {
             "/proc/device-tree/model": "Raspberry Pi Zero Rev 1.3\x00",
@@ -242,12 +251,15 @@ class HardwareProbeTests(unittest.TestCase):
         report = run_seed_signer_compatibility_probe(
             read_text=lambda path: files[str(path)],
             find_module=lambda name: name in {"RPi.GPIO", "spidev", "picamera"},
+            run_command=self._remote_access_disabled,
         )
 
         self.assertTrue(report["ready_for_hardware_acceptance"])
         self.assertFalse(report["production_signing_enabled"])
         self.assertFalse(report["persistent_secret_present"])
         self.assertFalse(report["tropic01_used"])
+        self.assertEqual(report["acceptance_blockers"], [])
+        self.assertEqual(report["human_actions_required"], [])
         self.assertEqual(
             {check["id"]: check["status"] for check in report["checks"]},
             {
@@ -259,6 +271,7 @@ class HardwareProbeTests(unittest.TestCase):
                 "boot_spi_enabled": "pass",
                 "swap_disabled": "pass",
                 "wireless_absent_or_blocked": "pass",
+                "remote_access_disabled": "pass",
             },
         )
 
@@ -272,6 +285,38 @@ class HardwareProbeTests(unittest.TestCase):
         self.assertIn("not a completed hardware acceptance report", " ".join(report["limitations"]))
         self.assertEqual(report["checks"][0]["id"], "board_model")
         self.assertEqual(report["checks"][0]["status"], "blocked")
+        self.assertIn("board_model", report["acceptance_blockers"])
+        self.assertIn("Run the probe on the target Raspberry Pi Zero-class board.", report["human_actions_required"])
+
+    def test_seed_signer_probe_fails_when_remote_access_is_active(self) -> None:
+        files = {
+            "/proc/device-tree/model": "Raspberry Pi Zero Rev 1.3\x00",
+            "/boot/config.txt": "start_x=1\ndtparam=spi=on\n",
+            "/proc/swaps": "Filename\tType\tSize\tUsed\tPriority\n",
+        }
+
+        def remote_access_active(args: tuple[str, ...]) -> tuple[int, str, str]:
+            if args == ("systemctl", "is-enabled", "ssh"):
+                return 0, "enabled", ""
+            if args == ("systemctl", "is-active", "ssh"):
+                return 0, "active", ""
+            if args[:2] == ("systemctl", "is-enabled"):
+                return 1, "disabled", ""
+            if args[:2] == ("systemctl", "is-active"):
+                return 3, "inactive", ""
+            return 127, "", "unexpected command"
+
+        report = run_seed_signer_compatibility_probe(
+            read_text=lambda path: files[str(path)],
+            find_module=lambda name: name in {"RPi.GPIO", "spidev", "picamera"},
+            run_command=remote_access_active,
+        )
+
+        statuses = {check["id"]: check["status"] for check in report["checks"]}
+        self.assertFalse(report["ready_for_hardware_acceptance"])
+        self.assertEqual(statuses["remote_access_disabled"], "fail")
+        self.assertIn("remote_access_disabled", report["acceptance_blockers"])
+        self.assertIn("Disable SSH/remote-login services before signing acceptance.", report["human_actions_required"])
 
     def test_hardware_probe_cli_writes_report_without_requiring_hardware(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:

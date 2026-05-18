@@ -151,8 +151,10 @@ even if current hardware readiness differs.
 - `nsealr-vault hardware-probe --out <report.json>` writes a non-destructive
   SeedSigner-compatible Pi Zero probe report for future hardware smoke runs.
   It checks board model, GPIO/SPI/camera Python modules, camera/SPI boot config
-  markers, swap state, and wireless absence/blocking evidence without claiming
-  production readiness.
+  markers, swap state, wireless absence/blocking evidence, and SSH/sshd service
+  state without claiming production readiness. The report includes
+  `acceptance_blockers` and `human_actions_required` so a later physical Pi run
+  can be fixed without guessing what evidence is missing.
 
 ## Planned Capabilities
 

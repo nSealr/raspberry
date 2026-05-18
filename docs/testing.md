@@ -145,9 +145,10 @@ default are left unchanged.
   access, RAM-only custody, no persistent signing-secret storage, and no
   TROPIC01 requirement.
 - SeedSigner-compatible hardware probe tests proving a complete fake Pi Zero
-  profile reports ready, a non-Pi environment reports blocked, and the
-  `nsealr-vault hardware-probe --out` CLI writes a safe report without requiring
-  hardware.
+  profile reports ready with remote access disabled, a non-Pi environment
+  reports blocked, active SSH fails readiness, blocker IDs map to human-action
+  prompts, and the `nsealr-vault hardware-probe --out` CLI writes a safe report
+  without requiring hardware.
 
 ## Next Tests
 
