@@ -48,6 +48,12 @@ from nsealr_vault.seed_entry import (
     session_import_review,
     session_import_source_fingerprint,
 )
+from nsealr_vault.session_import_flow import (
+    SessionImportFlowError,
+    SessionImportTranscriptStep,
+    StatelessSessionKeyring,
+    run_session_import_flow,
+)
 from nsealr_vault.signer import sign_request
 
 
@@ -569,6 +575,69 @@ class VaultCoreTests(unittest.TestCase):
 
         self.assertEqual(indexes, tuple(SEEDSIGNER_VECTOR_1["standard_word_indexes"]))
         self.assertEqual(review["review_id"], session_import_review_vector("seedqr-vector-1")["review_id"])
+
+    def test_session_import_flow_requires_local_approval_before_loading_keyring(self) -> None:
+        keyring = StatelessSessionKeyring()
+        source = SessionImportSource.nsec("nsec test vector", secret_key_from_nsec(TEST_KEY_1_NSEC))
+
+        result = run_session_import_flow(keyring, source, ["next", "approve"])
+
+        self.assertTrue(result.approved)
+        self.assertTrue(result.loaded)
+        self.assertEqual(result.review["review_id"], session_import_review_vector("nsec-test-key-1")["review_id"])
+        self.assertEqual(keyring.size, 1)
+        self.assertEqual(keyring.source_at(0), source)
+        self.assertEqual(
+            result.transcript,
+            [
+                SessionImportTranscriptStep(page_index=0, button="next", decision=None, loaded=False),
+                SessionImportTranscriptStep(page_index=1, button="approve", decision=True, loaded=True),
+            ],
+        )
+
+    def test_session_import_flow_rejection_does_not_load_keyring(self) -> None:
+        keyring = StatelessSessionKeyring()
+        source = SessionImportSource.bip39_seed("SeedQR vector 1", SEEDSIGNER_VECTOR_1["standard_word_indexes"])
+
+        result = run_session_import_flow(keyring, source, ["reject"])
+
+        self.assertFalse(result.approved)
+        self.assertFalse(result.loaded)
+        self.assertEqual(keyring.size, 0)
+        self.assertEqual(len(result.transcript), 1)
+        self.assertEqual(result.transcript[0].decision, False)
+        self.assertFalse(result.transcript[0].loaded)
+
+    def test_session_import_flow_blocks_early_or_nonterminal_approval(self) -> None:
+        keyring = StatelessSessionKeyring()
+        source = SessionImportSource.nsec("nsec test vector", secret_key_from_nsec(TEST_KEY_1_NSEC))
+
+        with self.assertRaisesRegex(ValueError, "approval requires viewing every review page"):
+            run_session_import_flow(keyring, source, ["approve"])
+        self.assertTrue(keyring.empty)
+
+        with self.assertRaisesRegex(SessionImportFlowError, "did not reach approval or rejection"):
+            run_session_import_flow(keyring, source, ["next"])
+        self.assertTrue(keyring.empty)
+
+        with self.assertRaisesRegex(SessionImportFlowError, "max button steps"):
+            run_session_import_flow(keyring, source, ["next", "next"], max_button_steps=1)
+        self.assertTrue(keyring.empty)
+
+    def test_stateless_session_keyring_bounds_sources_and_can_clear(self) -> None:
+        keyring = StatelessSessionKeyring(max_sources=1)
+        source = SessionImportSource.nsec("nsec test vector", secret_key_from_nsec(TEST_KEY_1_NSEC))
+
+        keyring.add_source(source)
+
+        self.assertFalse(keyring.empty)
+        self.assertEqual(keyring.source_at(0), source)
+        with self.assertRaisesRegex(SessionImportFlowError, "keyring is full"):
+            keyring.add_source(source)
+        with self.assertRaisesRegex(SessionImportFlowError, "out of range"):
+            keyring.source_at(1)
+        keyring.clear()
+        self.assertTrue(keyring.empty)
 
     def test_button_flow_can_use_word_by_word_mnemonic_session_secret_provider(self) -> None:
         word_input = FakeMnemonicWordInput(NIP06_KEY["mnemonic"].split())

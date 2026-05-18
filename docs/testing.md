@@ -152,6 +152,10 @@ default are left unchanged.
 - Desktop CLI `review-import` smoke tests proving stdin-fed Standard SeedQR
   and NIP-19 `nsec` sources write those same secret-hidden RAM-load reviews,
   and invalid import sources fail before output files are created.
+- Session import flow tests proving a parsed source loads into the stateless
+  RAM-only keyring only after local traversal to the final import decision page
+  and approval, while rejection, early approval, and non-terminal button
+  streams leave the keyring empty.
 - Shared nSealr v0 implementation-limit conformance test against the
   `nSealr/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,

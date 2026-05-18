@@ -243,6 +243,14 @@ hardware-agnostic harness for future Pi seed-entry screens: it writes no output
 after invalid source input and does not sign, derive a NIP-06 account key,
 persist source material, or approve later signing.
 
+Status: `nsealr_vault.session_import_flow` now adds the package-owned local
+import-approval loop for future Pi seed-entry screens. A parsed SeedQR/BIP-39
+or NIP-19 `nsec` source is loaded into the stateless RAM-only keyring only
+after the secret-hidden import review reaches the final decision page and is
+approved. Rejection, early approval, and non-terminal button streams leave the
+keyring unchanged. This still does not derive NIP-06 keys, sign events, persist
+material, create policy state, or complete camera/display/GPIO import UX.
+
 Status: `os/stateless-qr-vault-profile.md` now records the future Raspberry
 image acceptance boundary aligned with `nSealr/hardware`: removable microSD
 boot media, disabled or absent wireless, RAM-only session custody, no swap

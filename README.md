@@ -121,6 +121,10 @@ even if current hardware readiness differs.
   SeedQR, CompactSeedQR, and NIP-19 `nsec` sources. It validates the source
   and writes the secret-hidden review only after success; it does not sign,
   derive a NIP-06 key, persist material, or approve later signing.
+- Package-owned session import flow for future Pi seed-entry screens. It
+  requires local traversal of the secret-hidden import review before loading a
+  parsed source into the RAM-only session keyring; rejection and incomplete
+  button streams leave the keyring empty.
 - Hardware-neutral mnemonic seed-entry controller for future Pi display/button
   adapters. It reads BIP-39 words one by one, normalizes and validates the
   English wordlist/checksum, derives the NIP-06 session key as a one-shot

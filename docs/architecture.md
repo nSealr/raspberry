@@ -199,6 +199,13 @@ package code, renders the secret-hidden import review, and writes no output
 after validation failure. It deliberately excludes development raw-secret
 arguments and does not share the `sign` command's approval path.
 
+`nsealr_vault.session_import_flow` is the package-owned import-approval loop
+for future Pi seed-entry screens. It uses the same physical-review controller
+shape as event signing, but its terminal action only loads a parsed source into
+the stateless RAM-only keyring. Rejection, early approval, and non-terminal
+button streams leave the keyring unchanged. It does not derive NIP-06 keys,
+sign events, persist material, or create policy state.
+
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it
 uses the deterministic fixture author pubkey; the hardware flow derives the
