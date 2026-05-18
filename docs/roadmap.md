@@ -251,6 +251,12 @@ approved. Rejection, early approval, and non-terminal button streams leave the
 keyring unchanged. This still does not derive NIP-06 keys, sign events, persist
 material, create policy state, or complete camera/display/GPIO import UX.
 
+Status: approved RAM-only session sources can now feed the existing
+button-driven signing flow through `StatelessSessionSecretProvider`. BIP-39
+sources derive NIP-06 from explicit account/passphrase inputs and NIP-19 `nsec`
+sources return the imported key, both as one-shot session providers. This still
+does not add persistence, policy state, or final Pi import/sign UX.
+
 Status: `os/stateless-qr-vault-profile.md` now records the future Raspberry
 image acceptance boundary aligned with `nSealr/hardware`: removable microSD
 boot media, disabled or absent wireless, RAM-only session custody, no swap

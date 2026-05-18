@@ -41,9 +41,11 @@ from nsealr_vault.seed_entry import (
     SeedQrSessionSecretProvider,
     SessionImportSource,
     bip39_word_indexes_from_mnemonic,
+    mnemonic_from_bip39_word_indexes,
     mnemonic_from_compact_seedqr,
     mnemonic_from_standard_seedqr,
     normalize_mnemonic_words,
+    secret_key_from_session_import_source,
     secret_key_from_nsec,
     session_import_review,
     session_import_source_fingerprint,
@@ -51,6 +53,7 @@ from nsealr_vault.seed_entry import (
 from nsealr_vault.session_import_flow import (
     SessionImportFlowError,
     SessionImportTranscriptStep,
+    StatelessSessionSecretProvider,
     StatelessSessionKeyring,
     run_session_import_flow,
 )
@@ -574,7 +577,30 @@ class VaultCoreTests(unittest.TestCase):
         review = session_import_review(source)
 
         self.assertEqual(indexes, tuple(SEEDSIGNER_VECTOR_1["standard_word_indexes"]))
+        self.assertEqual(mnemonic_from_bip39_word_indexes(indexes), SEEDSIGNER_VECTOR_1_MNEMONIC)
         self.assertEqual(review["review_id"], session_import_review_vector("seedqr-vector-1")["review_id"])
+
+        with self.assertRaisesRegex(ValueError, "word index count"):
+            mnemonic_from_bip39_word_indexes(indexes[:11])
+        with self.assertRaisesRegex(ValueError, "outside the English wordlist"):
+            mnemonic_from_bip39_word_indexes((*indexes[:-1], 2048))
+
+    def test_session_import_source_secret_derivation_supports_bip39_and_nsec(self) -> None:
+        seed_source = SessionImportSource.bip39_seed(
+            "SeedQR vector 1",
+            bip39_word_indexes_from_mnemonic(NIP06_KEY["mnemonic"]),
+        )
+        nsec_source = SessionImportSource.nsec("nsec test vector", secret_key_from_nsec(TEST_KEY_1_NSEC))
+
+        self.assertEqual(
+            secret_key_from_session_import_source(
+                seed_source,
+                account=NIP06_KEY["account"],
+                passphrase=NIP06_KEY["passphrase"],
+            ),
+            NIP06_KEY["secret_key"],
+        )
+        self.assertEqual(secret_key_from_session_import_source(nsec_source), KEY["secret_key"])
 
     def test_session_import_flow_requires_local_approval_before_loading_keyring(self) -> None:
         keyring = StatelessSessionKeyring()
@@ -638,6 +664,27 @@ class VaultCoreTests(unittest.TestCase):
             keyring.source_at(1)
         keyring.clear()
         self.assertTrue(keyring.empty)
+
+    def test_stateless_session_secret_provider_feeds_existing_signing_flow_once(self) -> None:
+        keyring = StatelessSessionKeyring()
+        source = SessionImportSource.bip39_seed(
+            "NIP-06 account",
+            bip39_word_indexes_from_mnemonic(NIP06_KEY["mnemonic"]),
+        )
+        run_session_import_flow(keyring, source, ["next", "approve"])
+        provider = StatelessSessionSecretProvider(
+            keyring,
+            account=NIP06_KEY["account"],
+            passphrase=NIP06_KEY["passphrase"],
+        )
+        hardware = MemoryButtonQrVaultIO(encode_qr_envelope(BASIC_REQUEST), ["next", "next", "next", "approve"])
+
+        result = run_button_qr_vault_flow_with_secret_provider(hardware, provider)
+
+        self.assertTrue(result.approved)
+        self.assertEqual(result.response["result"]["event"]["pubkey"], NIP06_KEY["public_key"])
+        with self.assertRaisesRegex(RuntimeError, "stateless session source has already been consumed"):
+            provider()
 
     def test_button_flow_can_use_word_by_word_mnemonic_session_secret_provider(self) -> None:
         word_input = FakeMnemonicWordInput(NIP06_KEY["mnemonic"].split())

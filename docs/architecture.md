@@ -206,6 +206,14 @@ the stateless RAM-only keyring. Rejection, early approval, and non-terminal
 button streams leave the keyring unchanged. It does not derive NIP-06 keys,
 sign events, persist material, or create policy state.
 
+After a source has been locally approved and loaded,
+`StatelessSessionSecretProvider` can feed the existing button-driven signing
+flow exactly once. BIP-39/SeedQR sources derive a NIP-06 key from the explicit
+account and passphrase supplied for that signing session; NIP-19 `nsec` sources
+use the imported 32-byte key. This keeps source import, account/passphrase
+selection, event review, approval digest binding, and response emission as
+separate package-owned steps without adding persistent QR-vault custody.
+
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it
 uses the deterministic fixture author pubkey; the hardware flow derives the

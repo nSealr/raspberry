@@ -52,6 +52,17 @@ def bip39_word_indexes_from_mnemonic(mnemonic: str) -> tuple[int, ...]:
     return tuple(_ENGLISH_WORDS.index(word) for word in normalized.split())
 
 
+def mnemonic_from_bip39_word_indexes(word_indexes: list[int] | tuple[int, ...]) -> str:
+    indexes = tuple(word_indexes)
+    count = len(indexes)
+    if count not in VALID_MNEMONIC_WORD_COUNTS:
+        counts = ", ".join(str(value) for value in VALID_MNEMONIC_WORD_COUNTS)
+        raise ValueError(f"BIP-39 word index count must be one of {counts}")
+    if any(index < 0 or index >= len(_ENGLISH_WORDS) for index in indexes):
+        raise ValueError("BIP-39 word index is outside the English wordlist")
+    return normalize_mnemonic_words([_ENGLISH_WORDS[index] for index in indexes])
+
+
 def mnemonic_from_standard_seedqr(value: str) -> str:
     seedqr = "".join(value.split())
     if not seedqr:
@@ -236,6 +247,19 @@ def session_import_review(source: SessionImportSource) -> dict[str, object]:
             },
         ],
     }
+
+
+def secret_key_from_session_import_source(
+    source: SessionImportSource,
+    *,
+    account: int = 0,
+    passphrase: str = "",
+) -> str:
+    _validate_session_import_source(source)
+    if source.source_type == "nsec":
+        return source.nsec_secret_key
+    mnemonic = mnemonic_from_bip39_word_indexes(source.bip39_word_indexes)
+    return derive_nip06_secret(mnemonic, passphrase=passphrase, account=account)
 
 
 def collect_mnemonic_words(word_input: MnemonicWordInput, word_count: int) -> str:

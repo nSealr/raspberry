@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .controls import ButtonAction, ReviewControlSession
-from .seed_entry import SessionImportSource, session_import_review
+from .seed_entry import SessionImportSource, secret_key_from_session_import_source, session_import_review
 
 
 MAX_STATELESS_SESSION_SOURCES = 8
@@ -43,6 +43,25 @@ class StatelessSessionKeyring:
             return self._sources[index]
         except IndexError as exc:
             raise SessionImportFlowError("session key source index is out of range") from exc
+
+
+@dataclass
+class StatelessSessionSecretProvider:
+    keyring: StatelessSessionKeyring
+    source_index: int = 0
+    account: int = 0
+    passphrase: str = ""
+    _consumed: bool = False
+
+    def __call__(self) -> str:
+        if self._consumed:
+            raise RuntimeError("stateless session source has already been consumed")
+        self._consumed = True
+        return secret_key_from_session_import_source(
+            self.keyring.source_at(self.source_index),
+            account=self.account,
+            passphrase=self.passphrase,
+        )
 
 
 @dataclass(frozen=True)

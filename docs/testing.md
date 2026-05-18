@@ -156,6 +156,9 @@ default are left unchanged.
   RAM-only keyring only after local traversal to the final import decision page
   and approval, while rejection, early approval, and non-terminal button
   streams leave the keyring empty.
+- Imported-source secret-provider tests proving approved BIP-39/SeedQR and
+  NIP-19 `nsec` sources can feed the existing button-driven signing flow once,
+  with NIP-06 account/passphrase selection explicit and no persistent storage.
 - Shared nSealr v0 implementation-limit conformance test against the
   `nSealr/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,

@@ -125,6 +125,10 @@ even if current hardware readiness differs.
   requires local traversal of the secret-hidden import review before loading a
   parsed source into the RAM-only session keyring; rejection and incomplete
   button streams leave the keyring empty.
+- RAM-only imported-source secret provider for the existing button-driven
+  signing flow. It derives NIP-06 from approved BIP-39/SeedQR sources with an
+  explicit account/passphrase or uses an approved NIP-19 `nsec` source, then
+  consumes the selected source once without persisting material.
 - Hardware-neutral mnemonic seed-entry controller for future Pi display/button
   adapters. It reads BIP-39 words one by one, normalizes and validates the
   English wordlist/checksum, derives the NIP-06 session key as a one-shot
