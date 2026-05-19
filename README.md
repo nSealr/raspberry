@@ -53,6 +53,9 @@ even if current hardware readiness differs.
 - NIP-06 account descriptors bind to that same reviewed source fingerprint, so
   account metadata can be matched to the RAM-only source the user approved
   before any one-shot derivation.
+- Source public-key proof tests consume shared `nSealr/specs` vectors for
+  NIP-06 and NIP-19 `nsec` sources, deriving the signer public key from the
+  RAM-only source instead of trusting descriptor metadata or fingerprints alone.
 - The shared `nsealr-account-descriptor-v0` route
   `raspberry_qr_vault` is treated as a stateless-session, manual-only route
   bound to `policy-manual-only-qr-vault` with `persistent_grants: false`.

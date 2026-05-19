@@ -181,6 +181,9 @@ default are left unchanged.
 - Imported-source secret-provider tests proving approved BIP-39/SeedQR and
   NIP-19 `nsec` sources can feed the existing button-driven signing flow once,
   with NIP-06 account/passphrase selection explicit and no persistent storage.
+- Source public-key proof tests consume shared
+  `vectors/source-public-key-proofs/*.json` fixtures and derive the expected
+  reviewed public key from NIP-06 and NIP-19 `nsec` session sources.
 - Shared nSealr v0 implementation-limit conformance test against the
   `nSealr/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,

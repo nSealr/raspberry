@@ -8,6 +8,7 @@ from typing import Callable, Protocol
 
 from mnemonic import Mnemonic
 
+from .crypto import xonly_pubkey_from_secret
 from .nip06 import derive_nip06_secret
 
 
@@ -432,6 +433,21 @@ def secret_key_from_session_import_source(
         return source.nsec_secret_key
     mnemonic = mnemonic_from_bip39_word_indexes(source.bip39_word_indexes)
     return derive_nip06_secret(mnemonic, passphrase=passphrase, account=account)
+
+
+def public_key_from_session_import_source(
+    source: SessionImportSource,
+    *,
+    account: int = 0,
+    passphrase: str = "",
+) -> str:
+    return xonly_pubkey_from_secret(
+        secret_key_from_session_import_source(
+            source,
+            account=account,
+            passphrase=passphrase,
+        )
+    )
 
 
 def collect_mnemonic_words(word_input: MnemonicWordInput, word_count: int) -> str:

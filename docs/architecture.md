@@ -251,9 +251,12 @@ After a source has been locally approved and loaded,
 `StatelessSessionSecretProvider` can feed the existing button-driven signing
 flow exactly once. BIP-39/SeedQR sources derive a NIP-06 key from the explicit
 account and passphrase supplied for that signing session; NIP-19 `nsec` sources
-use the imported 32-byte key. This keeps source import, account/passphrase
-selection, event review, approval digest binding, and response emission as
-separate package-owned steps without adding persistent QR-vault custody.
+use the imported 32-byte key. The matching source public-key proof helper
+derives the reviewed public key from the same source before signing, so
+account descriptors and source fingerprints are binding metadata, not proof
+substitutes. This keeps source import, account/passphrase selection, event
+review, approval digest binding, and response emission as separate
+package-owned steps without adding persistent QR-vault custody.
 
 The Python keyring stores its internal copy of imported source material in
 mutable slots and wipes those slots on `clear()` and destruction. This is a

@@ -48,6 +48,7 @@ from nsealr_vault.seed_entry import (
     mnemonic_from_standard_seedqr,
     normalize_mnemonic_words,
     nsec_from_secret_key,
+    public_key_from_session_import_source,
     secret_key_from_session_import_source,
     secret_key_from_nsec,
     session_import_review,
@@ -155,6 +156,10 @@ SESSION_IMPORT_REVIEW_VECTORS = [
     json.loads(path.read_text(encoding="utf-8"))
     for path in sorted((SPECS / "vectors/session-import-reviews").glob("*.json"))
 ]
+SOURCE_PUBLIC_KEY_PROOF_VECTORS = [
+    json.loads(path.read_text(encoding="utf-8"))
+    for path in sorted((SPECS / "vectors/source-public-key-proofs").glob("*.json"))
+]
 SESSION_SOURCE_BACKUP_VECTORS = [
     json.loads(path.read_text(encoding="utf-8"))
     for path in sorted((SPECS / "vectors/session-source-backups").glob("*.json"))
@@ -173,6 +178,13 @@ def session_source_backup_vector(name: str) -> dict[str, object]:
         if vector["name"] == name:
             return vector
     raise AssertionError(f"missing session source backup vector: {name}")
+
+
+def source_public_key_proof_vector(name: str) -> dict[str, object]:
+    for vector in SOURCE_PUBLIC_KEY_PROOF_VECTORS:
+        if vector["name"] == name:
+            return vector
+    raise AssertionError(f"missing source public-key proof vector: {name}")
 
 
 class MemoryQrVaultIO:
@@ -769,6 +781,30 @@ class VaultCoreTests(unittest.TestCase):
             NIP06_KEY["secret_key"],
         )
         self.assertEqual(secret_key_from_session_import_source(nsec_source), KEY["secret_key"])
+
+    def test_session_import_source_public_key_proofs_match_shared_vectors(self) -> None:
+        nip06_proof = source_public_key_proof_vector("nip06-account-0-leader")
+        nsec_proof = source_public_key_proof_vector("nsec-test-key-1")
+        nip06_source = SessionImportSource.bip39_seed(
+            "NIP-06 account 0",
+            tuple(NIP06_KEY["standard_word_indexes"]),
+        )
+        nsec_source = SessionImportSource.nsec("nsec test vector", NIP19_NSEC_VECTOR["secret_key"])
+
+        self.assertEqual(session_import_source_fingerprint(nip06_source), nip06_proof["source_fingerprint"])
+        self.assertEqual(
+            public_key_from_session_import_source(
+                nip06_source,
+                account=nip06_proof["account"],
+                passphrase=nip06_proof["passphrase"],
+            ),
+            nip06_proof["expected_public_key"],
+        )
+        self.assertEqual(session_import_source_fingerprint(nsec_source), nsec_proof["source_fingerprint"])
+        self.assertEqual(
+            public_key_from_session_import_source(nsec_source),
+            nsec_proof["expected_public_key"],
+        )
 
     def test_session_source_qr_parses_decoded_text_sources(self) -> None:
         nsec_source = parse_session_source_qr_text("nsec QR", f" \n{TEST_KEY_1_NSEC}\t")
