@@ -64,9 +64,12 @@ QR transport, device-display reviewed, physically approved, manual-only,
 The final product key-source model is a RAM-only session keyring. The current
 foundation can load manual BIP-39 words, SeedSigner Standard SeedQR digit
 streams, SeedSigner CompactSeedQR entropy bytes, plain mnemonic text, and
-NIP-19 `nsec` private keys for the current session. Local mnemonic generation
-and local standalone-key generation remain product goals. BIP-39 passphrases
-create separate seed namespaces and are entered separately from public account
+NIP-19 `nsec` private keys for the current session. It can also generate
+12- or 24-word BIP-39 sources and standalone `nsec`-equivalent private-key
+sources into the same RAM-only source boundary, using OS randomness in normal
+operation and injected entropy in tests. The final visible backup/export
+ceremony for generated material remains pending. BIP-39 passphrases create
+separate seed namespaces and are entered separately from public account
 metadata. Policies belong to the resulting public key, but QR vault routes have
 only the manual-only policy and no persistent policy state.
 
@@ -197,6 +200,14 @@ renders the same two secret-hidden pages, source fingerprint, `review_id`, and
 import approval digest pinned in `nSealr/specs/vectors/session-import-reviews`.
 It does not show mnemonic words, `nsec`, raw private-key bytes, derived NIP-06
 keys, persistent slots, policy state, or signing approval.
+
+`generate_bip39_session_source` and `generate_nsec_session_source` are the
+first package-owned local generation boundaries. They produce source objects
+for the same secret-hidden review/keyring path instead of bypassing it:
+generated BIP-39 sources become checked word indexes, generated standalone
+keys must be valid secp256k1 scalars, and neither path persists material or
+creates policy state. A real Pi UX must still show a visible backup/export
+ceremony before treating generated material as usable user custody.
 
 The `review-import` command is the desktop harness for that boundary. It accepts
 only session-source inputs over stdin, validates and normalizes them through

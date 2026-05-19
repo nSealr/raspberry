@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import re
-from typing import Protocol
+import secrets
+from typing import Callable, Protocol
 
 from mnemonic import Mnemonic
 
@@ -22,6 +23,11 @@ COMPACT_SEEDQR_BYTE_LENGTHS = {
 BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 BECH32_CHARSET_REV = {char: index for index, char in enumerate(BECH32_CHARSET)}
 HEX32_RE = re.compile(r"^[0-9a-f]{64}$")
+SECP256K1_ORDER = int("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
+BIP39_GENERATION_ENTROPY_BYTES = {
+    12: 16,
+    24: 32,
+}
 
 
 class MnemonicWordInput(Protocol):
@@ -142,6 +148,34 @@ def _convert_5bit_words_to_bytes(words: list[int]) -> bytes:
     return bytes(out)
 
 
+def _convert_bytes_to_5bit_words(data: bytes) -> list[int]:
+    accumulator = 0
+    bit_count = 0
+    out: list[int] = []
+    for byte in data:
+        accumulator = (accumulator << 8) | byte
+        bit_count += 8
+        while bit_count >= 5:
+            bit_count -= 5
+            out.append((accumulator >> bit_count) & 31)
+    if bit_count:
+        out.append((accumulator << (5 - bit_count)) & 31)
+    return out
+
+
+def _bech32_checksum(hrp: str, data: list[int]) -> list[int]:
+    polymod = _bech32_polymod(_bech32_hrp_expand(hrp) + data + [0, 0, 0, 0, 0, 0]) ^ 1
+    return [(polymod >> (5 * (5 - index))) & 31 for index in range(6)]
+
+
+def _validate_secret_key_hex(secret_key: str) -> None:
+    if not HEX32_RE.fullmatch(secret_key):
+        raise ValueError("secret key must be 32-byte lowercase hex")
+    secret_int = int(secret_key, 16)
+    if secret_int <= 0 or secret_int >= SECP256K1_ORDER:
+        raise ValueError("secret key must be a valid secp256k1 scalar")
+
+
 def secret_key_from_nsec(value: str) -> str:
     hrp, words = _bech32_decode(value)
     if hrp != "nsec":
@@ -149,7 +183,16 @@ def secret_key_from_nsec(value: str) -> str:
     secret = _convert_5bit_words_to_bytes(words)
     if len(secret) != 32:
         raise ValueError("nsec payload must decode to a 32-byte secret key")
-    return secret.hex()
+    secret_key = secret.hex()
+    _validate_secret_key_hex(secret_key)
+    return secret_key
+
+
+def nsec_from_secret_key(secret_key: str) -> str:
+    _validate_secret_key_hex(secret_key)
+    data = _convert_bytes_to_5bit_words(bytes.fromhex(secret_key))
+    checksum = _bech32_checksum("nsec", data)
+    return "nsec1" + "".join(BECH32_CHARSET[word] for word in data + checksum)
 
 
 @dataclass(frozen=True)
@@ -165,7 +208,50 @@ class SessionImportSource:
 
     @classmethod
     def nsec(cls, label: str, secret_key: str) -> "SessionImportSource":
+        _validate_secret_key_hex(secret_key)
         return cls(source_type="nsec", label=label, nsec_secret_key=secret_key)
+
+
+def generate_bip39_session_source(
+    label: str,
+    *,
+    word_count: int = 12,
+    entropy: bytes | None = None,
+    random_bytes: Callable[[int], bytes] = secrets.token_bytes,
+) -> SessionImportSource:
+    byte_count = BIP39_GENERATION_ENTROPY_BYTES.get(word_count)
+    if byte_count is None:
+        counts = ", ".join(str(count) for count in sorted(BIP39_GENERATION_ENTROPY_BYTES))
+        raise ValueError(f"generated mnemonic word count must be one of {counts}")
+    material = entropy if entropy is not None else random_bytes(byte_count)
+    if not isinstance(material, bytes) or len(material) != byte_count:
+        raise ValueError(f"generated mnemonic entropy must be {byte_count} bytes")
+    mnemonic = _ENGLISH_MNEMONIC.to_mnemonic(material)
+    return SessionImportSource.bip39_seed(label, bip39_word_indexes_from_mnemonic(mnemonic))
+
+
+def generate_nsec_session_source(
+    label: str,
+    *,
+    entropy: bytes | None = None,
+    random_bytes: Callable[[int], bytes] = secrets.token_bytes,
+    max_attempts: int = 128,
+) -> SessionImportSource:
+    if max_attempts <= 0:
+        raise ValueError("nsec generation max_attempts must be positive")
+    if entropy is not None:
+        if not isinstance(entropy, bytes) or len(entropy) != 32:
+            raise ValueError("generated nsec entropy must be 32 bytes")
+        return SessionImportSource.nsec(label, entropy.hex())
+    for _attempt in range(max_attempts):
+        candidate = random_bytes(32)
+        if not isinstance(candidate, bytes) or len(candidate) != 32:
+            raise ValueError("generated nsec entropy must be 32 bytes")
+        try:
+            return SessionImportSource.nsec(label, candidate.hex())
+        except ValueError:
+            continue
+    raise RuntimeError("failed to generate a valid nsec session source")
 
 
 def _session_source_kind_label(source_type: str) -> str:

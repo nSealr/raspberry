@@ -221,6 +221,13 @@ RAM-only session sources. The feature is BIP-39/NIP-06 Nostr account import,
 not Bitcoin descriptor, xpub, PSBT, or wallet-policy import. MicroSD/file
 secret transfer stays outside QR vault acceptance.
 
+Status note, 2026-05-19: local generation now has a package-owned boundary for
+12- and 24-word BIP-39 session sources plus standalone `nsec`-equivalent
+private-key sources. Both use the same secret-hidden source review and
+RAM-only keyring path as imported sources, and tests inject deterministic
+entropy. The final Pi backup/export UI, physical review, and power-cycle
+evidence remain pending.
+
 Status: `nsealr_vault.seed_entry` now implements SeedSigner-compatible
 Standard SeedQR digit-stream parsing and CompactSeedQR entropy-byte parsing for
 12- and 24-word English BIP-39 mnemonics. `nsealr-vault sign` and

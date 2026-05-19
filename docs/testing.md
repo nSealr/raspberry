@@ -159,6 +159,11 @@ default are left unchanged.
   and approval, while rejection, early approval, and non-terminal button
   streams leave the keyring empty. Keyring tests also prove the package-owned
   mutable source slots are wiped on `clear()`.
+- Session-source generation tests proving generated 12-word BIP-39 and
+  standalone `nsec`-equivalent sources enter the same secret-hidden RAM-only
+  source boundary, deterministic test entropy is supported, invalid
+  secp256k1 scalar material is rejected, and generated secrets do not appear
+  in the source review output.
 - Imported-source secret-provider tests proving approved BIP-39/SeedQR and
   NIP-19 `nsec` sources can feed the existing button-driven signing flow once,
   with NIP-06 account/passphrase selection explicit and no persistent storage.

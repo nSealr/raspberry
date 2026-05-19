@@ -41,10 +41,13 @@ from nsealr_vault.seed_entry import (
     SeedQrSessionSecretProvider,
     SessionImportSource,
     bip39_word_indexes_from_mnemonic,
+    generate_bip39_session_source,
+    generate_nsec_session_source,
     mnemonic_from_bip39_word_indexes,
     mnemonic_from_compact_seedqr,
     mnemonic_from_standard_seedqr,
     normalize_mnemonic_words,
+    nsec_from_secret_key,
     secret_key_from_session_import_source,
     secret_key_from_nsec,
     session_import_review,
@@ -529,6 +532,7 @@ class VaultCoreTests(unittest.TestCase):
         self.assertEqual(NIP19_NSEC_VECTOR["secret_key"], KEY["secret_key"])
         self.assertEqual(NIP19_NSEC_VECTOR["public_key"], KEY["public_key"])
         self.assertEqual(secret_key_from_nsec(TEST_KEY_1_NSEC), KEY["secret_key"])
+        self.assertEqual(nsec_from_secret_key(KEY["secret_key"]), TEST_KEY_1_NSEC)
 
         provider = NsecSessionSecretProvider(TEST_KEY_1_NSEC)
         self.assertEqual(provider(), KEY["secret_key"])
@@ -541,6 +545,59 @@ class VaultCoreTests(unittest.TestCase):
             secret_key_from_nsec("npub1fu64hh9hes90w2808n8tjc2ajp5yhddjef0ctx4s7zmsgp6cwx4qgy4eg9")
         with self.assertRaisesRegex(ValueError, "lowercase"):
             secret_key_from_nsec(TEST_KEY_1_NSEC.upper())
+        with self.assertRaisesRegex(ValueError, "valid secp256k1 scalar"):
+            nsec_from_secret_key("00" * 32)
+
+    def test_generated_session_sources_are_ram_only_review_sources(self) -> None:
+        seed_source = generate_bip39_session_source(
+            "Generated seed",
+            word_count=12,
+            entropy=bytes(16),
+        )
+        nsec_source = generate_nsec_session_source(
+            "Generated nsec",
+            entropy=bytes.fromhex("01".zfill(64)),
+        )
+
+        self.assertEqual(seed_source.source_type, "bip39_seed")
+        self.assertEqual(
+            mnemonic_from_bip39_word_indexes(seed_source.bip39_word_indexes),
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+        )
+        self.assertEqual(nsec_source.source_type, "nsec")
+        self.assertEqual(nsec_source.nsec_secret_key, "00" * 31 + "01")
+        self.assertEqual(secret_key_from_session_import_source(nsec_source), "00" * 31 + "01")
+
+        rendered = json.dumps(
+            [session_import_review(seed_source), session_import_review(nsec_source)],
+            ensure_ascii=False,
+        )
+        self.assertIn("Secret: hidden", rendered)
+        self.assertNotIn("abandon", rendered)
+        self.assertNotIn(nsec_source.nsec_secret_key, rendered)
+
+    def test_generated_session_sources_reject_invalid_entropy(self) -> None:
+        with self.assertRaisesRegex(ValueError, "word count"):
+            generate_bip39_session_source("Generated seed", word_count=15, entropy=bytes(20))
+        with self.assertRaisesRegex(ValueError, "16 bytes"):
+            generate_bip39_session_source("Generated seed", word_count=12, entropy=bytes(15))
+        with self.assertRaisesRegex(ValueError, "valid secp256k1 scalar"):
+            generate_nsec_session_source("Generated nsec", entropy=bytes(32))
+
+        calls = 0
+
+        def invalid_then_valid(length: int) -> bytes:
+            nonlocal calls
+            self.assertEqual(length, 32)
+            calls += 1
+            if calls == 1:
+                return bytes(32)
+            return bytes.fromhex("02".zfill(64))
+
+        source = generate_nsec_session_source("Generated nsec", random_bytes=invalid_then_valid)
+
+        self.assertEqual(calls, 2)
+        self.assertEqual(source.nsec_secret_key, "00" * 31 + "02")
 
     def test_session_import_review_matches_shared_secret_hidden_vectors(self) -> None:
         seed_vector = session_import_review_vector("seedqr-vector-1")

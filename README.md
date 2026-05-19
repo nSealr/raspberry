@@ -35,8 +35,11 @@ even if current hardware readiness differs.
 - RAM-only session keyring inputs for the current foundation include manual
   BIP-39 word entry, SeedSigner Standard SeedQR digit streams, SeedSigner
   CompactSeedQR entropy bytes, plain BIP-39 mnemonic text, and Nostr NIP-19
-  `nsec` private keys checked against shared `nSealr/specs` vectors. Local
-  mnemonic generation and local standalone-key generation remain product goals.
+  `nsec` private keys checked against shared `nSealr/specs` vectors. Package
+  code now also generates 12- or 24-word BIP-39 sources and standalone
+  `nsec`-equivalent private-key sources into the same RAM-only session-source
+  boundary, with injected entropy for deterministic tests. Final Pi
+  backup/export UI remains pending.
   SeedSigner-compatible import is BIP-39 seed import for NIP-06 Nostr
   derivation; it does not import Bitcoin descriptors, xpubs, PSBTs, or wallet
   policy.
@@ -129,6 +132,11 @@ even if current hardware readiness differs.
   button streams leave the keyring empty. The keyring uses mutable internal
   source slots and wipes them on `clear()` as best-effort Python process
   hygiene.
+- Package-owned local session-source generation for future Pi source-creation
+  screens. Generated BIP-39 and standalone `nsec`-equivalent sources are
+  represented as the same secret-hidden RAM-only session sources as imports;
+  the visible backup/export ceremony and physical hardware acceptance remain
+  future work.
 - RAM-only imported-source secret provider for the existing button-driven
   signing flow. It derives NIP-06 from approved BIP-39/SeedQR sources with an
   explicit account/passphrase or uses an approved NIP-19 `nsec` source, then
