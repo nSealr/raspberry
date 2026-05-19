@@ -124,7 +124,9 @@ even if current hardware readiness differs.
 - Package-owned session import flow for future Pi seed-entry screens. It
   requires local traversal of the secret-hidden import review before loading a
   parsed source into the RAM-only session keyring; rejection and incomplete
-  button streams leave the keyring empty.
+  button streams leave the keyring empty. The keyring uses mutable internal
+  source slots and wipes them on `clear()` as best-effort Python process
+  hygiene.
 - RAM-only imported-source secret provider for the existing button-driven
   signing flow. It derives NIP-06 from approved BIP-39/SeedQR sources with an
   explicit account/passphrase or uses an approved NIP-19 `nsec` source, then

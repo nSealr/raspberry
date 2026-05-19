@@ -257,6 +257,12 @@ sources derive NIP-06 from explicit account/passphrase inputs and NIP-19 `nsec`
 sources return the imported key, both as one-shot session providers. This still
 does not add persistence, policy state, or final Pi import/sign UX.
 
+Status: the stateless session keyring now stores its internal source copy in
+mutable package-owned slots and wipes those slots on `clear()` and object
+destruction. This is best-effort Python process hygiene; real Pi image
+acceptance still needs power-cycle/session-loss evidence and must not claim
+interpreter-wide secure memory erasure.
+
 Status: `os/stateless-qr-vault-profile.md` now records the future Raspberry
 image acceptance boundary aligned with `nSealr/hardware`: removable microSD
 boot media, disabled or absent wireless, RAM-only session custody, no swap

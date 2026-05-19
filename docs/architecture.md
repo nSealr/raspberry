@@ -214,6 +214,13 @@ use the imported 32-byte key. This keeps source import, account/passphrase
 selection, event review, approval digest binding, and response emission as
 separate package-owned steps without adding persistent QR-vault custody.
 
+The Python keyring stores its internal copy of imported source material in
+mutable slots and wipes those slots on `clear()` and destruction. This is a
+best-effort package boundary for the desktop/Pi process, not a claim that
+Python can erase every caller-owned immutable string, tuple, QR decode buffer,
+or interpreter copy. Final Pi acceptance still has to prove process lifecycle
+and power-cycle loss on the real image.
+
 The `review` command is intentionally separate from `sign`: it takes a request,
 produces deterministic review JSON, and does not sign. In desktop-only mode it
 uses the deterministic fixture author pubkey; the hardware flow derives the

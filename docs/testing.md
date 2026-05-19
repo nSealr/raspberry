@@ -155,7 +155,8 @@ default are left unchanged.
 - Session import flow tests proving a parsed source loads into the stateless
   RAM-only keyring only after local traversal to the final import decision page
   and approval, while rejection, early approval, and non-terminal button
-  streams leave the keyring empty.
+  streams leave the keyring empty. Keyring tests also prove the package-owned
+  mutable source slots are wiped on `clear()`.
 - Imported-source secret-provider tests proving approved BIP-39/SeedQR and
   NIP-19 `nsec` sources can feed the existing button-driven signing flow once,
   with NIP-06 account/passphrase selection explicit and no persistent storage.

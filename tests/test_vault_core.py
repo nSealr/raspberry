@@ -665,6 +665,34 @@ class VaultCoreTests(unittest.TestCase):
         keyring.clear()
         self.assertTrue(keyring.empty)
 
+    def test_stateless_session_keyring_wipes_internal_sources_on_clear(self) -> None:
+        keyring = StatelessSessionKeyring(max_sources=2)
+        nsec_source = SessionImportSource.nsec("nsec test vector", secret_key_from_nsec(TEST_KEY_1_NSEC))
+        seed_source = SessionImportSource.bip39_seed(
+            "SeedQR vector 1",
+            bip39_word_indexes_from_mnemonic(NIP06_KEY["mnemonic"]),
+        )
+
+        keyring.add_source(nsec_source)
+        keyring.add_source(seed_source)
+        nsec_entry = keyring._sources[0]
+        seed_entry = keyring._sources[1]
+
+        self.assertEqual(nsec_entry.nsec_secret_key.hex(), nsec_source.nsec_secret_key)
+        self.assertEqual(seed_entry.bip39_word_indexes, list(seed_source.bip39_word_indexes))
+
+        keyring.clear()
+
+        self.assertTrue(keyring.empty)
+        self.assertEqual(nsec_entry.source_type, "wiped")
+        self.assertEqual(nsec_entry.label, "")
+        self.assertEqual(nsec_entry.nsec_secret_key, bytearray(32))
+        self.assertEqual(seed_entry.source_type, "wiped")
+        self.assertEqual(seed_entry.label, "")
+        self.assertTrue(all(index == 0 for index in seed_entry.bip39_word_indexes))
+        with self.assertRaisesRegex(SessionImportFlowError, "out of range"):
+            keyring.source_at(0)
+
     def test_stateless_session_secret_provider_feeds_existing_signing_flow_once(self) -> None:
         keyring = StatelessSessionKeyring()
         source = SessionImportSource.bip39_seed(

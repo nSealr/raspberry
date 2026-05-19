@@ -15,19 +15,57 @@ class SessionImportFlowError(RuntimeError):
 
 
 @dataclass
+class _SessionKeyringEntry:
+    source_type: str
+    label: str
+    bip39_word_indexes: list[int] = field(default_factory=list)
+    nsec_secret_key: bytearray = field(default_factory=bytearray)
+
+    @classmethod
+    def from_source(cls, source: SessionImportSource) -> "_SessionKeyringEntry":
+        session_import_review(source)
+        return cls(
+            source_type=source.source_type,
+            label=source.label,
+            bip39_word_indexes=list(source.bip39_word_indexes),
+            nsec_secret_key=bytearray.fromhex(source.nsec_secret_key) if source.nsec_secret_key else bytearray(),
+        )
+
+    def to_source(self) -> SessionImportSource:
+        if self.source_type == "bip39_seed":
+            return SessionImportSource.bip39_seed(self.label, tuple(self.bip39_word_indexes))
+        if self.source_type == "nsec":
+            return SessionImportSource.nsec(self.label, self.nsec_secret_key.hex())
+        raise SessionImportFlowError("session key source has been wiped")
+
+    def wipe(self) -> None:
+        for index in range(len(self.bip39_word_indexes)):
+            self.bip39_word_indexes[index] = 0
+        for index in range(len(self.nsec_secret_key)):
+            self.nsec_secret_key[index] = 0
+        self.label = ""
+        self.source_type = "wiped"
+
+
+@dataclass
 class StatelessSessionKeyring:
     max_sources: int = MAX_STATELESS_SESSION_SOURCES
-    _sources: list[SessionImportSource] = field(default_factory=list, init=False)
+    _sources: list[_SessionKeyringEntry] = field(default_factory=list, init=False)
+
+    def __del__(self) -> None:
+        try:
+            self.clear()
+        except Exception:
+            pass
 
     def add_source(self, source: SessionImportSource) -> None:
         if len(self._sources) >= self.max_sources:
             raise SessionImportFlowError("stateless session keyring is full")
-        # Validation is owned by the shared review builder; only reviewed sources
-        # should reach this method through run_session_import_flow.
-        session_import_review(source)
-        self._sources.append(source)
+        self._sources.append(_SessionKeyringEntry.from_source(source))
 
     def clear(self) -> None:
+        for source in self._sources:
+            source.wipe()
         self._sources.clear()
 
     @property
@@ -40,7 +78,7 @@ class StatelessSessionKeyring:
 
     def source_at(self, index: int) -> SessionImportSource:
         try:
-            return self._sources[index]
+            return self._sources[index].to_source()
         except IndexError as exc:
             raise SessionImportFlowError("session key source index is out of range") from exc
 
