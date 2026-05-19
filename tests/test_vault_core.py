@@ -1917,6 +1917,139 @@ class VaultCoreTests(unittest.TestCase):
             self.assertIn("session import label must not be empty", result.stderr)
             self.assertFalse(review_path.exists())
 
+    def test_cli_backup_source_reveals_nsec_only_after_final_approval(self) -> None:
+        vector = session_source_backup_vector("nsec-test-key-1-backup")
+        with tempfile.TemporaryDirectory() as temp_root:
+            backup_path = Path(temp_root) / "backup-result.json"
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "backup-source",
+                    "--nsec-stdin",
+                    "--label",
+                    "nsec test vector",
+                    "--button-sequence",
+                    "next,approve",
+                    "--out",
+                    str(backup_path),
+                ],
+                cwd=ROOT,
+                input=TEST_KEY_1_NSEC + "\n",
+                text=True,
+                check=True,
+            )
+
+            result = json.loads(backup_path.read_text(encoding="utf-8"))
+            self.assertEqual(result["format"], "nsealr-session-source-backup-result-v0")
+            self.assertTrue(result["approved"])
+            self.assertTrue(result["revealed"])
+            self.assertEqual(result["backup_payload"], vector["backup_payload"])
+            self.assertEqual(result["review"]["review_id"], vector["review_id"])
+            self.assertEqual(result["review"]["approval_digest"], vector["approval_digest"])
+            self.assertEqual(result["review"]["pages"], vector["pages"])
+            self.assertEqual(
+                result["transcript"],
+                [
+                    {"page_index": 0, "button": "next", "decision": None, "revealed": False},
+                    {"page_index": 1, "button": "approve", "decision": True, "revealed": True},
+                ],
+            )
+            review_json = json.dumps(result["review"], ensure_ascii=False)
+            self.assertNotIn(TEST_KEY_1_NSEC, review_json)
+            self.assertNotIn(NIP19_NSEC_VECTOR["secret_key"], review_json)
+
+    def test_cli_backup_source_rejects_without_revealing_payload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            backup_path = Path(temp_root) / "backup-result.json"
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "backup-source",
+                    "--nsec-stdin",
+                    "--label",
+                    "nsec test vector",
+                    "--button-sequence",
+                    "reject",
+                    "--out",
+                    str(backup_path),
+                ],
+                cwd=ROOT,
+                input=TEST_KEY_1_NSEC + "\n",
+                text=True,
+                check=True,
+            )
+
+            result = json.loads(backup_path.read_text(encoding="utf-8"))
+            self.assertFalse(result["approved"])
+            self.assertFalse(result["revealed"])
+            self.assertIsNone(result["backup_payload"])
+            self.assertEqual(
+                result["transcript"],
+                [{"page_index": 0, "button": "reject", "decision": False, "revealed": False}],
+            )
+
+    def test_cli_backup_source_rejects_early_approval_without_writing_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            backup_path = Path(temp_root) / "backup-result.json"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "backup-source",
+                    "--nsec-stdin",
+                    "--label",
+                    "nsec test vector",
+                    "--button-sequence",
+                    "approve",
+                    "--out",
+                    str(backup_path),
+                ],
+                cwd=ROOT,
+                input=TEST_KEY_1_NSEC + "\n",
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("approval requires viewing every review page", result.stderr)
+            self.assertFalse(backup_path.exists())
+
+    def test_cli_backup_source_rejects_scroll_without_writing_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_root:
+            backup_path = Path(temp_root) / "backup-result.json"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "nsealr_vault",
+                    "backup-source",
+                    "--nsec-stdin",
+                    "--label",
+                    "nsec test vector",
+                    "--button-sequence",
+                    "scroll",
+                    "--out",
+                    str(backup_path),
+                ],
+                cwd=ROOT,
+                input=TEST_KEY_1_NSEC + "\n",
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unsupported button action: scroll", result.stderr)
+            self.assertFalse(backup_path.exists())
+
     def test_cli_reviews_qr_request_without_secret_key(self) -> None:
         with tempfile.TemporaryDirectory() as temp_root:
             request_path = Path(temp_root) / "request.qr"

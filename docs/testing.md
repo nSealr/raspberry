@@ -174,6 +174,10 @@ default are left unchanged.
 - Session-source backup tests proving BIP-39 words/SeedQR and NIP-19 `nsec`
   recovery payloads match shared `nSealr/specs` backup vectors and are revealed
   only after the separate danger-zone review reaches the final approval page.
+- Desktop CLI `backup-source` smoke tests proving the same danger-zone recovery
+  ceremony is reachable through stdin-fed session sources, rejected flows do
+  not reveal payloads, early approval writes no output, and approved review
+  pages still do not leak secret material.
 - Imported-source secret-provider tests proving approved BIP-39/SeedQR and
   NIP-19 `nsec` sources can feed the existing button-driven signing flow once,
   with NIP-06 account/passphrase selection explicit and no persistent storage.

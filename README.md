@@ -133,6 +133,12 @@ even if current hardware readiness differs.
   SeedQR, CompactSeedQR, and NIP-19 `nsec` sources. It validates the source
   and writes the secret-hidden review only after success; it does not sign,
   derive a NIP-06 key, persist material, or approve later signing.
+- `nsealr-vault backup-source` exposes the separate danger-zone recovery
+  ceremony as a desktop harness. It accepts the same stdin-fed session sources,
+  requires a physical-style button sequence, writes the hidden review
+  transcript, and reveals BIP-39 words/SeedQR or `nsec` payload only after
+  final-page approval. An approved output contains secret recovery material; it
+  is not signing approval or persistent storage.
 - Package-owned session import flow for future Pi seed-entry screens. It
   requires local traversal of the secret-hidden import review before loading a
   parsed source into the RAM-only session keyring; rejection and incomplete
@@ -235,6 +241,7 @@ python3 -m nsealr_vault review --request request.qr --review display-frame.json 
 python3 -m nsealr_vault review --request request.qr --review review-detail-pages.json --input-format qr --output-format detail-pages-json
 printf '%s\n' '<standard-seedqr-digits>' | python3 -m nsealr_vault review-import --seedqr-stdin --label 'SeedQR session' --out import-review.json
 printf '%s\n' '<nsec1...>' | python3 -m nsealr_vault review-import --nsec-stdin --label 'nsec session' --out import-review.json
+printf '%s\n' '<nsec1...>' | python3 -m nsealr_vault backup-source --nsec-stdin --label 'nsec session' --button-sequence next,approve --out backup-result.json
 python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --approve
 python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve
 python3 -m nsealr_vault flow --secret-key <hex> --request request.qr --review review-screen.json --response response.qr --button-sequence next,next,next,approve --display-frame-log display-frames.json

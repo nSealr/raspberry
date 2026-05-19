@@ -223,6 +223,14 @@ package code, renders the secret-hidden import review, and writes no output
 after validation failure. It deliberately excludes development raw-secret
 arguments and does not share the `sign` command's approval path.
 
+The `backup-source` command is the desktop harness for the separate
+danger-zone recovery ceremony. It accepts the same normalized session-source
+inputs, requires a physical-style button sequence, writes a result containing
+the hidden review and transcript, and includes the backup payload only after
+final-page approval. An approved result contains secret recovery material and
+must stay a development/adapter artifact until physical Pi display/output
+acceptance exists.
+
 `nsealr_vault.session_import_flow` is the package-owned import-approval loop
 for future Pi seed-entry screens. It uses the same physical-review controller
 shape as event signing, but its terminal action only loads a parsed source into

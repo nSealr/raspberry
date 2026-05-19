@@ -227,8 +227,10 @@ private-key sources. Both use the same secret-hidden source review and
 RAM-only keyring path as imported sources, and tests inject deterministic
 entropy. The package also consumes shared danger-zone backup review vectors:
 BIP-39 words/SeedQR or NIP-19 `nsec` recovery payloads are produced only after
-the backup review reaches the final page and is approved. Final Pi physical
-backup display/output acceptance and power-cycle evidence remain pending.
+the backup review reaches the final page and is approved. The desktop
+`backup-source` harness now exposes that ceremony for future Pi output-adapter
+tests while still writing no output on early approval. Final Pi physical backup
+display/output acceptance and power-cycle evidence remain pending.
 
 Status: `nsealr_vault.seed_entry` now implements SeedSigner-compatible
 Standard SeedQR digit-stream parsing and CompactSeedQR entropy-byte parsing for

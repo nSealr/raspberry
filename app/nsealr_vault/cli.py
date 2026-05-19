@@ -35,6 +35,11 @@ from .seed_entry import (
     secret_key_from_nsec,
     session_import_review,
 )
+from .session_source_backup_flow import (
+    SessionSourceBackupFlowError,
+    SessionSourceBackupFlowResult,
+    run_session_source_backup_flow,
+)
 from .signer import sign_request, validate_signing_request
 
 
@@ -146,14 +151,41 @@ def _author_pubkey(value: str | None) -> str | None:
     return value
 
 
-def _button_sequence(value: str) -> list[str]:
+def _button_sequence_with_allowed(value: str, allowed: set[str]) -> list[str]:
     buttons = [item.strip() for item in value.split(",") if item.strip()]
     if not buttons:
         raise argparse.ArgumentTypeError("button sequence must not be empty")
-    invalid = [button for button in buttons if button not in {"next", "scroll", "approve", "reject"}]
+    invalid = [button for button in buttons if button not in allowed]
     if invalid:
         raise argparse.ArgumentTypeError(f"unsupported button action: {invalid[0]}")
     return buttons
+
+
+def _button_sequence(value: str) -> list[str]:
+    return _button_sequence_with_allowed(value, {"next", "scroll", "approve", "reject"})
+
+
+def _backup_button_sequence(value: str) -> list[str]:
+    return _button_sequence_with_allowed(value, {"next", "approve", "reject"})
+
+
+def _session_source_backup_result_json(result: SessionSourceBackupFlowResult) -> dict[str, object]:
+    return {
+        "format": "nsealr-session-source-backup-result-v0",
+        "review": result.review,
+        "approved": result.approved,
+        "revealed": result.revealed,
+        "backup_payload": result.backup_payload,
+        "transcript": [
+            {
+                "page_index": step.page_index,
+                "button": step.button,
+                "decision": step.decision,
+                "revealed": step.revealed,
+            }
+            for step in result.transcript
+        ],
+    }
 
 
 def _add_session_key_source_arguments(command: argparse.ArgumentParser) -> None:
@@ -273,6 +305,26 @@ def build_parser() -> argparse.ArgumentParser:
     review_import.add_argument("--label", required=True, help="Human-readable label shown on the import review")
     review_import.add_argument("--out", required=True, type=Path, help="Output session import review JSON path")
     review_import.add_argument(
+        "--mnemonic-word-count",
+        type=int,
+        default=12,
+        help="Expected BIP-39 word count for --mnemonic-words-stdin",
+    )
+
+    backup_source = subparsers.add_parser(
+        "backup-source",
+        help="Run a danger-zone RAM-only session-source backup review harness",
+    )
+    _add_session_import_source_arguments(backup_source)
+    backup_source.add_argument("--label", required=True, help="Human-readable label shown on the backup review")
+    backup_source.add_argument("--out", required=True, type=Path, help="Output backup review result JSON path")
+    backup_source.add_argument(
+        "--button-sequence",
+        required=True,
+        type=_backup_button_sequence,
+        help="Comma-separated physical button actions, e.g. next,approve or reject",
+    )
+    backup_source.add_argument(
         "--mnemonic-word-count",
         type=int,
         default=12,
@@ -399,6 +451,17 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             parser.error(str(exc))
         _write_value(args.out, "json", review_output)
+        return 0
+
+    if args.command == "backup-source":
+        try:
+            result = run_session_source_backup_flow(
+                _session_import_source_from_args(args, parser),
+                args.button_sequence,
+            )
+        except (SessionSourceBackupFlowError, ValueError) as exc:
+            parser.error(str(exc))
+        _write_value(args.out, "json", _session_source_backup_result_json(result))
         return 0
 
     if args.command == "flow":
