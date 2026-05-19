@@ -222,6 +222,15 @@ the stateless RAM-only keyring. Rejection, early approval, and non-terminal
 button streams leave the keyring unchanged. It does not derive NIP-06 keys,
 sign events, persist material, or create policy state.
 
+`nsealr_vault.session_source_qr` and
+`nsealr_vault.session_source_qr_import_flow` are the package-owned boundary for
+future Pi camera adapters that have already decoded a session-source QR. Text
+QRs are classified as NIP-19 `nsec`, SeedSigner Standard SeedQR, or plain
+BIP-39 mnemonic text; CompactSeedQR entropy bytes use the matching byte-input
+path. Both paths produce `SessionImportSource` objects and can be composed with
+the local import-review loop so camera code does not duplicate source parsing
+or load RAM-only custody before physical approval.
+
 After a source has been locally approved and loaded,
 `StatelessSessionSecretProvider` can feed the existing button-driven signing
 flow exactly once. BIP-39/SeedQR sources derive a NIP-06 key from the explicit

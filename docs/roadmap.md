@@ -264,6 +264,13 @@ approved. Rejection, early approval, and non-terminal button streams leave the
 keyring unchanged. This still does not derive NIP-06 keys, sign events, persist
 material, create policy state, or complete camera/display/GPIO import UX.
 
+Status: `nsealr_vault.session_source_qr` now gives future Pi camera adapters
+the same decoded source-QR boundary as ESP32. It parses decoded text as NIP-19
+`nsec`, SeedSigner Standard SeedQR, or plain BIP-39 mnemonic text, parses
+CompactSeedQR entropy bytes separately, and can compose those sources with the
+local import-review flow before loading the RAM-only keyring. This still does
+not add persistence, policy automation, or physical camera/display acceptance.
+
 Status: approved RAM-only session sources can now feed the existing
 button-driven signing flow through `StatelessSessionSecretProvider`. BIP-39
 sources derive NIP-06 from explicit account/passphrase inputs and NIP-19 `nsec`

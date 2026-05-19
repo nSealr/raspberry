@@ -132,6 +132,10 @@ even if current hardware readiness differs.
   button streams leave the keyring empty. The keyring uses mutable internal
   source slots and wipes them on `clear()` as best-effort Python process
   hygiene.
+- Package-owned decoded session-source QR boundary for future Pi camera
+  adapters. It classifies decoded text as NIP-19 `nsec`, SeedSigner Standard
+  SeedQR, or plain BIP-39 mnemonic text, and routes CompactSeedQR entropy bytes
+  through the same import-review/keyring gate before any source can be used.
 - Package-owned local session-source generation for future Pi source-creation
   screens. Generated BIP-39 and standalone `nsec`-equivalent sources are
   represented as the same secret-hidden RAM-only session sources as imports;

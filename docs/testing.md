@@ -159,6 +159,10 @@ default are left unchanged.
   and approval, while rejection, early approval, and non-terminal button
   streams leave the keyring empty. Keyring tests also prove the package-owned
   mutable source slots are wiped on `clear()`.
+- Decoded session-source QR tests proving future Pi camera adapters can route
+  text QRs for NIP-19 `nsec`, SeedSigner Standard SeedQR, and plain BIP-39
+  mnemonic text, plus CompactSeedQR entropy bytes, through package-owned
+  parsing and the same local import-review/keyring gate.
 - Session-source generation tests proving generated 12-word BIP-39 and
   standalone `nsec`-equivalent sources enter the same secret-hidden RAM-only
   source boundary, deterministic test entropy is supported, invalid

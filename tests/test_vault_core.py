@@ -60,6 +60,15 @@ from nsealr_vault.session_import_flow import (
     StatelessSessionKeyring,
     run_session_import_flow,
 )
+from nsealr_vault.session_source_qr import (
+    SessionSourceQrError,
+    parse_compact_seedqr_session_source,
+    parse_session_source_qr_text,
+)
+from nsealr_vault.session_source_qr_import_flow import (
+    run_compact_seedqr_session_import_flow,
+    run_session_source_qr_text_import_flow,
+)
 from nsealr_vault.signer import sign_request
 
 
@@ -661,6 +670,66 @@ class VaultCoreTests(unittest.TestCase):
             NIP06_KEY["secret_key"],
         )
         self.assertEqual(secret_key_from_session_import_source(nsec_source), KEY["secret_key"])
+
+    def test_session_source_qr_parses_decoded_text_sources(self) -> None:
+        nsec_source = parse_session_source_qr_text("nsec QR", f" \n{TEST_KEY_1_NSEC}\t")
+        seedqr_source = parse_session_source_qr_text(
+            "SeedQR QR",
+            f"{SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR[:16]}\n{SEEDSIGNER_VECTOR_1_STANDARD_SEEDQR[16:]}",
+        )
+        mnemonic_source = parse_session_source_qr_text("mnemonic QR", NIP06_KEY["mnemonic"])
+        compact_source = parse_compact_seedqr_session_source(
+            "CompactSeedQR QR",
+            bytes.fromhex(SEEDSIGNER_VECTOR_1_COMPACT_SEEDQR_HEX),
+        )
+
+        self.assertEqual(nsec_source, SessionImportSource.nsec("nsec QR", KEY["secret_key"]))
+        self.assertEqual(
+            seedqr_source,
+            SessionImportSource.bip39_seed("SeedQR QR", SEEDSIGNER_VECTOR_1["standard_word_indexes"]),
+        )
+        self.assertEqual(
+            mnemonic_source,
+            SessionImportSource.bip39_seed("mnemonic QR", bip39_word_indexes_from_mnemonic(NIP06_KEY["mnemonic"])),
+        )
+        self.assertEqual(
+            compact_source,
+            SessionImportSource.bip39_seed("CompactSeedQR QR", SEEDSIGNER_VECTOR_1["standard_word_indexes"]),
+        )
+
+        with self.assertRaisesRegex(SessionSourceQrError, "must not be empty"):
+            parse_session_source_qr_text("empty", " \n\t")
+        with self.assertRaisesRegex(SessionSourceQrError, "checksum is invalid"):
+            parse_session_source_qr_text("bad nsec", TEST_KEY_1_NSEC[:-1] + "q")
+        with self.assertRaisesRegex(SessionSourceQrError, "mnemonic word is not"):
+            parse_session_source_qr_text("bad text", " ".join(["abandon"] * 11 + ["notaword"]))
+
+    def test_session_source_qr_import_flow_loads_only_after_local_approval(self) -> None:
+        keyring = StatelessSessionKeyring()
+
+        result = run_session_source_qr_text_import_flow(
+            keyring,
+            "nsec QR",
+            TEST_KEY_1_NSEC,
+            ["next", "approve"],
+        )
+
+        self.assertTrue(result.approved)
+        self.assertTrue(result.loaded)
+        self.assertEqual(keyring.size, 1)
+        self.assertEqual(keyring.source_at(0), SessionImportSource.nsec("nsec QR", KEY["secret_key"]))
+
+        rejected_keyring = StatelessSessionKeyring()
+        rejected = run_compact_seedqr_session_import_flow(
+            rejected_keyring,
+            "CompactSeedQR QR",
+            bytes.fromhex(SEEDSIGNER_VECTOR_1_COMPACT_SEEDQR_HEX),
+            ["reject"],
+        )
+
+        self.assertFalse(rejected.approved)
+        self.assertFalse(rejected.loaded)
+        self.assertTrue(rejected_keyring.empty)
 
     def test_session_import_flow_requires_local_approval_before_loading_keyring(self) -> None:
         keyring = StatelessSessionKeyring()
