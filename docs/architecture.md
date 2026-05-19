@@ -257,6 +257,10 @@ account descriptors and source fingerprints are binding metadata, not proof
 substitutes. This keeps source import, account/passphrase selection, event
 review, approval digest binding, and response emission as separate
 package-owned steps without adding persistent QR-vault custody.
+`StatelessSessionKeyring.public_key_at()` and
+`StatelessSessionSecretProvider.public_key()` expose that proof boundary
+directly for future adapter/account-selection code without consuming the
+one-shot signing provider.
 
 The Python keyring stores its internal copy of imported source material in
 mutable slots and wipes those slots on `clear()` and destruction. This is a

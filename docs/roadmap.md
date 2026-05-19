@@ -292,6 +292,12 @@ public key from the RAM-only source instead of trusting descriptor metadata or
 source fingerprints alone. This is package-level proof coverage; physical Pi
 camera/display/button acceptance still remains pending.
 
+Status: the stateless session keyring and one-shot secret provider now expose
+the same source-derived public-key proof as package API. This gives future
+Pi account-selection and adapter code a direct way to prove the reviewed
+author public key from the selected RAM-only source before consuming the
+provider for signing, without adding persistence or policy state.
+
 Status: the stateless session keyring now stores its internal source copy in
 mutable package-owned slots and wipes those slots on `clear()` and object
 destruction. This is best-effort Python process hygiene; real Pi image

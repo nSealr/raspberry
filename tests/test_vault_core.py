@@ -922,10 +922,13 @@ class VaultCoreTests(unittest.TestCase):
 
         self.assertFalse(keyring.empty)
         self.assertEqual(keyring.source_at(0), source)
+        self.assertEqual(keyring.public_key_at(0), KEY["public_key"])
         with self.assertRaisesRegex(SessionImportFlowError, "keyring is full"):
             keyring.add_source(source)
         with self.assertRaisesRegex(SessionImportFlowError, "out of range"):
             keyring.source_at(1)
+        with self.assertRaisesRegex(SessionImportFlowError, "out of range"):
+            keyring.public_key_at(1)
         keyring.clear()
         self.assertTrue(keyring.empty)
 
@@ -971,10 +974,12 @@ class VaultCoreTests(unittest.TestCase):
         )
         hardware = MemoryButtonQrVaultIO(encode_qr_envelope(BASIC_REQUEST), ["next", "next", "next", "approve"])
 
+        self.assertEqual(provider.public_key(), NIP06_KEY["public_key"])
         result = run_button_qr_vault_flow_with_secret_provider(hardware, provider)
 
         self.assertTrue(result.approved)
         self.assertEqual(result.response["result"]["event"]["pubkey"], NIP06_KEY["public_key"])
+        self.assertEqual(provider.public_key(), NIP06_KEY["public_key"])
         with self.assertRaisesRegex(RuntimeError, "stateless session source has already been consumed"):
             provider()
 

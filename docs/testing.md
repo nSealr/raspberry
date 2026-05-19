@@ -184,6 +184,9 @@ default are left unchanged.
 - Source public-key proof tests consume shared
   `vectors/source-public-key-proofs/*.json` fixtures and derive the expected
   reviewed public key from NIP-06 and NIP-19 `nsec` session sources.
+- Stateless keyring/provider public-key tests prove future account-selection
+  code can derive the reviewed author public key from the selected RAM-only
+  source before the one-shot signing provider is consumed.
 - Shared nSealr v0 implementation-limit conformance test against the
   `nSealr/specs` limits profile.
 - Shared pre-signing invalid-vector rejection for unsafe event templates,
