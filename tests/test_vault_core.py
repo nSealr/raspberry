@@ -52,6 +52,8 @@ from nsealr_vault.seed_entry import (
     secret_key_from_nsec,
     session_import_review,
     session_import_source_fingerprint,
+    session_source_backup_payload,
+    session_source_backup_review,
 )
 from nsealr_vault.session_import_flow import (
     SessionImportFlowError,
@@ -68,6 +70,10 @@ from nsealr_vault.session_source_qr import (
 from nsealr_vault.session_source_qr_import_flow import (
     run_compact_seedqr_session_import_flow,
     run_session_source_qr_text_import_flow,
+)
+from nsealr_vault.session_source_backup_flow import (
+    SessionSourceBackupTranscriptStep,
+    run_session_source_backup_flow,
 )
 from nsealr_vault.signer import sign_request
 
@@ -149,6 +155,10 @@ SESSION_IMPORT_REVIEW_VECTORS = [
     json.loads(path.read_text(encoding="utf-8"))
     for path in sorted((SPECS / "vectors/session-import-reviews").glob("*.json"))
 ]
+SESSION_SOURCE_BACKUP_VECTORS = [
+    json.loads(path.read_text(encoding="utf-8"))
+    for path in sorted((SPECS / "vectors/session-source-backups").glob("*.json"))
+]
 
 
 def session_import_review_vector(name: str) -> dict[str, object]:
@@ -156,6 +166,13 @@ def session_import_review_vector(name: str) -> dict[str, object]:
         if vector["name"] == name:
             return vector
     raise AssertionError(f"missing session import review vector: {name}")
+
+
+def session_source_backup_vector(name: str) -> dict[str, object]:
+    for vector in SESSION_SOURCE_BACKUP_VECTORS:
+        if vector["name"] == name:
+            return vector
+    raise AssertionError(f"missing session source backup vector: {name}")
 
 
 class MemoryQrVaultIO:
@@ -607,6 +624,78 @@ class VaultCoreTests(unittest.TestCase):
 
         self.assertEqual(calls, 2)
         self.assertEqual(source.nsec_secret_key, "00" * 31 + "02")
+
+    def test_session_source_backup_review_matches_shared_danger_zone_vectors(self) -> None:
+        seed_vector = session_source_backup_vector("seedqr-vector-1-backup")
+        nsec_vector = session_source_backup_vector("nsec-test-key-1-backup")
+        seed_source = SessionImportSource.bip39_seed(
+            "SeedQR vector 1",
+            SEEDSIGNER_VECTOR_1["standard_word_indexes"],
+        )
+        nsec_source = SessionImportSource.nsec(
+            "nsec test vector",
+            secret_key_from_nsec(TEST_KEY_1_NSEC),
+        )
+
+        seed_review = session_source_backup_review(seed_source)
+        nsec_review = session_source_backup_review(nsec_source)
+
+        self.assertEqual(seed_review["review_id"], seed_vector["review_id"])
+        self.assertEqual(seed_review["approval_digest"], seed_vector["approval_digest"])
+        self.assertEqual(seed_review["pages"], seed_vector["pages"])
+        self.assertEqual(nsec_review["review_id"], nsec_vector["review_id"])
+        self.assertEqual(nsec_review["approval_digest"], nsec_vector["approval_digest"])
+        self.assertEqual(nsec_review["pages"], nsec_vector["pages"])
+
+        rendered = json.dumps([seed_review, nsec_review], ensure_ascii=False)
+        self.assertIn("Danger: secret export", rendered)
+        self.assertIn("Approve to reveal", rendered)
+        self.assertNotIn("attack", rendered)
+        self.assertNotIn("expire", rendered)
+        self.assertNotIn(TEST_KEY_1_NSEC, rendered)
+        self.assertNotIn(NIP19_NSEC_VECTOR["secret_key"], rendered)
+
+    def test_session_source_backup_payload_matches_shared_secret_payloads(self) -> None:
+        seed_source = SessionImportSource.bip39_seed(
+            "SeedQR vector 1",
+            SEEDSIGNER_VECTOR_1["standard_word_indexes"],
+        )
+        nsec_source = SessionImportSource.nsec(
+            "nsec test vector",
+            secret_key_from_nsec(TEST_KEY_1_NSEC),
+        )
+
+        self.assertEqual(
+            session_source_backup_payload(seed_source),
+            session_source_backup_vector("seedqr-vector-1-backup")["backup_payload"],
+        )
+        self.assertEqual(
+            session_source_backup_payload(nsec_source),
+            session_source_backup_vector("nsec-test-key-1-backup")["backup_payload"],
+        )
+
+    def test_session_source_backup_flow_reveals_only_after_local_approval(self) -> None:
+        source = SessionImportSource.nsec("nsec test vector", secret_key_from_nsec(TEST_KEY_1_NSEC))
+
+        approved = run_session_source_backup_flow(source, ["next", "approve"])
+
+        self.assertTrue(approved.approved)
+        self.assertTrue(approved.revealed)
+        self.assertEqual(approved.backup_payload, {"nsec": TEST_KEY_1_NSEC})
+        self.assertEqual(
+            approved.transcript,
+            [
+                SessionSourceBackupTranscriptStep(page_index=0, button="next", decision=None, revealed=False),
+                SessionSourceBackupTranscriptStep(page_index=1, button="approve", decision=True, revealed=True),
+            ],
+        )
+
+        rejected = run_session_source_backup_flow(source, ["reject"])
+        self.assertFalse(rejected.approved)
+        self.assertFalse(rejected.revealed)
+        self.assertIsNone(rejected.backup_payload)
+        with self.assertRaisesRegex(ValueError, "approval requires viewing every review page"):
+            run_session_source_backup_flow(source, ["approve"])
 
     def test_session_import_review_matches_shared_secret_hidden_vectors(self) -> None:
         nip06_vector = session_import_review_vector("nip06-account-0-leader")

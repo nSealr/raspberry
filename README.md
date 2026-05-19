@@ -38,8 +38,10 @@ even if current hardware readiness differs.
   `nsec` private keys checked against shared `nSealr/specs` vectors. Package
   code now also generates 12- or 24-word BIP-39 sources and standalone
   `nsec`-equivalent private-key sources into the same RAM-only session-source
-  boundary, with injected entropy for deterministic tests. Final Pi
-  backup/export UI remains pending.
+  boundary, with injected entropy for deterministic tests. Package code now
+  also has a danger-zone backup review flow that can reveal BIP-39
+  words/SeedQR or NIP-19 `nsec` payloads only after local review traversal and
+  approval; final Pi display/output acceptance remains pending.
   SeedSigner-compatible import is BIP-39 seed import for NIP-06 Nostr
   derivation; it does not import Bitcoin descriptors, xpubs, PSBTs, or wallet
   policy.
@@ -143,9 +145,9 @@ even if current hardware readiness differs.
   through the same import-review/keyring gate before any source can be used.
 - Package-owned local session-source generation for future Pi source-creation
   screens. Generated BIP-39 and standalone `nsec`-equivalent sources are
-  represented as the same secret-hidden RAM-only session sources as imports;
-  the visible backup/export ceremony and physical hardware acceptance remain
-  future work.
+  represented as the same RAM-only session sources as imports, and a separate
+  danger-zone backup review can reveal the recovery payload only after explicit
+  local approval. Physical hardware acceptance remains future work.
 - RAM-only imported-source secret provider for the existing button-driven
   signing flow. It derives NIP-06 from approved BIP-39/SeedQR sources with an
   explicit account/passphrase or uses an approved NIP-19 `nsec` source, then

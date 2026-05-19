@@ -67,16 +67,17 @@ streams, SeedSigner CompactSeedQR entropy bytes, plain mnemonic text, and
 NIP-19 `nsec` private keys for the current session. It can also generate
 12- or 24-word BIP-39 sources and standalone `nsec`-equivalent private-key
 sources into the same RAM-only source boundary, using OS randomness in normal
-operation and injected entropy in tests. The final visible backup/export
-ceremony for generated material remains pending. BIP-39 passphrases create
+operation and injected entropy in tests. The package now also models the
+danger-zone backup ceremony for generated material; physical display/output
+acceptance remains pending. BIP-39 passphrases create
 separate seed namespaces and are entered separately from public account
 metadata. Policies belong to the resulting public key, but QR vault routes have
 only the manual-only policy and no persistent policy state.
 
 MicroSD/file transfer of secret material is excluded from the QR vault
-acceptance model. The Raspberry microSD remains boot media. Secret export, if
-later implemented, must be a danger-zone recovery flow with local review and
-physical confirmation, not part of ordinary signing.
+acceptance model. The Raspberry microSD remains boot media. Secret export is a
+separate danger-zone recovery flow with local review and physical confirmation,
+not part of ordinary signing.
 
 Feature target and current status are tracked in `nSealr/specs`
 `vectors/features/signer-feature-matrix-v0.json`. The Raspberry QR vault is in
@@ -210,8 +211,11 @@ first package-owned local generation boundaries. They produce source objects
 for the same secret-hidden review/keyring path instead of bypassing it:
 generated BIP-39 sources become checked word indexes, generated standalone
 keys must be valid secp256k1 scalars, and neither path persists material or
-creates policy state. A real Pi UX must still show a visible backup/export
-ceremony before treating generated material as usable user custody.
+creates policy state. `session_source_backup_flow` models the visible
+backup/export ceremony by reviewing the source fingerprint and revealing
+mnemonic/SeedQR or `nsec` payloads only after final-page local approval. A real
+Pi UX still needs physical display/output acceptance before treating generated
+material as usable user custody.
 
 The `review-import` command is the desktop harness for that boundary. It accepts
 only session-source inputs over stdin, validates and normalizes them through

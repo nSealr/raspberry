@@ -171,6 +171,9 @@ default are left unchanged.
   source boundary, deterministic test entropy is supported, invalid
   secp256k1 scalar material is rejected, and generated secrets do not appear
   in the source review output.
+- Session-source backup tests proving BIP-39 words/SeedQR and NIP-19 `nsec`
+  recovery payloads match shared `nSealr/specs` backup vectors and are revealed
+  only after the separate danger-zone review reaches the final approval page.
 - Imported-source secret-provider tests proving approved BIP-39/SeedQR and
   NIP-19 `nsec` sources can feed the existing button-driven signing flow once,
   with NIP-06 account/passphrase selection explicit and no persistent storage.

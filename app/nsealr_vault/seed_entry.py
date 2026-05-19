@@ -335,6 +335,92 @@ def session_import_review(source: SessionImportSource) -> dict[str, object]:
     }
 
 
+def _standard_seedqr_from_word_indexes(word_indexes: tuple[int, ...]) -> str:
+    if len(word_indexes) not in SEEDQR_WORD_COUNTS:
+        counts = ", ".join(str(count) for count in SEEDQR_WORD_COUNTS)
+        raise ValueError(f"SeedQR backup word count must be one of {counts}")
+    return "".join(f"{index:04d}" for index in word_indexes)
+
+
+def _compact_seedqr_from_word_indexes(word_indexes: tuple[int, ...]) -> str:
+    mnemonic = mnemonic_from_bip39_word_indexes(word_indexes)
+    entropy = bytes(_ENGLISH_MNEMONIC.to_entropy(mnemonic.split()))
+    if len(entropy) not in COMPACT_SEEDQR_BYTE_LENGTHS:
+        allowed = ", ".join(str(length) for length in sorted(COMPACT_SEEDQR_BYTE_LENGTHS))
+        raise ValueError(f"CompactSeedQR backup entropy length must be one of {allowed}")
+    return entropy.hex()
+
+
+def _session_source_backup_format(source: SessionImportSource) -> str:
+    _validate_session_import_source(source)
+    if source.source_type == "bip39_seed":
+        return "bip39_words_seedqr"
+    if source.source_type == "nsec":
+        return "nip19_nsec"
+    raise ValueError("session backup source type must be bip39_seed or nsec")
+
+
+def session_source_backup_payload(source: SessionImportSource) -> dict[str, str]:
+    _validate_session_import_source(source)
+    if source.source_type == "bip39_seed":
+        return {
+            "mnemonic": mnemonic_from_bip39_word_indexes(source.bip39_word_indexes),
+            "standard_seedqr_digits": _standard_seedqr_from_word_indexes(source.bip39_word_indexes),
+            "compact_seedqr_hex": _compact_seedqr_from_word_indexes(source.bip39_word_indexes),
+        }
+    if source.source_type == "nsec":
+        return {"nsec": nsec_from_secret_key(source.nsec_secret_key)}
+    raise ValueError("session backup source type must be bip39_seed or nsec")
+
+
+def session_source_backup_review(source: SessionImportSource) -> dict[str, object]:
+    fingerprint = session_import_source_fingerprint(source)
+    backup_format = _session_source_backup_format(source)
+    digest_material = (
+        "nsealr.session-source-backup-review.v0\n"
+        f"{_session_source_kind_label(source.source_type)}\n"
+        f"{source.label}\n"
+        f"{fingerprint}\n"
+        f"{backup_format}"
+    ).encode()
+    if source.source_type == "bip39_seed":
+        output = "words/SeedQR"
+    else:
+        output = "nsec QR/text"
+    lines = [
+        "Danger: secret export",
+        f"Type: {_session_source_kind_label(source.source_type)}",
+        f"Label: {source.label}",
+        f"Fingerprint: {fingerprint}",
+        f"Output: {output}",
+        "Session RAM only",
+    ]
+    return {
+        "review_id": f"session-backup-{fingerprint}",
+        "approval_digest": hashlib.sha256(digest_material).hexdigest(),
+        "pages": [
+            {
+                "title": "Backup source",
+                "lines": lines,
+                "action": "next",
+                "page_indicator": "Page 1/2",
+                "logical_page_id": "session-backup-warning",
+            },
+            {
+                "title": "Show secret?",
+                "lines": [
+                    "Anyone can sign",
+                    "Verify offline copy",
+                    "Approve to reveal",
+                ],
+                "action": "approve_or_reject",
+                "page_indicator": "Page 2/2",
+                "logical_page_id": "session-backup-decision",
+            },
+        ],
+    }
+
+
 def secret_key_from_session_import_source(
     source: SessionImportSource,
     *,
