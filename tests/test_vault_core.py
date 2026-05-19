@@ -609,8 +609,13 @@ class VaultCoreTests(unittest.TestCase):
         self.assertEqual(source.nsec_secret_key, "00" * 31 + "02")
 
     def test_session_import_review_matches_shared_secret_hidden_vectors(self) -> None:
+        nip06_vector = session_import_review_vector("nip06-account-0-leader")
         seed_vector = session_import_review_vector("seedqr-vector-1")
         nsec_vector = session_import_review_vector("nsec-test-key-1")
+        nip06_source = SessionImportSource.bip39_seed(
+            "NIP-06 account 0",
+            bip39_word_indexes_from_mnemonic(NIP06_KEY["mnemonic"]),
+        )
         seed_source = SessionImportSource.bip39_seed(
             "SeedQR vector 1",
             SEEDSIGNER_VECTOR_1["standard_word_indexes"],
@@ -620,9 +625,14 @@ class VaultCoreTests(unittest.TestCase):
             secret_key_from_nsec(TEST_KEY_1_NSEC),
         )
 
+        nip06_review = session_import_review(nip06_source)
         seed_review = session_import_review(seed_source)
         nsec_review = session_import_review(nsec_source)
 
+        self.assertEqual(session_import_source_fingerprint(nip06_source), nip06_vector["fingerprint"])
+        self.assertEqual(nip06_review["review_id"], nip06_vector["review_id"])
+        self.assertEqual(nip06_review["approval_digest"], nip06_vector["approval_digest"])
+        self.assertEqual(nip06_review["pages"], nip06_vector["pages"])
         self.assertEqual(session_import_source_fingerprint(seed_source), seed_vector["fingerprint"])
         self.assertEqual(seed_review["review_id"], seed_vector["review_id"])
         self.assertEqual(seed_review["approval_digest"], seed_vector["approval_digest"])
@@ -2489,6 +2499,10 @@ class VaultCoreTests(unittest.TestCase):
         self.assertTrue(RASPBERRY_ACCOUNT_DESCRIPTOR["capabilities"]["physical_review"])
         self.assertTrue(RASPBERRY_ACCOUNT_DESCRIPTOR["capabilities"]["physical_approval"])
         self.assertFalse(RASPBERRY_ACCOUNT_DESCRIPTOR["capabilities"]["persistent_grants"])
+        self.assertEqual(
+            RASPBERRY_ACCOUNT_DESCRIPTOR["recovery"]["source_fingerprint"],
+            session_import_review_vector("nip06-account-0-leader")["fingerprint"],
+        )
         self.assertEqual(RASPBERRY_ACCOUNT_DESCRIPTOR["policy_profile_id"], MANUAL_QR_POLICY["policy_id"])
         self.assertEqual(selection["account_id"], RASPBERRY_ACCOUNT_DESCRIPTOR["account_id"])
         self.assertEqual(selection["route_type"], route["type"])

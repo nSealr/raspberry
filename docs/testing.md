@@ -151,6 +151,9 @@ default are left unchanged.
   fingerprint, and import approval digest from
   `nSealr/specs/vectors/session-import-reviews` without leaking mnemonic words,
   `nsec`, raw private-key bytes, persistence, derivation, or signing approval.
+- Identity tests also assert the Raspberry NIP-06 account descriptor's recovery
+  fingerprint matches the same shared RAM-only import-review fingerprint for
+  the canonical account-0 source.
 - Desktop CLI `review-import` smoke tests proving stdin-fed Standard SeedQR
   and NIP-19 `nsec` sources write those same secret-hidden RAM-load reviews,
   and invalid import sources fail before output files are created.

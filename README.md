@@ -48,6 +48,9 @@ even if current hardware readiness differs.
   It shows type, label, word count where applicable, and a deterministic
   fingerprint while hiding mnemonic words and raw private-key bytes; it is a
   RAM-load review only, not signing approval.
+- NIP-06 account descriptors bind to that same reviewed source fingerprint, so
+  account metadata can be matched to the RAM-only source the user approved
+  before any one-shot derivation.
 - The shared `nsealr-account-descriptor-v0` route
   `raspberry_qr_vault` is treated as a stateless-session, manual-only route
   bound to `policy-manual-only-qr-vault` with `persistent_grants: false`.
@@ -121,6 +124,8 @@ even if current hardware readiness differs.
 - Package-owned session import review helpers pin the same secret-hidden
   review pages, source fingerprint, `review_id`, and import approval digest as
   ESP32 for the shared QR-vault RAM-load ceremony.
+- Shared NIP-06 account descriptors also carry that reviewed source
+  fingerprint for account/source matching before one-shot derivation.
 - `nsealr-vault review-import` exposes that RAM-load ceremony as a desktop
   harness for stdin-fed BIP-39 mnemonic, word-by-word mnemonic, Standard
   SeedQR, CompactSeedQR, and NIP-19 `nsec` sources. It validates the source

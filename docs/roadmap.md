@@ -249,6 +249,11 @@ contract exposes type, label, word count where applicable, fingerprint,
 private-key bytes. This is a RAM-load review boundary, not NIP-06 derivation,
 persistent storage, or signing approval.
 
+Status note, 2026-05-19: the Raspberry QR account descriptor now carries the
+same reviewed source fingerprint as the canonical NIP-06 account-0 import
+review vector. This keeps account metadata bound to the RAM-only source review
+without adding persistent policy, persistent secrets, or TROPIC01.
+
 Status: `nsealr-vault review-import` now exposes that RAM-load review boundary
 from the desktop CLI for stdin-fed BIP-39 mnemonic, word-by-word mnemonic,
 Standard SeedQR, CompactSeedQR, and NIP-19 `nsec` sources. It is still a

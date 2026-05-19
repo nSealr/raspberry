@@ -201,6 +201,10 @@ import approval digest pinned in `nSealr/specs/vectors/session-import-reviews`.
 It does not show mnemonic words, `nsec`, raw private-key bytes, derived NIP-06
 keys, persistent slots, policy state, or signing approval.
 
+Shared NIP-06 account descriptors also carry the reviewed source fingerprint,
+so the Raspberry QR vault route can bind account metadata to the same RAM-only
+source the user reviewed before deriving a one-shot NIP-06 session key.
+
 `generate_bip39_session_source` and `generate_nsec_session_source` are the
 first package-owned local generation boundaries. They produce source objects
 for the same secret-hidden review/keyring path instead of bypassing it:
