@@ -208,6 +208,12 @@ the `nsealr-account-descriptor-v0` route `raspberry_qr_vault` and
 `manual_only`, and `persistent_grants: false`; this does not add policy
 automation, persistent storage, or TROPIC01 to the Raspberry QR vault.
 
+Status note, 2026-05-19: Raspberry now also consumes the shared
+`raspberry-qr-sign-event-account-0` route-selection vector. The checked
+selection remains QR transport, device-display reviewed, physically approved,
+manual-only, `stateless_session`, `persistent_grants: false`, and
+`contains_secret_material: false`.
+
 Status note, 2026-05-11: the Raspberry product target explicitly includes
 SeedSigner Standard SeedQR and CompactSeedQR import, plain BIP-39 mnemonic QR,
 `nsec` QR, local mnemonic generation, and local standalone-key generation as

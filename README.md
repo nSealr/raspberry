@@ -48,8 +48,10 @@ even if current hardware readiness differs.
 - The shared `nsealr-account-descriptor-v0` route
   `raspberry_qr_vault` is treated as a stateless-session, manual-only route
   bound to `policy-manual-only-qr-vault` with `persistent_grants: false`.
-  This repository must not add policy automation, persistent grants, or
-  TROPIC01 to that route.
+  The shared `raspberry-qr-sign-event-account-0` route-selection vector keeps
+  request routing aligned with that same QR transport and secretless metadata
+  contract. This repository must not add policy automation, persistent grants,
+  or TROPIC01 to that route.
 - Explicit approval gate: `sign_event` requests return `user_rejected` unless
   approval is provided to the CLI or signer API.
 - Deterministic event review model for raw kind, created_at, signer author

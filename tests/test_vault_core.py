@@ -120,6 +120,9 @@ RASPBERRY_ACCOUNT_DESCRIPTOR = json.loads(
     (SPECS / "vectors/accounts/raspberry-qr-nip06-account-0.json").read_text(encoding="utf-8")
 )
 MANUAL_QR_POLICY = json.loads((SPECS / "vectors/policies/manual-only-qr-vault.json").read_text(encoding="utf-8"))
+RASPBERRY_ROUTE_SELECTION = json.loads(
+    (SPECS / "vectors/route-selections/raspberry-qr-sign-event-account-0.json").read_text(encoding="utf-8")
+)
 SEEDSIGNER_VECTOR_1 = json.loads(
     (SPECS / "vectors/seedqr/seedsigner-vector-1.json").read_text(encoding="utf-8")
 )
@@ -2350,11 +2353,26 @@ class VaultCoreTests(unittest.TestCase):
 
     def test_identity_policy_docs_pin_manual_stateless_route(self) -> None:
         route = RASPBERRY_ACCOUNT_DESCRIPTOR["signer_route"]
+        selection = RASPBERRY_ROUTE_SELECTION["selection"]
         self.assertEqual(route["type"], "raspberry_qr_vault")
+        self.assertEqual(route["repository"], "raspberry")
+        self.assertEqual(route["transport"], "qr")
         self.assertEqual(route["custody"], "stateless_session")
+        self.assertEqual(route["trusted_review"], "device_display")
         self.assertEqual(route["policy_support"], "manual_only")
+        self.assertTrue(RASPBERRY_ACCOUNT_DESCRIPTOR["capabilities"]["physical_review"])
+        self.assertTrue(RASPBERRY_ACCOUNT_DESCRIPTOR["capabilities"]["physical_approval"])
         self.assertFalse(RASPBERRY_ACCOUNT_DESCRIPTOR["capabilities"]["persistent_grants"])
         self.assertEqual(RASPBERRY_ACCOUNT_DESCRIPTOR["policy_profile_id"], MANUAL_QR_POLICY["policy_id"])
+        self.assertEqual(selection["account_id"], RASPBERRY_ACCOUNT_DESCRIPTOR["account_id"])
+        self.assertEqual(selection["route_type"], route["type"])
+        self.assertEqual(selection["repository"], route["repository"])
+        self.assertEqual(selection["transport"], route["transport"])
+        self.assertEqual(selection["custody"], route["custody"])
+        self.assertEqual(selection["trusted_review"], route["trusted_review"])
+        self.assertEqual(selection["policy_support"], route["policy_support"])
+        self.assertFalse(selection["persistent_grants"])
+        self.assertFalse(selection["contains_secret_material"])
 
         docs = "\n".join(
             [

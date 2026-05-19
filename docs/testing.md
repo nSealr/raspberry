@@ -28,7 +28,9 @@ default are left unchanged.
 - Shared identity/policy boundary tests proving the Raspberry account
   descriptor uses `nsealr-account-descriptor-v0`, route `raspberry_qr_vault`,
   `policy-manual-only-qr-vault`, stateless custody, manual-only policy support,
-  and `persistent_grants: false`.
+  `persistent_grants: false`, and the shared
+  `raspberry-qr-sign-event-account-0` route-selection vector with secretless QR
+  transport routing.
 - Signing tests against `nSealr/specs` fixtures.
 - Review model tests against every shared review vector for raw event kind,
   created_at, signer author pubkey, complete content, and complete structured

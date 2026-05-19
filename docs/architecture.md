@@ -55,6 +55,11 @@ store labels, route metadata, account index, and policy profile ids, but it
 must not turn the Raspberry QR vault into a policy-automated signer, persistent
 grant target, persistent seed store, secure-element unlock path, or TROPIC01
 route.
+The shared `raspberry-qr-sign-event-account-0` route-selection vector is
+consumed as the request-routing contract for that descriptor. It must remain
+QR transport, device-display reviewed, physically approved, manual-only,
+`stateless_session`, `persistent_grants: false`, and
+`contains_secret_material: false`.
 
 The final product key-source model is a RAM-only session keyring. The current
 foundation can load manual BIP-39 words, SeedSigner Standard SeedQR digit
