@@ -254,6 +254,14 @@ the backup review reaches the final page and is approved. The desktop
 tests while still writing no output on early approval. Final Pi physical backup
 display/output acceptance and power-cycle evidence remain pending.
 
+Status: `nsealr_vault.session_source_backup_flow` now also exposes an
+adapter-facing display/button/output loop for that danger-zone recovery
+ceremony. It renders bounded backup review frames before each physical-style
+button read and emits the recovery payload to an injected output sink only
+after final-page approval. Rejection and bounded non-terminal button streams
+emit nothing. This remains fake-adapter coverage; final Pi physical backup
+display/output acceptance and power-cycle evidence remain pending.
+
 Status: `nsealr_vault.seed_entry` now implements SeedSigner-compatible
 Standard SeedQR digit-stream parsing and CompactSeedQR entropy-byte parsing for
 12- and 24-word English BIP-39 mnemonics. `nsealr-vault sign` and

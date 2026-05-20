@@ -245,6 +245,13 @@ final-page approval. An approved result contains secret recovery material and
 must stay a development/adapter artifact until physical Pi display/output
 acceptance exists.
 
+`run_session_source_backup_io_flow` is the adapter-facing version of that same
+ceremony. It renders bounded backup review frames before every local button
+read and sends the recovery payload to an injected output sink only after
+final-page approval. Rejection, early approval, and bounded non-terminal
+button streams emit no payload, so future Pi display/QR/word-output adapters
+cannot bypass the danger-zone review loop.
+
 `nsealr_vault.session_import_flow` is the package-owned import-approval loop
 for future Pi seed-entry screens. It uses the same physical-review controller
 shape as event signing, but its terminal action only loads a parsed source into

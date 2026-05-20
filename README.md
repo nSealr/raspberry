@@ -160,6 +160,11 @@ even if current hardware readiness differs.
   transcript, and reveals BIP-39 words/SeedQR or `nsec` payload only after
   final-page approval. An approved output contains secret recovery material; it
   is not signing approval or persistent storage.
+- Package-owned session-source backup IO for future Pi output adapters. It
+  renders bounded danger-zone review frames before each local button read and
+  emits the recovery payload to an injected output sink only after final-page
+  approval. Rejection, early approval, and bounded non-terminal button streams
+  emit nothing.
 - Package-owned session import flow for future Pi seed-entry screens. It
   requires local traversal of the secret-hidden import review before loading a
   parsed source into the RAM-only session keyring; rejection and incomplete

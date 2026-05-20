@@ -191,6 +191,10 @@ default are left unchanged.
 - Session-source backup tests proving BIP-39 words/SeedQR and NIP-19 `nsec`
   recovery payloads match shared `nSealr/specs` backup vectors and are revealed
   only after the separate danger-zone review reaches the final approval page.
+- Session-source backup IO tests proving bounded danger-zone review frames are
+  displayed before local button reads, approved flows emit the recovery payload
+  to an injected output sink only after final-page approval, and rejection or
+  bounded non-terminal button streams emit nothing.
 - Desktop CLI `backup-source` smoke tests proving the same danger-zone recovery
   ceremony is reachable through stdin-fed session sources, rejected flows do
   not reveal payloads, early approval writes no output, and approved review

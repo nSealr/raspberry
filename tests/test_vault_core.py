@@ -73,8 +73,10 @@ from nsealr_vault.session_source_qr_import_flow import (
     run_session_source_qr_text_import_flow,
 )
 from nsealr_vault.session_source_backup_flow import (
+    SessionSourceBackupFlowError,
     SessionSourceBackupTranscriptStep,
     run_session_source_backup_flow,
+    run_session_source_backup_io_flow,
 )
 from nsealr_vault.signer import sign_request
 
@@ -227,6 +229,24 @@ class MemoryButtonQrVaultIO:
 
     def emit_response_qr(self, response_qr: str) -> None:
         self.response_qr = response_qr
+
+
+class MemorySessionSourceBackupIO:
+    def __init__(self, buttons: list[str]) -> None:
+        self.buttons = list(buttons)
+        self.frames: list[tuple[int, dict]] = []
+        self.backup_payloads: list[dict[str, str]] = []
+
+    def display_review_frame(self, screen_review: dict, page_index: int, frame: dict) -> None:
+        self.frames.append((page_index, frame))
+
+    def read_review_button(self) -> str:
+        if not self.buttons:
+            raise RuntimeError("no more backup buttons")
+        return self.buttons.pop(0)
+
+    def emit_backup_payload(self, backup_payload: dict[str, str]) -> None:
+        self.backup_payloads.append(backup_payload)
 
 
 class NextOnlyButtonQrVaultIO:
@@ -708,6 +728,39 @@ class VaultCoreTests(unittest.TestCase):
         self.assertIsNone(rejected.backup_payload)
         with self.assertRaisesRegex(ValueError, "approval requires viewing every review page"):
             run_session_source_backup_flow(source, ["approve"])
+
+    def test_session_source_backup_io_reveals_only_after_displayed_approval(self) -> None:
+        source = SessionImportSource.nsec("nsec test vector", secret_key_from_nsec(TEST_KEY_1_NSEC))
+        io = MemorySessionSourceBackupIO(["next", "approve"])
+
+        result = run_session_source_backup_io_flow(source, io)
+
+        self.assertTrue(result.approved)
+        self.assertTrue(result.revealed)
+        self.assertEqual(result.backup_payload, {"nsec": TEST_KEY_1_NSEC})
+        self.assertEqual(io.backup_payloads, [{"nsec": TEST_KEY_1_NSEC}])
+        self.assertEqual([page_index for page_index, _frame in io.frames], [0, 1])
+        rendered_frames = json.dumps([frame for _page_index, frame in io.frames], ensure_ascii=False)
+        self.assertIn("Danger: secret export", rendered_frames)
+        self.assertNotIn(TEST_KEY_1_NSEC, rendered_frames)
+        self.assertNotIn(NIP19_NSEC_VECTOR["secret_key"], rendered_frames)
+
+    def test_session_source_backup_io_rejection_or_timeout_does_not_emit_payload(self) -> None:
+        source = SessionImportSource.nsec("nsec test vector", secret_key_from_nsec(TEST_KEY_1_NSEC))
+        rejected_io = MemorySessionSourceBackupIO(["reject"])
+
+        rejected = run_session_source_backup_io_flow(source, rejected_io)
+
+        self.assertFalse(rejected.approved)
+        self.assertFalse(rejected.revealed)
+        self.assertIsNone(rejected.backup_payload)
+        self.assertEqual(rejected_io.backup_payloads, [])
+
+        timeout_io = MemorySessionSourceBackupIO(["next", "next"])
+        with self.assertRaisesRegex(SessionSourceBackupFlowError, "max button steps"):
+            run_session_source_backup_io_flow(source, timeout_io, max_button_steps=1)
+        self.assertEqual(timeout_io.backup_payloads, [])
+        self.assertEqual([page_index for page_index, _frame in timeout_io.frames], [0])
 
     def test_session_import_review_matches_shared_secret_hidden_vectors(self) -> None:
         nip06_vector = session_import_review_vector("nip06-account-0-leader")
