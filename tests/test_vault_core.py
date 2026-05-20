@@ -1329,6 +1329,17 @@ class VaultCoreTests(unittest.TestCase):
         response = decode_qr_envelope(hardware.response_qr)
         self.assert_valid_signed_event_for_pubkey(response["result"]["event"], KEY["public_key"])
 
+    def test_button_qr_vault_flow_accepts_animated_request_scan(self) -> None:
+        animated_request = "\n".join(encode_animated_qr_envelope_frames(TAGGED_REQUEST, chunk_size_chars=32))
+        hardware = MemoryButtonQrVaultIO(animated_request, ["next", "next", "next", "approve"])
+
+        result = run_button_qr_vault_flow(hardware, KEY["secret_key"])
+
+        self.assertTrue(result.approved)
+        self.assertEqual(result.request_id, TAGGED_REQUEST["request_id"])
+        response = decode_qr_envelope(hardware.response_qr)
+        self.assert_valid_signed_event_for_pubkey(response["result"]["event"], KEY["public_key"])
+
     def test_button_qr_vault_flow_allows_early_rejection(self) -> None:
         hardware = MemoryButtonQrVaultIO(encode_qr_envelope(BASIC_REQUEST), ["reject"])
 

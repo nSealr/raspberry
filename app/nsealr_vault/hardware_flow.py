@@ -13,7 +13,13 @@ from .display import (
     render_review_detail_pages,
     screen_review_for_request,
 )
-from .qr import decode_qr_envelope, encode_qr_envelope
+from .qr import (
+    ANIMATED_QR_ENVELOPE_PREFIX,
+    QR_ENVELOPE_PREFIX,
+    decode_animated_qr_envelope_frames,
+    decode_qr_envelope,
+    encode_qr_envelope,
+)
 from .review import review_event_template
 from .signer import sign_request
 
@@ -57,7 +63,7 @@ def run_qr_vault_flow(
     secret_key_hex: str,
     response_encoder: Callable[[dict[str, Any]], str] = encode_qr_envelope,
 ) -> QrVaultFlowResult:
-    request = decode_qr_envelope(io.scan_request_qr())
+    request = _decode_scanned_request_qr(io.scan_request_qr())
     if not isinstance(request, dict):
         raise ValueError("QR vault flow requires a JSON object request")
 
@@ -106,7 +112,7 @@ def run_button_qr_vault_flow_with_secret_provider(
     if max_button_steps <= 0:
         raise ValueError("button review flow max steps must be positive")
 
-    request = decode_qr_envelope(io.scan_request_qr())
+    request = _decode_scanned_request_qr(io.scan_request_qr())
     if not isinstance(request, dict):
         raise ValueError("QR vault flow requires a JSON object request")
 
@@ -179,7 +185,7 @@ def run_detail_button_qr_vault_flow_with_secret_provider(
     if max_button_steps <= 0:
         raise ValueError("button review flow max steps must be positive")
 
-    request = decode_qr_envelope(io.scan_request_qr())
+    request = _decode_scanned_request_qr(io.scan_request_qr())
     if not isinstance(request, dict):
         raise ValueError("QR vault flow requires a JSON object request")
 
@@ -239,3 +245,16 @@ def run_detail_button_qr_vault_flow_with_secret_provider(
         response=response,
         review_transcript=review_transcript,
     )
+
+
+def _decode_scanned_request_qr(scanned_qr: str) -> object:
+    frames = [line.strip() for line in scanned_qr.splitlines() if line.strip()]
+    if not frames:
+        raise ValueError("QR vault flow requires a scanned request QR")
+    if len(frames) == 1 and frames[0].startswith(QR_ENVELOPE_PREFIX):
+        return decode_qr_envelope(frames[0])
+    if all(frame.startswith(ANIMATED_QR_ENVELOPE_PREFIX) for frame in frames):
+        return decode_animated_qr_envelope_frames(frames)
+    if len(frames) == 1:
+        return decode_qr_envelope(frames[0])
+    raise ValueError("QR vault flow requires static nsealr1 or animated nsealr1a request QR")

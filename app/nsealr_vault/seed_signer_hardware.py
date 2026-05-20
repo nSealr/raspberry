@@ -5,6 +5,8 @@ import io
 from dataclasses import dataclass
 from typing import Callable, Protocol, Sequence
 
+from .limits import NSEALR_V0_LIMITS
+from .qr import ANIMATED_QR_ENVELOPE_PREFIX, QR_ENVELOPE_PREFIX, decode_animated_qr_envelope_frames
 from .st7789_layout import (
     SEEDSIGNER_ST7789_HEIGHT,
     SEEDSIGNER_ST7789_WIDTH,
@@ -189,11 +191,25 @@ class SeedSignerCameraQrScanner:
 
     def scan_request_qr(self, max_frames: int | None = None) -> str:
         frames = 0
+        animated_frames: list[str] = []
         while max_frames is None or frames < max_frames:
             frame = self.frame_source.capture_frame()
             decoded = self.qr_decoder.decode_qr(frame)
-            if decoded is not None and decoded.strip():
-                return decoded.strip()
+            if decoded is not None:
+                payload = decoded.strip()
+                if payload.startswith(QR_ENVELOPE_PREFIX):
+                    return payload
+                if payload.startswith(ANIMATED_QR_ENVELOPE_PREFIX):
+                    if payload not in animated_frames:
+                        animated_frames.append(payload)
+                    if len(animated_frames) > NSEALR_V0_LIMITS["max_animated_qr_frame_count"]:
+                        animated_frames = [payload]
+                    try:
+                        decode_animated_qr_envelope_frames(animated_frames)
+                    except ValueError:
+                        pass
+                    else:
+                        return "\n".join(animated_frames)
             frames += 1
             self.sleep(self.poll_delay_s)
         raise TimeoutError("no nSealr request QR decoded")

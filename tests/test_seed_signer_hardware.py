@@ -16,6 +16,7 @@ from nsealr_vault.seed_signer_hardware import (
     SeedSignerSt7789ResponseQrDisplay,
     SeedSignerSt7789ReviewDisplay,
 )
+from nsealr_vault.qr import decode_animated_qr_envelope_frames, encode_animated_qr_envelope_frames
 
 
 class FakeGpio:
@@ -259,6 +260,33 @@ class SeedSignerHardwareTests(unittest.TestCase):
 
         self.assertEqual(scanner.scan_request_qr(max_frames=2), "nsealr1:test-request")
         self.assertEqual(decoder.frames, ["frame-a", "frame-b"])
+
+    def test_camera_qr_scanner_ignores_unrelated_payloads_until_nsealr_request(self) -> None:
+        frames = FakeFrameSource(["frame-a", "frame-b", "frame-c"])
+        decoder = FakeQrDecoder([None, "bitcoin-seedqr-not-a-request", " nsealr1:test-request "])
+        scanner = SeedSignerCameraQrScanner(frame_source=frames, qr_decoder=decoder, sleep=lambda _seconds: None)
+
+        self.assertEqual(scanner.scan_request_qr(max_frames=3), "nsealr1:test-request")
+        self.assertEqual(decoder.frames, ["frame-a", "frame-b", "frame-c"])
+
+    def test_camera_qr_scanner_collects_animated_request_frames(self) -> None:
+        animated = encode_animated_qr_envelope_frames(
+            {
+                "version": 1,
+                "request_id": "req-camera-animated",
+                "method": "sign_event",
+                "params": {"event_template": {"created_at": 1710000000, "kind": 1, "tags": [], "content": "hello"}},
+            },
+            chunk_size_chars=24,
+        )
+        frames = FakeFrameSource([f"frame-{index}" for index in range(len(animated) + 1)])
+        decoder = FakeQrDecoder(["unrelated", *animated])
+        scanner = SeedSignerCameraQrScanner(frame_source=frames, qr_decoder=decoder, sleep=lambda _seconds: None)
+
+        scanned = scanner.scan_request_qr(max_frames=len(animated) + 1)
+
+        self.assertEqual(scanned.splitlines(), animated)
+        self.assertEqual(decode_animated_qr_envelope_frames(scanned.splitlines())["request_id"], "req-camera-animated")
 
     def test_camera_qr_scanner_times_out_without_payload(self) -> None:
         scanner = SeedSignerCameraQrScanner(

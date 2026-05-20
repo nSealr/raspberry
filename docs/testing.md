@@ -71,8 +71,8 @@ default are left unchanged.
 - Hardware-agnostic QR vault flow test with in-memory camera, display/button,
   and response-QR I/O.
 - Button-driven QR vault flow tests proving page-by-page traversal before
-  approval, early rejection without signing, and bounded failure for
-  non-terminal button streams.
+  approval, early rejection without signing, animated request scan decoding,
+  and bounded failure for non-terminal button streams.
 - RAM-only secret-provider tests proving future stateless Pi adapters load
   session key material before review to derive the displayed author pubkey,
   while still refusing to sign unless complete review traversal and physical
@@ -108,9 +108,11 @@ default are left unchanged.
   commands stay within the 240x240 display, preserve meta/value/normal body
   styles, and reject body layouts that would overlap the footer/action area.
 - SeedSigner-compatible driver-facing adapter tests proving camera QR scanning
-  polls injected frames until a payload is decoded, ST7789 review rendering
-  applies bounded layout commands to an injected draw target, and ST7789
-  response-QR rendering draws a validated centered matrix with a quiet zone.
+  polls injected frames until a nSealr request payload is decoded, ignores
+  unrelated QR payloads, collects complete animated request frame sets, ST7789
+  review rendering applies bounded layout commands to an injected draw target,
+  and ST7789 response-QR rendering draws a validated centered matrix with a
+  quiet zone.
 - Optional Pi camera adapter tests proving `PiCameraJpegFrameSource` captures
   JPEG bytes through a `picamera`-style object and `PyzbarQrDecoder` returns the
   first UTF-8 QR payload, returns `None` when no QR is present, and rejects

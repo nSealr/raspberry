@@ -107,7 +107,9 @@ behavior through the common `contract_id` and vectors.
   before approval can succeed and keeps rejection available before the final
   page.
 - `nsealr_vault.hardware_flow`: hardware-agnostic QR signer orchestration
-  with injected scan, display, button, and response-QR boundaries.
+  with injected scan, display, button, and response-QR boundaries. It accepts
+  static `nsealr1:` request payloads and complete animated `nsealr1a:` request
+  frame sets before deriving review pages and approval digests.
 - `nsealr_vault.adapters`: file-backed QR flow adapters used by the CLI and
   integration smoke tests, plus a composed button-flow adapter boundary that
   keeps scanner, trusted display, physical button input, and response QR output
@@ -126,7 +128,9 @@ behavior through the common `contract_id` and vectors.
   The camera side now includes optional
   `picamera` JPEG capture and `pyzbar`/zbar decoding adapters that follow the
   SeedSigner Pi Zero software shape without making those libraries mandatory
-  outside the Pi image. The display side now includes an optional PIL
+  outside the Pi image. The scanner ignores unrelated decoded QR payloads and
+  accumulates animated request frames until the shared QR decoder accepts the
+  full frame set. The display side now includes an optional PIL
   framebuffer draw target that can present rendered review frames to a
   Waveshare/SeedSigner-style display driver object without importing that
   driver in CI, plus an optional `python-qrcode` response matrix renderer for

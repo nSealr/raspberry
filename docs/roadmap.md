@@ -179,6 +179,13 @@ response-QR display boundary. These adapters are testable without Pi hardware
 and do not claim physical camera/display acceptance until connected to real
 frame sources, draw targets, QR rendering, and the available Pi Zero kit.
 
+Status: the hardware-style Raspberry QR flow now accepts complete animated
+`nsealr1a:` request frame sets as well as static `nsealr1:` requests. The
+SeedSigner-compatible camera scanner ignores unrelated decoded QR payloads and
+collects animated request frames until the shared decoder accepts a complete
+set, so large valid requests can reach the same local review/approval path
+without bypassing stateless custody or physical approval.
+
 Status: the SeedSigner-compatible camera path now has optional concrete
 `picamera` JPEG frame capture and `pyzbar`/zbar QR decoding adapters behind the
 existing injected scanner boundary. These dependencies remain optional so CI
