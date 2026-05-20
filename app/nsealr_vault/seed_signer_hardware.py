@@ -3,11 +3,14 @@ from __future__ import annotations
 import importlib
 import io
 from dataclasses import dataclass
-from typing import Callable, Protocol, Sequence
+from typing import Any, Callable, Protocol, Sequence
 
+from .controls import ButtonAction
+from .display import DisplayFrameLimits
 from .limits import NSEALR_V0_LIMITS
 from .qr import ANIMATED_QR_ENVELOPE_PREFIX, QR_ENVELOPE_PREFIX, decode_animated_qr_envelope_frames
 from .seed_entry import SessionImportSource
+from .session_import_flow import SessionImportFlowResult, StatelessSessionKeyring, run_session_import_io_flow
 from .session_source_qr import (
     SessionSourceQrError,
     parse_compact_seedqr_session_source,
@@ -24,7 +27,7 @@ BOARD_MODE = "BOARD"
 GPIO_INPUT = "IN"
 GPIO_LOW = 0
 GPIO_PUD_UP = "PUD_UP"
-REVIEW_ACTIONS = ("reject", "approve", "next", "scroll")
+REVIEW_ACTIONS: tuple[ButtonAction, ...] = ("reject", "approve", "next", "scroll")
 ST7789_GLYPH_WIDTH = 6
 PIL_COLOR_MAP = {
     "black": (0, 0, 0),
@@ -68,6 +71,21 @@ class St7789DrawTarget(Protocol):
 
 class QrMatrixRenderer(Protocol):
     def render_qr_matrix(self, payload: str) -> Sequence[Sequence[bool]]:
+        ...
+
+
+class SessionSourceScanner(Protocol):
+    def scan_session_source_qr(self, label: str, max_frames: int | None = None) -> SessionImportSource:
+        ...
+
+
+class SessionImportReviewDisplay(Protocol):
+    def display_review_frame(self, screen_review: dict[str, Any], page_index: int, frame: dict[str, Any]) -> None:
+        ...
+
+
+class SessionImportButtonInput(Protocol):
+    def read_review_button(self) -> ButtonAction:
         ...
 
 
@@ -151,7 +169,7 @@ class SeedSignerGpioButtonInput:
         for pin in self.profile.all_pins:
             self.gpio.setup(pin, input_mode, pull_up_down=pull_up)
 
-    def read_review_button(self, max_polls: int | None = None) -> str:
+    def read_review_button(self, max_polls: int | None = None) -> ButtonAction:
         polls = 0
         while max_polls is None or polls < max_polls:
             action = self._pressed_action()
@@ -163,7 +181,7 @@ class SeedSignerGpioButtonInput:
             self.sleep(self.poll_delay_s)
         raise TimeoutError("no SeedSigner-compatible button press observed")
 
-    def _pressed_action(self) -> str | None:
+    def _pressed_action(self) -> ButtonAction | None:
         for action in REVIEW_ACTIONS:
             for pin in self.profile.action_pins[action]:
                 if self.gpio.input(pin) == getattr(self.gpio, "LOW", GPIO_LOW):
@@ -255,6 +273,43 @@ class SeedSignerSessionSourceQrScanner:
             frames += 1
             self.sleep(self.poll_delay_s)
         raise TimeoutError("no supported nSealr session source QR decoded")
+
+
+@dataclass
+class SeedSignerSessionSourceImportIO:
+    """Composed SeedSigner-style IO for RAM-only session-source import."""
+
+    scanner: SessionSourceScanner
+    review_display: SessionImportReviewDisplay
+    button_input: SessionImportButtonInput
+
+    def scan_session_source_qr(self, label: str, max_frames: int | None = None) -> SessionImportSource:
+        return self.scanner.scan_session_source_qr(label, max_frames=max_frames)
+
+    def display_review_frame(self, screen_review: dict[str, Any], page_index: int, frame: dict[str, Any]) -> None:
+        self.review_display.display_review_frame(screen_review, page_index, frame)
+
+    def read_review_button(self) -> ButtonAction:
+        return self.button_input.read_review_button()
+
+
+def run_seed_signer_session_source_qr_import_flow(
+    *,
+    keyring: StatelessSessionKeyring,
+    io: SeedSignerSessionSourceImportIO,
+    label: str,
+    max_scan_frames: int | None = None,
+    display_limits: DisplayFrameLimits = DisplayFrameLimits(),
+    max_button_steps: int = 32,
+) -> SessionImportFlowResult:
+    source = io.scan_session_source_qr(label, max_frames=max_scan_frames)
+    return run_session_import_io_flow(
+        keyring,
+        source,
+        io,
+        display_limits=display_limits,
+        max_button_steps=max_button_steps,
+    )
 
 
 class PiCameraJpegFrameSource:

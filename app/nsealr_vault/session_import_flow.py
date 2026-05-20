@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable, Protocol
 
 from .controls import ButtonAction, ReviewControlSession
+from .display import DisplayFrameLimits, render_display_frame
 from .seed_entry import (
     SessionImportSource,
     public_key_from_session_import_source,
@@ -16,6 +17,18 @@ MAX_STATELESS_SESSION_SOURCES = 8
 
 
 class SessionImportFlowError(RuntimeError):
+    pass
+
+
+class SessionImportReviewIO(Protocol):
+    def display_review_frame(self, screen_review: dict[str, Any], page_index: int, frame: dict[str, Any]) -> None:
+        """Render one bounded session-import review frame before reading a button."""
+
+    def read_review_button(self) -> ButtonAction:
+        """Return one local physical review action."""
+
+
+class _ButtonSequenceExhausted(RuntimeError):
     pass
 
 
@@ -144,6 +157,51 @@ def run_session_import_flow(
     *,
     max_button_steps: int = 32,
 ) -> SessionImportFlowResult:
+    button_iter = iter(buttons)
+
+    def read_button() -> ButtonAction:
+        try:
+            return next(button_iter)
+        except StopIteration as exc:
+            raise _ButtonSequenceExhausted from exc
+
+    return _run_session_import_control_loop(
+        keyring,
+        source,
+        read_button=read_button,
+        max_button_steps=max_button_steps,
+    )
+
+
+def run_session_import_io_flow(
+    keyring: StatelessSessionKeyring,
+    source: SessionImportSource,
+    io: SessionImportReviewIO,
+    *,
+    display_limits: DisplayFrameLimits = DisplayFrameLimits(),
+    max_button_steps: int = 32,
+) -> SessionImportFlowResult:
+    return _run_session_import_control_loop(
+        keyring,
+        source,
+        read_button=io.read_review_button,
+        display_frame=lambda review, page_index: io.display_review_frame(
+            review,
+            page_index,
+            render_display_frame(review, page_index, display_limits),
+        ),
+        max_button_steps=max_button_steps,
+    )
+
+
+def _run_session_import_control_loop(
+    keyring: StatelessSessionKeyring,
+    source: SessionImportSource,
+    *,
+    read_button: Callable[[], ButtonAction],
+    display_frame: Callable[[dict[str, Any], int], None] | None = None,
+    max_button_steps: int = 32,
+) -> SessionImportFlowResult:
     if max_button_steps <= 0:
         raise SessionImportFlowError("session import flow max button steps must be positive")
 
@@ -151,10 +209,14 @@ def run_session_import_flow(
     controls = ReviewControlSession({"pages": review["pages"]})
     transcript: list[SessionImportTranscriptStep] = []
 
-    for step_count, button in enumerate(buttons, start=1):
-        if step_count > max_button_steps:
-            raise SessionImportFlowError("session import review exceeded max button steps")
+    for _step_count in range(1, max_button_steps + 1):
         page_index = controls.page_index
+        if display_frame is not None:
+            display_frame(review, page_index)
+        try:
+            button = read_button()
+        except _ButtonSequenceExhausted as exc:
+            raise SessionImportFlowError("session import review did not reach approval or rejection") from exc
         decision = controls.handle_button(button)
         loaded = False
         if decision is True:
@@ -164,4 +226,4 @@ def run_session_import_flow(
         if decision is not None:
             return SessionImportFlowResult(review, approved=decision, loaded=loaded, transcript=transcript)
 
-    raise SessionImportFlowError("session import review did not reach approval or rejection")
+    raise SessionImportFlowError("session import review exceeded max button steps")

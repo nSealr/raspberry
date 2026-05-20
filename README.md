@@ -126,6 +126,12 @@ even if current hardware readiness differs.
   mnemonic text for the existing secret-hidden import-review boundary.
   These are hardware-facing boundaries for Pi bring-up, not completed physical
   acceptance.
+- SeedSigner-compatible session-source import composition for Pi bring-up:
+  scanner, trusted-review display, physical-style buttons, and the stateless
+  session keyring now share one tested flow. The source is loaded only after
+  the secret-hidden import review has been displayed and approved; rejection
+  and bounded non-terminal button streams leave the keyring empty. This still
+  does not claim physical camera/display/GPIO acceptance on a real Pi kit.
 - RAM-only secret-provider boundary for the button-driven flow. The key is
   loaded for the signing session before review so the trusted screen can bind
   the displayed author pubkey into the `approval_digest`; signing still only

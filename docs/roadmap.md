@@ -302,6 +302,16 @@ CompactSeedQR entropy bytes separately, and can compose those sources with the
 local import-review flow before loading the RAM-only keyring. This still does
 not add persistence, policy automation, or physical camera/display acceptance.
 
+Status: `nsealr_vault.session_import_flow` now also exposes a display/button
+IO loop, and `nsealr_vault.seed_signer_hardware` composes it with the
+SeedSigner-compatible session-source camera scanner. The Pi-facing flow scans
+a supported session-source QR, renders the secret-hidden import review through
+the ST7789 review-display boundary, reads physical-style buttons, and mutates
+the RAM-only keyring only after final-page approval. Rejection and bounded
+non-terminal button streams leave the keyring empty. This still does not claim
+real Pi camera/display/GPIO acceptance or add persistence, policy automation,
+or secure-element work to the stateless QR vault.
+
 Status: approved RAM-only session sources can now feed the existing
 button-driven signing flow through `StatelessSessionSecretProvider`. BIP-39
 sources derive NIP-06 from explicit account/passphrase inputs and NIP-19 `nsec`

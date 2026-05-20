@@ -252,6 +252,12 @@ the stateless RAM-only keyring. Rejection, early approval, and non-terminal
 button streams leave the keyring unchanged. It does not derive NIP-06 keys,
 sign events, persist material, or create policy state.
 
+The same module also owns the display/button IO loop used by real adapters.
+`run_session_import_io_flow` renders a bounded import-review frame before each
+local button read and uses the same approval rules and transcript model as the
+button-list test harness. This keeps hardware-facing code from reimplementing
+the import review, max-step bound, or keyring mutation rules.
+
 `nsealr_vault.session_source_qr` and
 `nsealr_vault.session_source_qr_import_flow` are the package-owned boundary for
 future Pi camera adapters that have already decoded a session-source QR. Text
@@ -450,8 +456,13 @@ boundary for the session-source side of the product. It does not load a key by
 itself. It only converts a supported decoded source QR into a
 `SessionImportSource`; raw CompactSeedQR byte payloads are tried before the
 UTF-8 text fallback so binary SeedSigner exports can use the same review gate.
-The existing import-review/keyring flow still performs the secret-hidden
-review, approval digest, and RAM-only keyring mutation.
+`SeedSignerSessionSourceImportIO` and
+`run_seed_signer_session_source_qr_import_flow` then compose that scanner with
+the ST7789 review-display boundary, SeedSigner-compatible buttons, and the
+stateless keyring. The composed flow displays the secret-hidden review before
+every button read and loads the RAM-only source only after final-page approval.
+This is still an adapter contract tested with fakes; real Pi camera/display/
+GPIO acceptance remains a separate hardware smoke step.
 
 `PillowSt7789DrawTarget` is the matching optional framebuffer bridge for the
 trusted-review display path. It consumes the already bounded ST7789 layout

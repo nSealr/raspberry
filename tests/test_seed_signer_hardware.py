@@ -15,10 +15,14 @@ from nsealr_vault.seed_signer_hardware import (
     SEEDSIGNER_40_PIN_BUTTON_PROFILE,
     SeedSignerCameraQrScanner,
     SeedSignerGpioButtonInput,
+    SeedSignerSessionSourceImportIO,
     SeedSignerSessionSourceQrScanner,
     SeedSignerSt7789ResponseQrDisplay,
     SeedSignerSt7789ReviewDisplay,
+    run_seed_signer_session_source_qr_import_flow,
 )
+from nsealr_vault.seed_entry import SessionImportSource
+from nsealr_vault.session_import_flow import SessionImportFlowError, StatelessSessionKeyring
 from nsealr_vault.qr import decode_animated_qr_envelope_frames, encode_animated_qr_envelope_frames
 
 
@@ -189,6 +193,34 @@ class FakePyzbarModule:
         return self.barcodes
 
 
+class FakeSessionSourceScanner:
+    def __init__(self, source: SessionImportSource) -> None:
+        self.source = source
+        self.calls: list[tuple[str, int | None]] = []
+
+    def scan_session_source_qr(self, label: str, max_frames: int | None = None) -> SessionImportSource:
+        self.calls.append((label, max_frames))
+        return self.source
+
+
+class FakeSessionImportDisplay:
+    def __init__(self) -> None:
+        self.frames: list[tuple[int, dict[str, object]]] = []
+
+    def display_review_frame(self, screen_review: dict[str, object], page_index: int, frame: dict[str, object]) -> None:
+        self.frames.append((page_index, frame))
+
+
+class FakeSessionImportButtons:
+    def __init__(self, buttons: list[str]) -> None:
+        self.buttons = list(buttons)
+
+    def read_review_button(self) -> str:
+        if not self.buttons:
+            raise RuntimeError("no more session import buttons")
+        return self.buttons.pop(0)
+
+
 class SeedSignerHardwareTests(unittest.TestCase):
     def test_profile_matches_seedsigner_40_pin_hat_pins(self) -> None:
         profile = SEEDSIGNER_40_PIN_BUTTON_PROFILE
@@ -351,6 +383,71 @@ class SeedSignerHardwareTests(unittest.TestCase):
 
         with self.assertRaisesRegex(TimeoutError, "no supported nSealr session source QR decoded"):
             scanner.scan_session_source_qr("Session source", max_frames=2)
+
+    def test_session_source_import_io_loads_keyring_after_displayed_approval(self) -> None:
+        source = SessionImportSource.nsec("Camera nsec", "00" * 31 + "01")
+        scanner = FakeSessionSourceScanner(source)
+        display = FakeSessionImportDisplay()
+        io = SeedSignerSessionSourceImportIO(
+            scanner=scanner,
+            review_display=display,
+            button_input=FakeSessionImportButtons(["next", "approve"]),
+        )
+        keyring = StatelessSessionKeyring()
+
+        result = run_seed_signer_session_source_qr_import_flow(
+            keyring=keyring,
+            io=io,
+            label="Camera nsec",
+            max_scan_frames=4,
+        )
+
+        self.assertTrue(result.approved)
+        self.assertTrue(result.loaded)
+        self.assertEqual(keyring.source_at(0), source)
+        self.assertEqual(scanner.calls, [("Camera nsec", 4)])
+        self.assertEqual([page_index for page_index, _frame in display.frames], [0, 1])
+        rendered_frames = json.dumps([frame for _page_index, frame in display.frames])
+        self.assertIn("Secret: hidden", rendered_frames)
+        self.assertNotIn(source.nsec_secret_key, rendered_frames)
+
+    def test_session_source_import_io_rejection_keeps_keyring_empty(self) -> None:
+        source = SessionImportSource.nsec("Camera nsec", "00" * 31 + "01")
+        display = FakeSessionImportDisplay()
+        io = SeedSignerSessionSourceImportIO(
+            scanner=FakeSessionSourceScanner(source),
+            review_display=display,
+            button_input=FakeSessionImportButtons(["reject"]),
+        )
+        keyring = StatelessSessionKeyring()
+
+        result = run_seed_signer_session_source_qr_import_flow(keyring=keyring, io=io, label="Camera nsec")
+
+        self.assertFalse(result.approved)
+        self.assertFalse(result.loaded)
+        self.assertTrue(keyring.empty)
+        self.assertEqual([page_index for page_index, _frame in display.frames], [0])
+
+    def test_session_source_import_io_bounds_nonterminal_button_streams(self) -> None:
+        source = SessionImportSource.nsec("Camera nsec", "00" * 31 + "01")
+        display = FakeSessionImportDisplay()
+        io = SeedSignerSessionSourceImportIO(
+            scanner=FakeSessionSourceScanner(source),
+            review_display=display,
+            button_input=FakeSessionImportButtons(["next", "next"]),
+        )
+        keyring = StatelessSessionKeyring()
+
+        with self.assertRaisesRegex(SessionImportFlowError, "max button steps"):
+            run_seed_signer_session_source_qr_import_flow(
+                keyring=keyring,
+                io=io,
+                label="Camera nsec",
+                max_button_steps=1,
+            )
+
+        self.assertTrue(keyring.empty)
+        self.assertEqual([page_index for page_index, _frame in display.frames], [0])
 
     def test_picamera_frame_source_captures_jpeg_bytes(self) -> None:
         camera = FakePiCamera()

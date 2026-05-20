@@ -119,6 +119,11 @@ default are left unchanged.
   a package-owned `SessionImportSource`, including CompactSeedQR byte payloads,
   and unsupported streams time out deterministically without loading the
   keyring.
+- SeedSigner-compatible session-source import IO tests proving the camera
+  scanner output is displayed through the bounded import-review frame path
+  before each local button read, final-page approval loads the stateless
+  keyring, rejection leaves it empty, and bounded non-terminal button streams
+  fail without loading source material.
 - Optional Pi camera adapter tests proving `PiCameraJpegFrameSource` captures
   JPEG bytes through a `picamera`-style object and `PyzbarQrDecoder` preserves
   raw QR payload bytes for CompactSeedQR while text callers decode UTF-8 only
