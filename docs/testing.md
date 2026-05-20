@@ -114,6 +114,10 @@ default are left unchanged.
   and ST7789 response-QR rendering draws a validated centered matrix with a
   quiet zone, including bounded cycling for animated `nsealr1a:` response
   frame sets and rejection of mixed or non-nSealr response payloads.
+- SeedSigner-compatible session-source camera scanner tests proving non-source
+  QR payloads are ignored until a supported RAM-only source QR is decoded into
+  a package-owned `SessionImportSource`, and unsupported streams time out
+  deterministically without loading the keyring.
 - Optional Pi camera adapter tests proving `PiCameraJpegFrameSource` captures
   JPEG bytes through a `picamera`-style object and `PyzbarQrDecoder` returns the
   first UTF-8 QR payload, returns `None` when no QR is present, and rejects

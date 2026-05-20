@@ -192,6 +192,13 @@ existing injected scanner boundary. These dependencies remain optional so CI
 and desktop tests do not require Pi libraries. Physical OV5647/ZeroCam scan
 quality on the available Pi Zero remains pending.
 
+Status: the same SeedSigner-compatible camera boundary now includes a
+session-source scanner for RAM-only import. It ignores non-source QR payloads
+until decoded text is accepted as Standard SeedQR, NIP-19 `nsec`, or plain
+BIP-39 mnemonic text, then returns a package-owned `SessionImportSource` for
+the existing secret-hidden import-review/keyring gate. CompactSeedQR byte
+delivery and physical camera acceptance remain pending.
+
 Status: the ST7789 review-display path now has an optional PIL framebuffer
 draw target that maps bounded layout commands to rectangles/text and presents
 the resulting image through an injected display presenter. This bridges the

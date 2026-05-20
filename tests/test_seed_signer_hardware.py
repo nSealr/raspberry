@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import unittest
+from pathlib import Path
 
 from nsealr_vault.seed_signer_hardware import (
     BOARD_MODE,
@@ -13,10 +15,14 @@ from nsealr_vault.seed_signer_hardware import (
     SEEDSIGNER_40_PIN_BUTTON_PROFILE,
     SeedSignerCameraQrScanner,
     SeedSignerGpioButtonInput,
+    SeedSignerSessionSourceQrScanner,
     SeedSignerSt7789ResponseQrDisplay,
     SeedSignerSt7789ReviewDisplay,
 )
 from nsealr_vault.qr import decode_animated_qr_envelope_frames, encode_animated_qr_envelope_frames
+
+
+SPECS = Path(__file__).resolve().parent / "fixtures/specs"
 
 
 class FakeGpio:
@@ -297,6 +303,32 @@ class SeedSignerHardwareTests(unittest.TestCase):
 
         with self.assertRaisesRegex(TimeoutError, "no nSealr request QR decoded"):
             scanner.scan_request_qr(max_frames=2)
+
+    def test_session_source_qr_scanner_ignores_non_source_payloads_until_seedqr(self) -> None:
+        seedqr_vector = json.loads((SPECS / "vectors/seedqr/seedsigner-vector-1.json").read_text(encoding="utf-8"))
+        frames = FakeFrameSource(["frame-a", "frame-b", "frame-c"])
+        decoder = FakeQrDecoder([
+            "nsealr1:not-a-session-source",
+            "not a valid mnemonic or nsec",
+            seedqr_vector["standard_seedqr_digits"],
+        ])
+        scanner = SeedSignerSessionSourceQrScanner(frame_source=frames, qr_decoder=decoder, sleep=lambda _seconds: None)
+
+        source = scanner.scan_session_source_qr("SeedQR session", max_frames=3)
+
+        self.assertEqual(source.source_type, "bip39_seed")
+        self.assertEqual(source.label, "SeedQR session")
+        self.assertEqual(list(source.bip39_word_indexes), seedqr_vector["standard_word_indexes"])
+
+    def test_session_source_qr_scanner_times_out_without_supported_source(self) -> None:
+        scanner = SeedSignerSessionSourceQrScanner(
+            frame_source=FakeFrameSource(["frame-a", "frame-b"]),
+            qr_decoder=FakeQrDecoder(["nsealr1:not-a-session-source", None]),
+            sleep=lambda _seconds: None,
+        )
+
+        with self.assertRaisesRegex(TimeoutError, "no supported nSealr session source QR decoded"):
+            scanner.scan_session_source_qr("Session source", max_frames=2)
 
     def test_picamera_frame_source_captures_jpeg_bytes(self) -> None:
         camera = FakePiCamera()

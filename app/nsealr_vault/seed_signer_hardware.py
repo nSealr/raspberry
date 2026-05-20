@@ -7,6 +7,8 @@ from typing import Callable, Protocol, Sequence
 
 from .limits import NSEALR_V0_LIMITS
 from .qr import ANIMATED_QR_ENVELOPE_PREFIX, QR_ENVELOPE_PREFIX, decode_animated_qr_envelope_frames
+from .seed_entry import SessionImportSource
+from .session_source_qr import SessionSourceQrError, parse_session_source_qr_text
 from .st7789_layout import (
     SEEDSIGNER_ST7789_HEIGHT,
     SEEDSIGNER_ST7789_WIDTH,
@@ -213,6 +215,37 @@ class SeedSignerCameraQrScanner:
             frames += 1
             self.sleep(self.poll_delay_s)
         raise TimeoutError("no nSealr request QR decoded")
+
+
+class SeedSignerSessionSourceQrScanner:
+    """Camera QR scanner boundary for RAM-only session source import."""
+
+    def __init__(
+        self,
+        *,
+        frame_source: CameraFrameSource,
+        qr_decoder: QrDecoder,
+        sleep: Callable[[float], None] | None = None,
+        poll_delay_s: float = 0.05,
+    ) -> None:
+        self.frame_source = frame_source
+        self.qr_decoder = qr_decoder
+        self.sleep = sleep or _default_sleep
+        self.poll_delay_s = poll_delay_s
+
+    def scan_session_source_qr(self, label: str, max_frames: int | None = None) -> SessionImportSource:
+        frames = 0
+        while max_frames is None or frames < max_frames:
+            frame = self.frame_source.capture_frame()
+            decoded = self.qr_decoder.decode_qr(frame)
+            if decoded is not None:
+                try:
+                    return parse_session_source_qr_text(label, decoded)
+                except SessionSourceQrError:
+                    pass
+            frames += 1
+            self.sleep(self.poll_delay_s)
+        raise TimeoutError("no supported nSealr session source QR decoded")
 
 
 class PiCameraJpegFrameSource:
@@ -473,6 +506,13 @@ def create_seed_signer_gpio_button_input() -> SeedSignerGpioButtonInput:
 
 def create_seed_signer_camera_qr_scanner() -> SeedSignerCameraQrScanner:
     return SeedSignerCameraQrScanner(
+        frame_source=PiCameraJpegFrameSource(),
+        qr_decoder=PyzbarQrDecoder(),
+    )
+
+
+def create_seed_signer_session_source_qr_scanner() -> SeedSignerSessionSourceQrScanner:
+    return SeedSignerSessionSourceQrScanner(
         frame_source=PiCameraJpegFrameSource(),
         qr_decoder=PyzbarQrDecoder(),
     )

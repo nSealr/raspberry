@@ -137,6 +137,12 @@ behavior through the common `contract_id` and vectors.
   signed-event QR output. The response display renders static `nsealr1:`
   responses once and newline-separated `nsealr1a:` animated output as separate
   bounded QR frames.
+- `nsealr_vault.seed_signer_hardware.SeedSignerSessionSourceQrScanner`: a
+  SeedSigner-compatible camera boundary for RAM-only source import. It polls
+  injected frames and QR decoder output until package-owned source parsing
+  accepts Standard SeedQR, NIP-19 `nsec`, or plain mnemonic text, ignoring
+  non-source QR payloads before the existing secret-hidden import-review flow
+  handles approval and keyring load.
 - `nsealr_vault.st7789_layout`: SeedSigner-compatible 240x240 ST7789 layout
   planner for trusted-review frames. It turns renderer-neutral frame data into
   bounded draw commands before a Pi display library or SPI driver is selected.
@@ -438,6 +444,12 @@ camera pieces for that path. On a Pi image they compose into
 `create_seed_signer_camera_qr_scanner()` using `picamera`, PIL, and
 `pyzbar`/zbar; in CI they are tested through fakes and remain absent unless the
 Pi runtime installs them.
+
+`SeedSignerSessionSourceQrScanner` reuses the same camera and QR-decoder
+boundary for the session-source side of the product. It does not load a key by
+itself. It only converts a supported decoded source QR into a
+`SessionImportSource`; the existing import-review/keyring flow still performs
+the secret-hidden review, approval digest, and RAM-only keyring mutation.
 
 `PillowSt7789DrawTarget` is the matching optional framebuffer bridge for the
 trusted-review display path. It consumes the already bounded ST7789 layout
