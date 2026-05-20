@@ -40,6 +40,19 @@ class FakeGpio:
         return self.LOW if pin in self.low_pins else self.HIGH
 
 
+class ReleasingGpio(FakeGpio):
+    def __init__(self, pressed_pin: int) -> None:
+        super().__init__()
+        self.pressed_pin = pressed_pin
+        self.pressed_reads = 0
+
+    def input(self, pin: int) -> int:
+        if pin != self.pressed_pin:
+            return self.HIGH
+        self.pressed_reads += 1
+        return self.LOW if self.pressed_reads == 1 else self.HIGH
+
+
 class FakeFrameSource:
     def __init__(self, frames: list[object]) -> None:
         self.frames = list(frames)
@@ -207,9 +220,31 @@ class SeedSignerHardwareTests(unittest.TestCase):
         for pin, expected in cases.items():
             with self.subTest(pin=pin):
                 gpio = FakeGpio({pin})
-                buttons = SeedSignerGpioButtonInput(gpio=gpio, sleep=lambda _seconds: None)
+                buttons = SeedSignerGpioButtonInput(
+                    gpio=gpio,
+                    sleep=lambda _seconds: None,
+                    require_release=False,
+                )
 
                 self.assertEqual(buttons.read_review_button(max_polls=1), expected)
+
+    def test_gpio_input_waits_for_button_release_before_returning_action(self) -> None:
+        gpio = ReleasingGpio(SEEDSIGNER_40_PIN_BUTTON_PROFILE.key_right)
+        buttons = SeedSignerGpioButtonInput(gpio=gpio, sleep=lambda _seconds: None)
+
+        self.assertEqual(buttons.read_review_button(max_polls=1), "next")
+        self.assertEqual(gpio.pressed_reads, 2)
+
+    def test_gpio_input_times_out_when_button_release_is_not_observed(self) -> None:
+        gpio = FakeGpio({SEEDSIGNER_40_PIN_BUTTON_PROFILE.key_right})
+        buttons = SeedSignerGpioButtonInput(
+            gpio=gpio,
+            sleep=lambda _seconds: None,
+            release_timeout_polls=2,
+        )
+
+        with self.assertRaisesRegex(TimeoutError, "button release not observed"):
+            buttons.read_review_button(max_polls=1)
 
     def test_gpio_input_times_out_without_a_pressed_button(self) -> None:
         buttons = SeedSignerGpioButtonInput(gpio=FakeGpio(), sleep=lambda _seconds: None)

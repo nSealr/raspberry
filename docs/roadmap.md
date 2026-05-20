@@ -161,6 +161,12 @@ right/down/center/KEY1 GPIO inputs to `next`/`scroll`/`approve`/`reject` and is
 covered with injected-GPIO tests, while real Pi hardware acceptance remains
 pending.
 
+Status: the SeedSigner-compatible GPIO button adapter now waits for the
+pressed button to be released before returning the review action. This keeps a
+held physical button from advancing multiple review steps or approving on a
+subsequent loop iteration without a separate press. Tests cover release gating
+and deterministic stuck-button failure with an injected GPIO source.
+
 Status: `nsealr_vault.st7789_layout` now provides a SeedSigner-compatible
 240x240 ST7789 trusted-review layout plan. It emits bounded draw commands for
 title, page indicator, styled body lines, and action hint, giving the future

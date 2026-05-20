@@ -100,7 +100,10 @@ default are left unchanged.
 - SeedSigner-compatible GPIO profile tests proving the 40-pin HAT BOARD pin
   map is stable, all buttons are configured as pull-up inputs, right/down/
   center/KEY1 map to `next`/`scroll`/`approve`/`reject`, and no press times out
-  deterministically under injected GPIO.
+  deterministically under injected GPIO. The GPIO adapter tests also prove a
+  physical button must be released before the action is returned, preventing a
+  held button from becoming multiple review actions, and stuck buttons fail
+  deterministically when a release timeout is configured.
 - SeedSigner-compatible ST7789 layout tests proving trusted-review draw
   commands stay within the 240x240 display, preserve meta/value/normal body
   styles, and reject body layouts that would overlap the footer/action area.

@@ -104,7 +104,9 @@ even if current hardware readiness differs.
   right advances top-level review pages, down scrolls inside long Content/Tags
   pages, center press approves on the Decision page, and KEY1 rejects from any
   page. The profile is testable with injected GPIO and does not claim physical
-  acceptance until run on the Pi kit.
+  acceptance until run on the Pi kit. The GPIO adapter waits for button release
+  before returning an action, so a held physical button cannot be consumed as a
+  burst of review actions by the next loop iteration.
 - SeedSigner-compatible ST7789 240x240 layout planner for trusted-review
   frames. It produces bounded draw commands for title, page indicator, styled
   body lines, and action hint before a real PIL/spidev display driver exists.

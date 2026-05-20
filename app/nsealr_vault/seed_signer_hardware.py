@@ -121,11 +121,19 @@ class SeedSignerGpioButtonInput:
         profile: SeedSignerButtonProfile = SEEDSIGNER_40_PIN_BUTTON_PROFILE,
         sleep: Callable[[float], None] | None = None,
         poll_delay_s: float = 0.01,
+        require_release: bool = True,
+        release_timeout_polls: int | None = None,
     ) -> None:
+        if poll_delay_s < 0:
+            raise ValueError("GPIO poll delay must be non-negative")
+        if release_timeout_polls is not None and release_timeout_polls <= 0:
+            raise ValueError("GPIO release timeout polls must be positive")
         self.gpio = gpio
         self.profile = profile
         self.sleep = sleep or _default_sleep
         self.poll_delay_s = poll_delay_s
+        self.require_release = require_release
+        self.release_timeout_polls = release_timeout_polls
         self._configure_gpio()
 
     def _configure_gpio(self) -> None:
@@ -138,13 +146,29 @@ class SeedSignerGpioButtonInput:
     def read_review_button(self, max_polls: int | None = None) -> str:
         polls = 0
         while max_polls is None or polls < max_polls:
-            for action in REVIEW_ACTIONS:
-                for pin in self.profile.action_pins[action]:
-                    if self.gpio.input(pin) == getattr(self.gpio, "LOW", GPIO_LOW):
-                        return action
+            action = self._pressed_action()
+            if action is not None:
+                if self.require_release:
+                    self._wait_for_release()
+                return action
             polls += 1
             self.sleep(self.poll_delay_s)
         raise TimeoutError("no SeedSigner-compatible button press observed")
+
+    def _pressed_action(self) -> str | None:
+        for action in REVIEW_ACTIONS:
+            for pin in self.profile.action_pins[action]:
+                if self.gpio.input(pin) == getattr(self.gpio, "LOW", GPIO_LOW):
+                    return action
+        return None
+
+    def _wait_for_release(self) -> None:
+        release_polls = 0
+        while self._pressed_action() is not None:
+            if self.release_timeout_polls is not None and release_polls >= self.release_timeout_polls:
+                raise TimeoutError("SeedSigner-compatible button release not observed")
+            release_polls += 1
+            self.sleep(self.poll_delay_s)
 
 
 class SeedSignerCameraQrScanner:

@@ -116,12 +116,14 @@ behavior through the common `contract_id` and vectors.
 - `nsealr_vault.seed_signer_hardware`: SeedSigner-compatible 40-pin
   Waveshare-style HAT button profile and optional GPIO input adapter. It pins
   the review actions to BOARD pins from the SeedSigner hardware reference while
-  keeping GPIO access injectable for tests; it is not a completed hardware
-  acceptance claim. The same module owns driver-facing Pi adapter boundaries
-  for camera QR scanning, ST7789 trusted-review rendering, and ST7789
-  response-QR display. The adapters depend on injected frame sources, QR
-  decoders, draw targets, and QR matrix renderers, so package tests can pin
-  behavior before physical Pi acceptance. The camera side now includes optional
+  keeping GPIO access injectable for tests. The adapter waits for release after
+  a detected press so one held button cannot advance multiple review actions;
+  it is not a completed hardware acceptance claim. The same module owns
+  driver-facing Pi adapter boundaries for camera QR scanning, ST7789
+  trusted-review rendering, and ST7789 response-QR display. The adapters depend
+  on injected frame sources, QR decoders, draw targets, and QR matrix
+  renderers, so package tests can pin behavior before physical Pi acceptance.
+  The camera side now includes optional
   `picamera` JPEG capture and `pyzbar`/zbar decoding adapters that follow the
   SeedSigner Pi Zero software shape without making those libraries mandatory
   outside the Pi image. The display side now includes an optional PIL
