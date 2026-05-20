@@ -71,11 +71,11 @@ class FakeFrameSource:
 
 
 class FakeQrDecoder:
-    def __init__(self, payloads: list[str | None]) -> None:
+    def __init__(self, payloads: list[str | bytes | None]) -> None:
         self.payloads = list(payloads)
         self.frames: list[object] = []
 
-    def decode_qr(self, frame: object) -> str | None:
+    def decode_qr(self, frame: object) -> str | bytes | None:
         self.frames.append(frame)
         if not self.payloads:
             return None
@@ -320,6 +320,28 @@ class SeedSignerHardwareTests(unittest.TestCase):
         self.assertEqual(source.label, "SeedQR session")
         self.assertEqual(list(source.bip39_word_indexes), seedqr_vector["standard_word_indexes"])
 
+    def test_request_qr_scanner_decodes_utf8_bytes_payloads(self) -> None:
+        frames = FakeFrameSource(["frame-a", "frame-b"])
+        decoder = FakeQrDecoder([b"not-a-request", b"  nsealr1:request  "])
+        scanner = SeedSignerCameraQrScanner(frame_source=frames, qr_decoder=decoder, sleep=lambda _seconds: None)
+
+        self.assertEqual(scanner.scan_request_qr(max_frames=2), "nsealr1:request")
+
+    def test_session_source_qr_scanner_accepts_compact_seedqr_bytes(self) -> None:
+        seedqr_vector = json.loads((SPECS / "vectors/seedqr/seedsigner-vector-1.json").read_text(encoding="utf-8"))
+        frames = FakeFrameSource(["frame-a", "frame-b"])
+        decoder = FakeQrDecoder([
+            b"\xffnot-utf8-or-compact",
+            bytes.fromhex(seedqr_vector["compact_seedqr_hex"]),
+        ])
+        scanner = SeedSignerSessionSourceQrScanner(frame_source=frames, qr_decoder=decoder, sleep=lambda _seconds: None)
+
+        source = scanner.scan_session_source_qr("CompactSeedQR session", max_frames=2)
+
+        self.assertEqual(source.source_type, "bip39_seed")
+        self.assertEqual(source.label, "CompactSeedQR session")
+        self.assertEqual(list(source.bip39_word_indexes), seedqr_vector["standard_word_indexes"])
+
     def test_session_source_qr_scanner_times_out_without_supported_source(self) -> None:
         scanner = SeedSignerSessionSourceQrScanner(
             frame_source=FakeFrameSource(["frame-a", "frame-b"]),
@@ -344,7 +366,7 @@ class SeedSignerHardwareTests(unittest.TestCase):
         pyzbar = FakePyzbarModule([FakeBarcode(b"nsealr1:request")])
         decoder = PyzbarQrDecoder(pyzbar=pyzbar, qrcode_symbol="QRCODE")
 
-        self.assertEqual(decoder.decode_qr("pil-image"), "nsealr1:request")
+        self.assertEqual(decoder.decode_qr("pil-image"), b"nsealr1:request")
         self.assertEqual(pyzbar.calls, [("pil-image", ["QRCODE"])])
 
     def test_pyzbar_decoder_returns_none_when_no_qr_is_found(self) -> None:
@@ -352,11 +374,10 @@ class SeedSignerHardwareTests(unittest.TestCase):
 
         self.assertIsNone(decoder.decode_qr("pil-image"))
 
-    def test_pyzbar_decoder_rejects_non_utf8_payload(self) -> None:
+    def test_pyzbar_decoder_preserves_non_utf8_payload_bytes(self) -> None:
         decoder = PyzbarQrDecoder(pyzbar=FakePyzbarModule([FakeBarcode(b"\xff")]), qrcode_symbol="QRCODE")
 
-        with self.assertRaisesRegex(ValueError, "QR payload is not UTF-8"):
-            decoder.decode_qr("pil-image")
+        self.assertEqual(decoder.decode_qr("pil-image"), b"\xff")
 
     def test_pillow_st7789_draw_target_renders_to_presenter(self) -> None:
         presented: list[FakePillowImage] = []

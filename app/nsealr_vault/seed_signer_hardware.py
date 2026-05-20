@@ -8,7 +8,11 @@ from typing import Callable, Protocol, Sequence
 from .limits import NSEALR_V0_LIMITS
 from .qr import ANIMATED_QR_ENVELOPE_PREFIX, QR_ENVELOPE_PREFIX, decode_animated_qr_envelope_frames
 from .seed_entry import SessionImportSource
-from .session_source_qr import SessionSourceQrError, parse_session_source_qr_text
+from .session_source_qr import (
+    SessionSourceQrError,
+    parse_compact_seedqr_session_source,
+    parse_session_source_qr_text,
+)
 from .st7789_layout import (
     SEEDSIGNER_ST7789_HEIGHT,
     SEEDSIGNER_ST7789_WIDTH,
@@ -47,7 +51,7 @@ class CameraFrameSource(Protocol):
 
 
 class QrDecoder(Protocol):
-    def decode_qr(self, frame: object) -> str | None:
+    def decode_qr(self, frame: object) -> str | bytes | None:
         ...
 
 
@@ -198,7 +202,11 @@ class SeedSignerCameraQrScanner:
             frame = self.frame_source.capture_frame()
             decoded = self.qr_decoder.decode_qr(frame)
             if decoded is not None:
-                payload = decoded.strip()
+                payload = _decoded_qr_text(decoded)
+                if payload is None:
+                    frames += 1
+                    self.sleep(self.poll_delay_s)
+                    continue
                 if payload.startswith(QR_ENVELOPE_PREFIX):
                     return payload
                 if payload.startswith(ANIMATED_QR_ENVELOPE_PREFIX):
@@ -239,10 +247,11 @@ class SeedSignerSessionSourceQrScanner:
             frame = self.frame_source.capture_frame()
             decoded = self.qr_decoder.decode_qr(frame)
             if decoded is not None:
-                try:
-                    return parse_session_source_qr_text(label, decoded)
-                except SessionSourceQrError:
-                    pass
+                for source_parser in _session_source_parsers(label, decoded):
+                    try:
+                        return source_parser()
+                    except SessionSourceQrError:
+                        pass
             frames += 1
             self.sleep(self.poll_delay_s)
         raise TimeoutError("no supported nSealr session source QR decoded")
@@ -301,7 +310,7 @@ class PyzbarQrDecoder:
         self.qrcode_symbol = qrcode_symbol
         self.image_loader = image_loader or _load_image_from_jpeg_bytes
 
-    def decode_qr(self, frame: object) -> str | None:
+    def decode_qr(self, frame: object) -> str | bytes | None:
         image = self.image_loader(frame) if isinstance(frame, bytes) else frame
         barcodes = self.pyzbar.decode(image, symbols=[self.qrcode_symbol])
         if not barcodes:
@@ -310,10 +319,7 @@ class PyzbarQrDecoder:
         if isinstance(data, str):
             return data.strip()
         if isinstance(data, bytes):
-            try:
-                return data.decode("utf-8").strip()
-            except UnicodeDecodeError as exc:
-                raise ValueError("QR payload is not UTF-8") from exc
+            return data
         raise ValueError("QR decoder returned unsupported payload type")
 
 
@@ -541,6 +547,27 @@ def _load_image_from_jpeg_bytes(value: bytes) -> object:
     except ModuleNotFoundError as exc:
         raise RuntimeError("Pillow is required to decode picamera JPEG frames") from exc
     return pil_image.open(io.BytesIO(value))
+
+
+def _decoded_qr_text(decoded: str | bytes) -> str | None:
+    if isinstance(decoded, str):
+        return decoded.strip()
+    try:
+        return decoded.decode("utf-8").strip()
+    except UnicodeDecodeError:
+        return None
+
+
+def _session_source_parsers(label: str, decoded: str | bytes) -> list[Callable[[], SessionImportSource]]:
+    parsers: list[Callable[[], SessionImportSource]] = []
+    if isinstance(decoded, bytes):
+        parsers.append(lambda: parse_compact_seedqr_session_source(label, decoded))
+        text = _decoded_qr_text(decoded)
+        if text is not None:
+            parsers.append(lambda: parse_session_source_qr_text(label, text))
+        return parsers
+    parsers.append(lambda: parse_session_source_qr_text(label, decoded))
+    return parsers
 
 
 def _default_pil_font(scale: int) -> object:

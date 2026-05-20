@@ -194,10 +194,10 @@ quality on the available Pi Zero remains pending.
 
 Status: the same SeedSigner-compatible camera boundary now includes a
 session-source scanner for RAM-only import. It ignores non-source QR payloads
-until decoded text is accepted as Standard SeedQR, NIP-19 `nsec`, or plain
-BIP-39 mnemonic text, then returns a package-owned `SessionImportSource` for
-the existing secret-hidden import-review/keyring gate. CompactSeedQR byte
-delivery and physical camera acceptance remain pending.
+until decoded payloads are accepted as Standard SeedQR, CompactSeedQR bytes,
+NIP-19 `nsec`, or plain BIP-39 mnemonic text, then returns a package-owned
+`SessionImportSource` for the existing secret-hidden import-review/keyring
+gate. Physical camera acceptance remains pending.
 
 Status: the ST7789 review-display path now has an optional PIL framebuffer
 draw target that maps bounded layout commands to rectangles/text and presents

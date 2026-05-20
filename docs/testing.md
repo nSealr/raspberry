@@ -116,12 +116,14 @@ default are left unchanged.
   frame sets and rejection of mixed or non-nSealr response payloads.
 - SeedSigner-compatible session-source camera scanner tests proving non-source
   QR payloads are ignored until a supported RAM-only source QR is decoded into
-  a package-owned `SessionImportSource`, and unsupported streams time out
-  deterministically without loading the keyring.
+  a package-owned `SessionImportSource`, including CompactSeedQR byte payloads,
+  and unsupported streams time out deterministically without loading the
+  keyring.
 - Optional Pi camera adapter tests proving `PiCameraJpegFrameSource` captures
-  JPEG bytes through a `picamera`-style object and `PyzbarQrDecoder` returns the
-  first UTF-8 QR payload, returns `None` when no QR is present, and rejects
-  non-UTF-8 QR payloads.
+  JPEG bytes through a `picamera`-style object and `PyzbarQrDecoder` preserves
+  raw QR payload bytes for CompactSeedQR while text callers decode UTF-8 only
+  at the scanner boundary, returns `None` when no QR is present, and rejects
+  unsupported QR payload objects.
 - Optional ST7789 framebuffer tests proving `PillowSt7789DrawTarget` maps
   bounded layout rectangles/text to a PIL-style image and calls an injected
   presenter without requiring a physical display driver.

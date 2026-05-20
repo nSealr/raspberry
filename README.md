@@ -122,8 +122,8 @@ even if current hardware readiness differs.
   QR payloads and can collect a complete animated `nsealr1a:` request set
   before returning it to the flow. A separate session-source camera scanner
   ignores non-source QR payloads until it decodes a supported RAM-only source
-  such as Standard SeedQR, NIP-19 `nsec`, or plain mnemonic text for the
-  existing secret-hidden import-review boundary.
+  such as Standard SeedQR, CompactSeedQR bytes, NIP-19 `nsec`, or plain
+  mnemonic text for the existing secret-hidden import-review boundary.
   These are hardware-facing boundaries for Pi bring-up, not completed physical
   acceptance.
 - RAM-only secret-provider boundary for the button-driven flow. The key is

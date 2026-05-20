@@ -448,8 +448,10 @@ Pi runtime installs them.
 `SeedSignerSessionSourceQrScanner` reuses the same camera and QR-decoder
 boundary for the session-source side of the product. It does not load a key by
 itself. It only converts a supported decoded source QR into a
-`SessionImportSource`; the existing import-review/keyring flow still performs
-the secret-hidden review, approval digest, and RAM-only keyring mutation.
+`SessionImportSource`; raw CompactSeedQR byte payloads are tried before the
+UTF-8 text fallback so binary SeedSigner exports can use the same review gate.
+The existing import-review/keyring flow still performs the secret-hidden
+review, approval digest, and RAM-only keyring mutation.
 
 `PillowSt7789DrawTarget` is the matching optional framebuffer bridge for the
 trusted-review display path. It consumes the already bounded ST7789 layout
