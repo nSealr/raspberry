@@ -202,8 +202,10 @@ Physical ST7789 display acceptance remains pending.
 Status: the signed response QR path now has an optional `python-qrcode` matrix
 renderer behind the existing ST7789 response display adapter. It validates the
 generated square boolean matrix before drawing it and remains optional outside
-the Pi image. Physical response-QR readability and scan-back acceptance remain
-pending.
+the Pi image. The adapter now also splits newline-separated animated
+`nsealr1a:` responses into bounded QR frames and cycles them separately for the
+future scan-back path. Physical response-QR readability and scan-back
+acceptance remain pending.
 
 Status: `nsealr-vault flow --st7789-layout-log` now exports the ST7789 layout
 commands generated from each button-driven review frame, so future display

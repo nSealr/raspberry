@@ -387,18 +387,37 @@ class SeedSignerSt7789ResponseQrDisplay:
         width: int = SEEDSIGNER_ST7789_WIDTH,
         height: int = SEEDSIGNER_ST7789_HEIGHT,
         quiet_zone_modules: int = 4,
+        frame_repetitions: int = 3,
+        frame_delay_s: float = 0.25,
+        sleep: Callable[[float], None] | None = None,
     ) -> None:
         if width <= 0 or height <= 0:
             raise ValueError("display dimensions must be positive")
         if quiet_zone_modules < 0:
             raise ValueError("QR quiet zone must be non-negative")
+        if frame_repetitions <= 0:
+            raise ValueError("QR frame repetitions must be positive")
+        if frame_delay_s < 0:
+            raise ValueError("QR frame delay must be non-negative")
         self.target = target
         self.qr_renderer = qr_renderer
         self.width = width
         self.height = height
         self.quiet_zone_modules = quiet_zone_modules
+        self.frame_repetitions = frame_repetitions
+        self.frame_delay_s = frame_delay_s
+        self.sleep = sleep or _default_sleep
 
     def emit_response_qr(self, response_qr: str) -> None:
+        frames = _response_qr_frames(response_qr)
+        cycles = self.frame_repetitions if len(frames) > 1 else 1
+        for _ in range(cycles):
+            for frame in frames:
+                self._render_response_qr_frame(frame)
+                if len(frames) > 1:
+                    self.sleep(self.frame_delay_s)
+
+    def _render_response_qr_frame(self, response_qr: str) -> None:
         matrix = _validated_qr_matrix(self.qr_renderer.render_qr_matrix(response_qr))
         modules = len(matrix) + (self.quiet_zone_modules * 2)
         module_size = min(self.width, self.height) // modules
@@ -516,6 +535,21 @@ def _validated_qr_matrix(matrix: Sequence[Sequence[bool]]) -> Sequence[Sequence[
     if len(matrix) != width:
         raise ValueError("QR matrix must be square")
     return matrix
+
+
+def _response_qr_frames(response_qr: str) -> list[str]:
+    frames = [line.strip() for line in response_qr.splitlines() if line.strip()]
+    if not frames:
+        raise ValueError("response QR payload must not be empty")
+    if len(frames) == 1:
+        if frames[0].startswith(QR_ENVELOPE_PREFIX) or frames[0].startswith(ANIMATED_QR_ENVELOPE_PREFIX):
+            return frames
+        raise ValueError("response QR payload must be nsealr1 or nsealr1a")
+    if len(frames) > NSEALR_V0_LIMITS["max_animated_qr_frame_count"]:
+        raise ValueError("animated response QR frame count exceeds nSealr v0 limit")
+    if all(frame.startswith(ANIMATED_QR_ENVELOPE_PREFIX) for frame in frames):
+        return frames
+    raise ValueError("animated response QR payload must contain only nsealr1a frames")
 
 
 def _clip_text_for_width(text: str, scale: int, max_width: int | None) -> str:

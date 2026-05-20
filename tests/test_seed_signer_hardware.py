@@ -415,6 +415,42 @@ class SeedSignerHardwareTests(unittest.TestCase):
         self.assertIn(("fill_rect", 120, 120, 60, 60, "black"), target.operations)
         self.assertEqual(target.operations[-1], ("present",))
 
+    def test_st7789_response_qr_display_cycles_animated_frames(self) -> None:
+        target = FakeDrawTarget()
+        renderer = FakeQrMatrixRenderer([[True]])
+        sleeps: list[float] = []
+        display = SeedSignerSt7789ResponseQrDisplay(
+            target=target,
+            qr_renderer=renderer,
+            frame_repetitions=2,
+            frame_delay_s=0.1,
+            sleep=sleeps.append,
+        )
+
+        display.emit_response_qr("nsealr1a:frame-1\nnsealr1a:frame-2\n")
+
+        self.assertEqual(renderer.payloads, ["nsealr1a:frame-1", "nsealr1a:frame-2"] * 2)
+        self.assertEqual(sleeps, [0.1, 0.1, 0.1, 0.1])
+        self.assertEqual([operation for operation in target.operations if operation == ("present",)], [("present",)] * 4)
+
+    def test_st7789_response_qr_display_rejects_mixed_animated_payload(self) -> None:
+        display = SeedSignerSt7789ResponseQrDisplay(
+            target=FakeDrawTarget(),
+            qr_renderer=FakeQrMatrixRenderer([[True]]),
+        )
+
+        with self.assertRaisesRegex(ValueError, "only nsealr1a frames"):
+            display.emit_response_qr("nsealr1a:frame-1\nnsealr1:static")
+
+    def test_st7789_response_qr_display_rejects_non_nsealr_payload(self) -> None:
+        display = SeedSignerSt7789ResponseQrDisplay(
+            target=FakeDrawTarget(),
+            qr_renderer=FakeQrMatrixRenderer([[True]]),
+        )
+
+        with self.assertRaisesRegex(ValueError, "must be nsealr1 or nsealr1a"):
+            display.emit_response_qr("not-a-response")
+
     def test_st7789_response_qr_display_rejects_invalid_matrix(self) -> None:
         target = FakeDrawTarget()
         renderer = FakeQrMatrixRenderer([[True], [False, True]])

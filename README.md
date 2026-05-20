@@ -116,8 +116,11 @@ even if current hardware readiness differs.
   an injected camera-frame QR scanner, an ST7789 review display adapter that
   applies the bounded layout commands to an injected draw target, and an ST7789
   response-QR display adapter that renders an injected QR matrix with a quiet
-  zone. The camera scanner ignores unrelated decoded QR payloads and can collect
-  a complete animated `nsealr1a:` request set before returning it to the flow.
+  zone. The response display handles a single static `nsealr1:` payload or a
+  bounded `nsealr1a:` animated frame set as separate QR frames, not as one
+  multi-line QR payload. The camera scanner ignores unrelated decoded QR
+  payloads and can collect a complete animated `nsealr1a:` request set before
+  returning it to the flow.
   These are hardware-facing boundaries for Pi bring-up, not completed physical
   acceptance.
 - RAM-only secret-provider boundary for the button-driven flow. The key is

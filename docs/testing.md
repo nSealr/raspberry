@@ -112,7 +112,8 @@ default are left unchanged.
   unrelated QR payloads, collects complete animated request frame sets, ST7789
   review rendering applies bounded layout commands to an injected draw target,
   and ST7789 response-QR rendering draws a validated centered matrix with a
-  quiet zone.
+  quiet zone, including bounded cycling for animated `nsealr1a:` response
+  frame sets and rejection of mixed or non-nSealr response payloads.
 - Optional Pi camera adapter tests proving `PiCameraJpegFrameSource` captures
   JPEG bytes through a `picamera`-style object and `PyzbarQrDecoder` returns the
   first UTF-8 QR payload, returns `None` when no QR is present, and rejects
