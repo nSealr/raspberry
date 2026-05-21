@@ -117,10 +117,12 @@ even if current hardware readiness differs.
   applies the bounded layout commands to an injected draw target, and an ST7789
   response-QR display adapter that renders an injected QR matrix with a quiet
   zone. The response display handles a single static `nsealr1:` payload or a
-  bounded `nsealr1a:` animated frame set as separate QR frames, not as one
-  multi-line QR payload. The request camera scanner ignores unrelated decoded
-  QR payloads and can collect a complete animated `nsealr1a:` request set
-  before returning it to the flow. A separate session-source camera scanner
+  bounded, decoded-valid `nsealr1a:` animated frame set as separate QR frames,
+  not as one multi-line QR payload. Malformed response envelopes are rejected
+  before a future display adapter can show them. The request camera scanner
+  ignores unrelated decoded QR payloads and can collect a complete animated
+  `nsealr1a:` request set before returning it to the flow. A separate
+  session-source camera scanner
   ignores non-source QR payloads until it decodes a supported RAM-only source
   such as Standard SeedQR, CompactSeedQR bytes, NIP-19 `nsec`, or plain
   mnemonic text for the existing secret-hidden import-review boundary.

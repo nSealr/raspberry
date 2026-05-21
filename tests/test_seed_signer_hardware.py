@@ -23,7 +23,7 @@ from nsealr_vault.seed_signer_hardware import (
 )
 from nsealr_vault.seed_entry import SessionImportSource
 from nsealr_vault.session_import_flow import SessionImportFlowError, StatelessSessionKeyring
-from nsealr_vault.qr import decode_animated_qr_envelope_frames, encode_animated_qr_envelope_frames
+from nsealr_vault.qr import decode_animated_qr_envelope_frames, encode_animated_qr_envelope_frames, encode_qr_envelope
 
 
 SPECS = Path(__file__).resolve().parent / "fixtures/specs"
@@ -517,9 +517,10 @@ class SeedSignerHardwareTests(unittest.TestCase):
         qr = FakeQrCode([[True, False], [False, True]])
         qrcode_module = FakeQrcodeModule(qr)
         renderer = PythonQrcodeMatrixRenderer(qrcode_module=qrcode_module)
+        payload = "renderer-payload"
 
-        self.assertEqual(renderer.render_qr_matrix("nsealr1:response"), [[True, False], [False, True]])
-        self.assertEqual(qr.data, ["nsealr1:response"])
+        self.assertEqual(renderer.render_qr_matrix(payload), [[True, False], [False, True]])
+        self.assertEqual(qr.data, [payload])
         self.assertTrue(qr.made_fit)
         self.assertEqual(qrcode_module.kwargs, {"border": 0})
 
@@ -528,7 +529,7 @@ class SeedSignerHardwareTests(unittest.TestCase):
         renderer = PythonQrcodeMatrixRenderer(qrcode_module=FakeQrcodeModule(qr))
 
         with self.assertRaisesRegex(ValueError, "QR matrix values must be booleans"):
-            renderer.render_qr_matrix("nsealr1:response")
+            renderer.render_qr_matrix("renderer-payload")
 
     def test_st7789_review_display_renders_layout_commands_to_target(self) -> None:
         target = FakeDrawTarget()
@@ -555,10 +556,11 @@ class SeedSignerHardwareTests(unittest.TestCase):
         target = FakeDrawTarget()
         renderer = FakeQrMatrixRenderer([[True, False], [False, True]])
         display = SeedSignerSt7789ResponseQrDisplay(target=target, qr_renderer=renderer, quiet_zone_modules=1)
+        response_qr = encode_qr_envelope({"version": 1, "request_id": "req-response-display", "ok": True, "result": {}})
 
-        display.emit_response_qr("nsealr1:response")
+        display.emit_response_qr(response_qr)
 
-        self.assertEqual(renderer.payloads, ["nsealr1:response"])
+        self.assertEqual(renderer.payloads, [response_qr])
         self.assertEqual(target.operations[0], ("fill_rect", 0, 0, 240, 240, "black"))
         self.assertEqual(target.operations[1], ("fill_rect", 0, 0, 240, 240, "white"))
         self.assertIn(("fill_rect", 60, 60, 60, 60, "black"), target.operations)
@@ -576,12 +578,37 @@ class SeedSignerHardwareTests(unittest.TestCase):
             frame_delay_s=0.1,
             sleep=sleeps.append,
         )
+        animated = encode_animated_qr_envelope_frames(
+            {"version": 1, "request_id": "req-response-display-animated", "ok": True, "result": {}},
+            chunk_size_chars=24,
+        )
 
-        display.emit_response_qr("nsealr1a:frame-1\nnsealr1a:frame-2\n")
+        display.emit_response_qr("\n".join(animated))
 
-        self.assertEqual(renderer.payloads, ["nsealr1a:frame-1", "nsealr1a:frame-2"] * 2)
-        self.assertEqual(sleeps, [0.1, 0.1, 0.1, 0.1])
-        self.assertEqual([operation for operation in target.operations if operation == ("present",)], [("present",)] * 4)
+        self.assertEqual(renderer.payloads, animated * 2)
+        self.assertEqual(sleeps, [0.1] * (len(animated) * 2))
+        self.assertEqual(
+            [operation for operation in target.operations if operation == ("present",)],
+            [("present",)] * (len(animated) * 2),
+        )
+
+    def test_st7789_response_qr_display_rejects_malformed_static_frame(self) -> None:
+        display = SeedSignerSt7789ResponseQrDisplay(
+            target=FakeDrawTarget(),
+            qr_renderer=FakeQrMatrixRenderer([[True]]),
+        )
+
+        with self.assertRaisesRegex(ValueError, "static response QR payload is invalid"):
+            display.emit_response_qr("nsealr1:not-valid-base64url-json")
+
+    def test_st7789_response_qr_display_rejects_malformed_animated_frames(self) -> None:
+        display = SeedSignerSt7789ResponseQrDisplay(
+            target=FakeDrawTarget(),
+            qr_renderer=FakeQrMatrixRenderer([[True]]),
+        )
+
+        with self.assertRaisesRegex(ValueError, "animated response QR payload is invalid"):
+            display.emit_response_qr("nsealr1a:not-a-valid-frame\nnsealr1a:still-invalid")
 
     def test_st7789_response_qr_display_rejects_mixed_animated_payload(self) -> None:
         display = SeedSignerSt7789ResponseQrDisplay(
@@ -605,17 +632,19 @@ class SeedSignerHardwareTests(unittest.TestCase):
         target = FakeDrawTarget()
         renderer = FakeQrMatrixRenderer([[True], [False, True]])
         display = SeedSignerSt7789ResponseQrDisplay(target=target, qr_renderer=renderer)
+        response_qr = encode_qr_envelope({"version": 1, "request_id": "req-invalid-matrix", "ok": True, "result": {}})
 
         with self.assertRaisesRegex(ValueError, "QR matrix must be rectangular"):
-            display.emit_response_qr("nsealr1:response")
+            display.emit_response_qr(response_qr)
 
     def test_st7789_response_qr_display_requires_square_qr_matrix(self) -> None:
         target = FakeDrawTarget()
         renderer = FakeQrMatrixRenderer([[True, False, True], [False, True, False]])
         display = SeedSignerSt7789ResponseQrDisplay(target=target, qr_renderer=renderer)
+        response_qr = encode_qr_envelope({"version": 1, "request_id": "req-non-square-matrix", "ok": True, "result": {}})
 
         with self.assertRaisesRegex(ValueError, "QR matrix must be square"):
-            display.emit_response_qr("nsealr1:response")
+            display.emit_response_qr(response_qr)
 
 
 if __name__ == "__main__":

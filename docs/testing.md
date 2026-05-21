@@ -112,8 +112,9 @@ default are left unchanged.
   unrelated QR payloads, collects complete animated request frame sets, ST7789
   review rendering applies bounded layout commands to an injected draw target,
   and ST7789 response-QR rendering draws a validated centered matrix with a
-  quiet zone, including bounded cycling for animated `nsealr1a:` response
-  frame sets and rejection of mixed or non-nSealr response payloads.
+  quiet zone, including bounded cycling for decoded-valid animated `nsealr1a:`
+  response frame sets and rejection of malformed static, malformed animated,
+  mixed, or non-nSealr response payloads.
 - SeedSigner-compatible session-source camera scanner tests proving non-source
   QR payloads are ignored until a supported RAM-only source QR is decoded into
   a package-owned `SessionImportSource`, including CompactSeedQR byte payloads,

@@ -57,6 +57,12 @@ Status note, 2026-05-10: Raspberry QR tooling now supports the shared
 `nsealr-vault flow --output-format qr-animated` can emit a multi-frame response
 while preserving the existing review and approval digest semantics.
 
+Status note, 2026-05-21: the SeedSigner-compatible ST7789 response-QR display
+adapter now validates static `nsealr1:` response envelopes and complete
+animated `nsealr1a:` frame sets through the shared QR decoders before rendering
+any frame. This keeps malformed QR output from becoming a physical display
+artifact while real Pi display/readback acceptance remains pending.
+
 Status: the physical-button approval state machine is implemented in
 `nsealr_vault.controls`. It is still hardware-neutral, but it pins the rule
 that approval can only happen after every trusted-review page has been reached,

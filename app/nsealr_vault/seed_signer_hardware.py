@@ -8,7 +8,7 @@ from typing import Any, Callable, Protocol, Sequence
 from .controls import ButtonAction
 from .display import DisplayFrameLimits
 from .limits import NSEALR_V0_LIMITS
-from .qr import ANIMATED_QR_ENVELOPE_PREFIX, QR_ENVELOPE_PREFIX, decode_animated_qr_envelope_frames
+from .qr import ANIMATED_QR_ENVELOPE_PREFIX, QR_ENVELOPE_PREFIX, decode_animated_qr_envelope_frames, decode_qr_envelope
 from .seed_entry import SessionImportSource
 from .session_import_flow import SessionImportFlowResult, StatelessSessionKeyring, run_session_import_io_flow
 from .session_source_qr import (
@@ -664,14 +664,29 @@ def _response_qr_frames(response_qr: str) -> list[str]:
     if not frames:
         raise ValueError("response QR payload must not be empty")
     if len(frames) == 1:
-        if frames[0].startswith(QR_ENVELOPE_PREFIX) or frames[0].startswith(ANIMATED_QR_ENVELOPE_PREFIX):
+        if frames[0].startswith(QR_ENVELOPE_PREFIX):
+            try:
+                decode_qr_envelope(frames[0])
+            except ValueError as exc:
+                raise ValueError("static response QR payload is invalid") from exc
+            return frames
+        if frames[0].startswith(ANIMATED_QR_ENVELOPE_PREFIX):
+            _validate_animated_response_qr_frames(frames)
             return frames
         raise ValueError("response QR payload must be nsealr1 or nsealr1a")
     if len(frames) > NSEALR_V0_LIMITS["max_animated_qr_frame_count"]:
         raise ValueError("animated response QR frame count exceeds nSealr v0 limit")
     if all(frame.startswith(ANIMATED_QR_ENVELOPE_PREFIX) for frame in frames):
+        _validate_animated_response_qr_frames(frames)
         return frames
     raise ValueError("animated response QR payload must contain only nsealr1a frames")
+
+
+def _validate_animated_response_qr_frames(frames: Sequence[str]) -> None:
+    try:
+        decode_animated_qr_envelope_frames(frames)
+    except ValueError as exc:
+        raise ValueError("animated response QR payload is invalid") from exc
 
 
 def _clip_text_for_width(text: str, scale: int, max_width: int | None) -> str:
