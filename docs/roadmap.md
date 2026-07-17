@@ -365,10 +365,10 @@ not a downloadable OS image.
 
 ## Boundary
 
-Shared QR vault contracts stay in `nSealr/specs`. ESP32-S3 QR vault firmware
-is a separate target in `nSealr/esp32`; it should reuse the same vectors and
-approval-digest semantics rather than depending on Raspberry implementation
-code. Review-transcript vectors are part of that shared contract.
+Shared QR vault contracts stay in `nSealr/specs`. ESP32 QR vault firmware
+(the nSealr Vault — ESP32 edition, now targeting ESP32-P4) is a separate target
+in `nSealr/esp32`; it should reuse the same vectors and approval-digest
+semantics rather than depending on Raspberry implementation code. Review-transcript vectors are part of that shared contract.
 
 The Raspberry/Pi QR vault remains a stateless, air-gapped, RAM-only custody
 line. The pre-signing hardening gate may add parser/rejection conformance, but
