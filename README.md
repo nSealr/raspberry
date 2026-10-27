@@ -1,3 +1,32 @@
+# Raspberry Pi signer adapters and reference code — development moved
+
+Current development is in [nSealr/nsealr](https://github.com/nSealr/nsealr),
+under `apps/pi`. Open new software issues and pull requests
+[in the product repository](https://github.com/nSealr/nsealr/issues).
+
+The [accepted A02 migration](https://github.com/nSealr/nsealr/tree/main/docs/restart/implementation/A02)
+records the original commits, complete path/disposition mapping and declared
+changes. Its accepted product source was
+`b1c90139a651895284b2624da7d12903cf16bc9d`. This repository's migrated source
+was `d1534d9dcfba8fe4a35cea2ed3529e32a5003dc6`. Original history, evidence tags and the
+MIT license remain here; no source history is rewritten or deleted.
+
+Use the [current product requirements](https://github.com/nSealr/nsealr/tree/main/docs/product),
+[pinned public bootstrap](https://github.com/nSealr/nsealr/tree/main/tools/baseline)
+and current owners, rather than the historical setup below. There is no
+production-ready signer release or real-key custody qualification implied by
+this migration. Custom board work remains future scope and smartcard research
+is retired.
+
+## Historical README
+
+The following text describes the original experimental source. Its commands,
+capabilities and repository links are historical, not current installation or
+support instructions. The [original README](https://github.com/nSealr/raspberry/blob/d1534d9dcfba8fe4a35cea2ed3529e32a5003dc6/README.md)
+remains available at its exact source commit.
+
+---
+
 # nSealr Raspberry
 
 Raspberry/Pi software for nSealr signing devices.

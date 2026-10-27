@@ -19,7 +19,7 @@ COMMON_FILES = [
     "docs/testing.md",
     "docs/roadmap.md",
     "docs/audit-checklist.md",
-    ".github/workflows/ci.yml",
+    ".github/workflows/ci.yaml",
 ]
 
 REQUIRED_DIRS = {
